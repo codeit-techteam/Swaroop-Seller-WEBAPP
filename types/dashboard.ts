@@ -1,7 +1,18 @@
-export type TransactionStatus = "SOURCED" | "PENDING" | "LIVE" | "CLOSED";
+export type TransactionStatus =
+  | "SOURCED"
+  | "PENDING"
+  | "LIVE"
+  | "PROCESSING"
+  | "DISPATCHED"
+  | "CLOSED";
 
 export type PriorityTaskType =
-  "dispatch" | "certificate" | "settlement" | "compliance";
+  | "dispatch"
+  | "certificate"
+  | "settlement"
+  | "compliance"
+  | "procurement"
+  | "pricing";
 
 export type ActivityLogStatus = "info" | "success" | "warning" | "danger";
 
@@ -10,6 +21,7 @@ export interface DashboardMetrics {
   availableInventoryUnit: string;
   activeOffers: number;
   pendingRequests: number;
+  activeOrders: number;
   pendingSettlement: number;
   pendingSettlementLabel: string;
   dispatchPending: number;
@@ -32,6 +44,8 @@ export interface Transaction {
   id: string;
   orderId: string;
   commodity: string;
+  buyer: string;
+  quantityMt: number;
   value: number;
   currency: "INR" | "USD";
   status: TransactionStatus;
@@ -70,5 +84,11 @@ export interface CommandAction {
   id: string;
   label: string;
   href?: string;
-  action?: "create-offer" | "update-stock" | "upload-kyc" | "reports";
+  action?:
+    | "create-offer"
+    | "update-stock"
+    | "upload-kyc"
+    | "reports"
+    | "create-pr"
+    | "view-orders";
 }

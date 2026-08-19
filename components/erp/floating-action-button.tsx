@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, FileUp, PackagePlus, Plus, Tag, X } from "lucide-react";
+import { FileUp, PackagePlus, Plus, Tag, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import toast from "react-hot-toast";
@@ -29,12 +29,6 @@ const actions = [
     label: "Upload Document",
     href: ROUTES.DOCUMENTS,
     icon: FileUp,
-  },
-  {
-    id: "generate-report",
-    label: "Generate Report",
-    href: ROUTES.ANALYTICS,
-    icon: BarChart3,
   },
 ];
 

@@ -12,7 +12,9 @@ const statusChipVariants = cva(
         sourced: "border-emerald-200 bg-emerald-50 text-emerald-700",
         pending: "border-amber-200 bg-amber-50 text-amber-700",
         live: "border-blue-200 bg-blue-50 text-blue-700",
-        closed: "border-red-200 bg-red-50 text-red-700",
+        processing: "border-indigo-200 bg-indigo-50 text-indigo-700",
+        dispatched: "border-sky-200 bg-sky-50 text-sky-700",
+        closed: "border-red-200 bg-red-50 text-slate-600",
         in_stock: "border-blue-300 bg-white text-blue-700",
         low_stock: "border-red-300 bg-white text-red-600",
         out_of_stock: "border-slate-300 bg-white text-slate-500",
@@ -51,6 +53,10 @@ export function transactionStatusVariant(status: string): StatusChipVariant {
       return "pending";
     case "LIVE":
       return "live";
+    case "PROCESSING":
+      return "processing";
+    case "DISPATCHED":
+      return "dispatched";
     case "CLOSED":
       return "closed";
     default:

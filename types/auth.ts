@@ -1,4 +1,6 @@
-export type UserRole = "seller" | "admin" | "viewer";
+import type { UserRole } from "@/config/roles";
+
+export type { UserRole };
 
 export interface User {
   id: string;
@@ -6,6 +8,8 @@ export interface User {
   name: string;
   role: UserRole;
   avatarUrl?: string;
+  company?: string;
+  sellerId?: string;
 }
 
 export interface AuthTokens {

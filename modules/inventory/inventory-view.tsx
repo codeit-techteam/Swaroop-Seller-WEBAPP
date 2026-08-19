@@ -204,13 +204,20 @@ export function InventoryView() {
         </div>
         <div className="flex items-center gap-2">
           <ExportDropdown label="Report" variant="outline" />
+          <Button
+            variant="outline"
+            className="border-slate-200"
+            asChild
+          >
+            <Link href={ROUTES.INVENTORY_RESERVATIONS}>Reserve Stock</Link>
+          </Button>
           <Button className="gap-2 bg-[#0B1F3A] hover:bg-[#122846]" asChild>
-            <Link href={ROUTES.INVENTORY_ADD_PRODUCT}>+ Add Inventory</Link>
+            <Link href={ROUTES.INVENTORY_ADD_PRODUCT}>+ Add Stock</Link>
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <SummaryCard
           title="Total Inventory"
           value={summary.totalInventory}
@@ -223,11 +230,16 @@ export function InventoryView() {
           valueClassName="text-[#1B6EF3]"
         />
         <SummaryCard
+          title="Reserved"
+          value={summary.reserved}
+          suffix={summary.unit}
+        />
+        <SummaryCard
           title="Low Stock"
           value={summary.lowStock}
           valueClassName="text-red-600"
         />
-        <SummaryCard title="Out of Stock" value={summary.outOfStock} />
+        <SummaryCard title="Warehouses" value={summary.warehouses} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">

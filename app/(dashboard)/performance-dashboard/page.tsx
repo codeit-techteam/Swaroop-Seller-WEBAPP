@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { PerformanceDashboardView } from "@/modules/performance";
-
-export const metadata: Metadata = {
-  title: "Seller Performance Dashboard | PetroTrade Seller",
-  description:
-    "Operational oversight and strategic trade metrics for seller performance analytics.",
-};
+import { ROUTES } from "@/lib/constants";
 
 export default function PerformanceDashboardPage() {
-  return <PerformanceDashboardView />;
+  redirect(ROUTES.DASHBOARD);
 }

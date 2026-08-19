@@ -1,0 +1,48 @@
+import type { Dispute } from "@/types/disputes";
+
+export const disputesMock: Dispute[] = [
+  {
+    id: "dsp-1",
+    disputeId: "DSP-104",
+    orderId: "PC-98280",
+    category: "QUALITY",
+    raisedBy: "Time Technoplast",
+    amount: 8_40_000,
+    status: "OPEN",
+    openedAt: "2024-05-15T09:20:00.000Z",
+    slaHours: 18,
+  },
+  {
+    id: "dsp-2",
+    disputeId: "DSP-101",
+    orderId: "PC-98259",
+    category: "QUANTITY",
+    raisedBy: "Ultratech Cement",
+    amount: 2_10_000,
+    status: "UNDER_REVIEW",
+    openedAt: "2024-05-14T11:00:00.000Z",
+    slaHours: 8,
+  },
+  {
+    id: "dsp-3",
+    disputeId: "DSP-098",
+    orderId: "PC-98244",
+    category: "PAYMENT",
+    raisedBy: "GAIL India",
+    amount: 12_40_000,
+    status: "AWAITING_EVIDENCE",
+    openedAt: "2024-05-12T16:40:00.000Z",
+    slaHours: 36,
+  },
+  {
+    id: "dsp-4",
+    disputeId: "DSP-090",
+    orderId: "PC-98231",
+    category: "LOGISTICS",
+    raisedBy: "Indorama Ventures",
+    amount: 95_000,
+    status: "RESOLVED",
+    openedAt: "2024-05-08T10:15:00.000Z",
+    slaHours: 0,
+  },
+];

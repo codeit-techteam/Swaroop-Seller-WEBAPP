@@ -45,6 +45,8 @@ export interface InventoryItem {
 export interface InventorySummary {
   totalInventory: number;
   available: number;
+  reserved: number;
+  warehouses: number;
   lowStock: number;
   outOfStock: number;
   unit: string;

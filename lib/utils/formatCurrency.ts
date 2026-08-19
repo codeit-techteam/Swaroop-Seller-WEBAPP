@@ -20,3 +20,18 @@ export function formatCurrency(
 
   return currencyFormatter.format(value);
 }
+
+export function formatCompactInr(value: number): string {
+  const abs = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+
+  if (abs >= 1_00_00_000) {
+    return `${sign}₹${(abs / 1_00_00_000).toFixed(1)} Cr`;
+  }
+
+  if (abs >= 1_00_000) {
+    return `${sign}₹${(abs / 1_00_000).toFixed(abs >= 10_00_000 ? 0 : 1)} L`;
+  }
+
+  return `${sign}${formatCurrency(abs)}`;
+}

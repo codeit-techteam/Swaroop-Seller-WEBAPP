@@ -674,6 +674,8 @@ export const inventoryMock: InventoryItem[] = [
 export const inventorySummaryMock: InventorySummary = {
   totalInventory: 12450,
   available: 8120,
+  reserved: 1743,
+  warehouses: 6,
   lowStock: 14,
   outOfStock: 2,
   unit: "MT",
@@ -701,6 +703,8 @@ export const inventoryWarehouses = [
   "All Warehouses",
   "Mundra Terminal 3",
   "Hazira Port Logi-Zone",
+  "Jamnagar Complex",
+  "Dahej Liquid Terminal",
   "JNPT Warehouse B",
   "Kandla Bulk Yard",
   "Panipat Depot",

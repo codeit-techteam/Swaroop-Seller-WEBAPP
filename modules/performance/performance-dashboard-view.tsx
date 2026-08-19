@@ -66,10 +66,10 @@ export function PerformanceDashboardView() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Seller Performance Dashboard
+            Operations Performance
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Operational oversight and strategic trade metrics.
+            Operational oversight across marketplace, procurement and finance.
           </p>
         </div>
         <div className="flex items-center gap-2">

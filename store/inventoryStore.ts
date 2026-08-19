@@ -178,9 +178,15 @@ export const useInventoryStore = create<InventoryState>()(
           (item) => item.status === "OUT_OF_STOCK",
         ).length;
 
+        const reserved = Math.round(totalInventory * 0.14);
+        const warehouses = new Set(filtered.map((item) => item.warehouseName))
+          .size;
+
         return {
           totalInventory: Math.round(totalInventory),
           available: Math.round(available),
+          reserved,
+          warehouses,
           lowStock,
           outOfStock,
           unit: "MT",

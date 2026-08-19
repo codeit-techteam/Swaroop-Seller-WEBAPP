@@ -1,4 +1,5 @@
 export { toast, useToast } from "./use-toast";
+export { useClientTable } from "./useClientTable";
 export { useDebounce } from "./useDebounce";
 export { useDisclosure } from "./useDisclosure";
 export { useFilters } from "./useFilters";
@@ -9,6 +10,5 @@ export {
   useIsTablet,
   useMediaQuery,
 } from "./useMediaQuery";
-export { useMounted } from "./useMounted";
 export { usePagination } from "./usePagination";
 export { useSearch } from "./useSearch";

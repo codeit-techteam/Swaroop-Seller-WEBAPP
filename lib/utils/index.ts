@@ -1,6 +1,6 @@
 export { cn } from "./cn";
 export { downloadFile, downloadFromUrl } from "./downloadFile";
-export { formatCurrency } from "./formatCurrency";
+export { formatCompactInr, formatCurrency } from "./formatCurrency";
 export { formatDate, formatDateTime, formatRelativeTime } from "./formatDate";
 export {
   formatCompactNumber,

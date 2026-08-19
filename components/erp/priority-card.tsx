@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle,
   ChevronRight,
+  ClipboardList,
   FileWarning,
+  Tag,
   Truck,
   Wallet,
 } from "lucide-react";
@@ -17,6 +19,8 @@ const iconMap = {
   certificate: FileWarning,
   settlement: Wallet,
   compliance: AlertTriangle,
+  procurement: ClipboardList,
+  pricing: Tag,
 };
 
 interface PriorityCardProps {
