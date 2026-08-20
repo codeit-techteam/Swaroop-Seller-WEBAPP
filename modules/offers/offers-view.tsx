@@ -137,12 +137,21 @@ export function OffersView() {
     closeConfirmDialog();
   };
 
-  const confirmConfig = {
+  const confirmConfig: Record<
+    NonNullable<typeof confirmDialog.type>,
+    { title: string; description: string; confirmLabel: string }
+  > = {
     resume: {
       title: "Resume Offer",
       description:
         "This offer will become active and visible on the marketplace.",
       confirmLabel: "Resume Offer",
+    },
+    pause: {
+      title: "Pause Offer",
+      description:
+        "This offer will be hidden from the marketplace until resumed.",
+      confirmLabel: "Pause Offer",
     },
     delete: {
       title: "Delete Offer",
@@ -154,6 +163,11 @@ export function OffersView() {
       title: "Activate Offer",
       description: "Make this offer live on the marketplace?",
       confirmLabel: "Activate",
+    },
+    duplicate: {
+      title: "Duplicate Offer",
+      description: "Create a draft copy of this offer?",
+      confirmLabel: "Duplicate",
     },
   };
 
