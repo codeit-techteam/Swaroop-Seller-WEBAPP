@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, Circle, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { Check, Circle, X } from "lucide-react";
 
-import { getTrackProgress } from "@/lib/utils/payment-track";
 import { cn } from "@/lib/utils";
+import { getTrackProgress } from "@/lib/utils/payment-track";
 import type { PaymentTrackStep } from "@/types/finance";
 
 interface PaymentTrackInlineProps {
@@ -25,8 +25,7 @@ export function PaymentTrackInline({
         {track.map((step, index) => {
           const isLast = index === track.length - 1;
           const done = step.status === "completed";
-          const current =
-            step.status === "current" || step.status === "failed";
+          const current = step.status === "current" || step.status === "failed";
           const failed = step.status === "failed";
 
           return (
@@ -137,10 +136,8 @@ export function PaymentTrackTimeline({
               <span
                 className={cn(
                   "relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2",
-                  isCompleted &&
-                    "border-emerald-500 bg-emerald-500 text-white",
-                  isCurrent &&
-                    "border-[#1B6EF3] bg-[#E8F1FF] text-[#1B6EF3]",
+                  isCompleted && "border-emerald-500 bg-emerald-500 text-white",
+                  isCurrent && "border-[#1B6EF3] bg-[#E8F1FF] text-[#1B6EF3]",
                   isFailed && "border-red-500 bg-red-500 text-white",
                   step.status === "upcoming" &&
                     "border-slate-200 bg-white text-slate-300",
