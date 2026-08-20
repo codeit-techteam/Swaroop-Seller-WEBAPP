@@ -1,8 +1,7 @@
 "use client";
 
-import { FilterX } from "lucide-react";
+import { FilterX, Search } from "lucide-react";
 
-import { SearchBar } from "@/components/purchase-requests/search-bar";
 import { purchaseStatusLabel } from "@/components/purchase-requests/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,88 +41,98 @@ export function PurchaseFilterBar({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm",
+        "space-y-4 border-b border-slate-100 px-5 py-5 md:px-6",
         className,
       )}
     >
-      <Select
-        value={filters.status}
-        onValueChange={(value) => onFilterChange("status", value)}
-      >
-        <SelectTrigger className="h-9 w-[160px] border-slate-200 bg-white text-sm">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          {PURCHASE_STATUSES.map((status) => (
-            <SelectItem key={status} value={status}>
-              {purchaseStatusLabel(status)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={filters.materialGrade}
-        onValueChange={(value) => onFilterChange("materialGrade", value)}
-      >
-        <SelectTrigger className="h-9 w-[160px] border-slate-200 bg-white text-sm">
-          <SelectValue placeholder="Material Grade" />
-        </SelectTrigger>
-        <SelectContent>
-          {MATERIAL_GRADES.map((grade) => (
-            <SelectItem key={grade} value={grade}>
-              {grade === "All Grades" ? "All Grades" : grade}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={filters.warehouse}
-        onValueChange={(value) => onFilterChange("warehouse", value)}
-      >
-        <SelectTrigger className="h-9 w-[170px] border-slate-200 bg-white text-sm">
-          <SelectValue placeholder="Warehouse" />
-        </SelectTrigger>
-        <SelectContent>
-          {PURCHASE_WAREHOUSES.map((warehouse) => (
-            <SelectItem key={warehouse} value={warehouse}>
-              {warehouse}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <div className="flex items-center gap-1.5">
+      <div className="relative max-w-2xl">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <Input
-          type="date"
-          value={filters.dateFrom}
-          onChange={(event) => onFilterChange("dateFrom", event.target.value)}
-          className="h-9 w-[145px] border-slate-200 bg-white text-sm"
-          aria-label="Date from"
-        />
-        <span className="text-xs text-slate-400">to</span>
-        <Input
-          type="date"
-          value={filters.dateTo}
-          onChange={(event) => onFilterChange("dateTo", event.target.value)}
-          className="h-9 w-[145px] border-slate-200 bg-white text-sm"
-          aria-label="Date to"
+          value={filters.search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="Search request ID, grade, warehouse..."
+          className="h-10 border-slate-200 bg-slate-50 pl-9 shadow-none focus-visible:ring-[#1B6EF3]"
         />
       </div>
 
-      <SearchBar value={filters.search} onChange={onSearchChange} />
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={filters.status}
+          onValueChange={(value) => onFilterChange("status", value)}
+        >
+          <SelectTrigger className="h-9 w-[160px] border-slate-200 bg-white text-sm">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            {PURCHASE_STATUSES.map((status) => (
+              <SelectItem key={status} value={status}>
+                {purchaseStatusLabel(status)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-9 gap-1.5 text-slate-600 hover:text-[#1B6EF3]"
-        onClick={onClearAll}
-      >
-        <FilterX className="h-4 w-4" />
-        Clear All
-      </Button>
+        <Select
+          value={filters.materialGrade}
+          onValueChange={(value) => onFilterChange("materialGrade", value)}
+        >
+          <SelectTrigger className="h-9 w-[160px] border-slate-200 bg-white text-sm">
+            <SelectValue placeholder="Material Grade" />
+          </SelectTrigger>
+          <SelectContent>
+            {MATERIAL_GRADES.map((grade) => (
+              <SelectItem key={grade} value={grade}>
+                {grade === "All Grades" ? "All Grades" : grade}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.warehouse}
+          onValueChange={(value) => onFilterChange("warehouse", value)}
+        >
+          <SelectTrigger className="h-9 w-[170px] border-slate-200 bg-white text-sm">
+            <SelectValue placeholder="Warehouse" />
+          </SelectTrigger>
+          <SelectContent>
+            {PURCHASE_WAREHOUSES.map((warehouse) => (
+              <SelectItem key={warehouse} value={warehouse}>
+                {warehouse}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="date"
+            value={filters.dateFrom}
+            onChange={(event) => onFilterChange("dateFrom", event.target.value)}
+            className="h-9 w-[145px] border-slate-200 bg-white text-sm"
+            aria-label="Date from"
+          />
+          <span className="text-xs text-slate-400">to</span>
+          <Input
+            type="date"
+            value={filters.dateTo}
+            onChange={(event) => onFilterChange("dateTo", event.target.value)}
+            className="h-9 w-[145px] border-slate-200 bg-white text-sm"
+            aria-label="Date to"
+          />
+        </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="ml-auto h-9 gap-1.5 text-slate-600 hover:text-[#1B6EF3]"
+          onClick={onClearAll}
+        >
+          <FilterX className="h-4 w-4" />
+          Clear All
+        </Button>
+      </div>
     </div>
   );
 }

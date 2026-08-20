@@ -1,40 +1,24 @@
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
-
 import { cn } from "@/lib/utils";
 import type { PurchaseRequestStatus } from "@/types/purchase-requests";
 
-const statusBadgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
-  {
-    variants: {
-      variant: {
-        pending: "border-amber-200 bg-amber-50 text-amber-700",
-        accepted: "border-emerald-200 bg-emerald-50 text-emerald-700",
-        rejected: "border-red-300 bg-white text-red-600",
-        counter_sent: "border-blue-200 bg-blue-50 text-blue-700",
-        expired: "border-slate-300 bg-slate-100 text-slate-500",
-        closed: "border-slate-200 bg-slate-50 text-slate-600",
-      },
-    },
-    defaultVariants: {
-      variant: "pending",
-    },
-  },
-);
-
-export type StatusBadgeVariant = NonNullable<
-  VariantProps<typeof statusBadgeVariants>["variant"]
->;
-
 const STATUS_LABELS: Record<PurchaseRequestStatus, string> = {
-  pending: "PENDING",
-  accepted: "ACCEPTED",
-  rejected: "REJECTED",
-  counter_sent: "COUNTER SENT",
-  expired: "EXPIRED",
-  closed: "CLOSED",
+  pending: "Pending",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  counter_sent: "Counter sent",
+  expired: "Expired",
+  closed: "Closed",
+};
+
+const STATUS_DOT: Record<PurchaseRequestStatus, string> = {
+  pending: "bg-amber-500",
+  accepted: "bg-emerald-500",
+  rejected: "bg-red-500",
+  counter_sent: "bg-blue-500",
+  expired: "bg-slate-400",
+  closed: "bg-slate-400",
 };
 
 interface StatusBadgeProps {
@@ -44,7 +28,16 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
-    <span className={cn(statusBadgeVariants({ variant: status }), className)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 text-sm font-medium text-slate-600",
+        className,
+      )}
+    >
+      <span
+        className={cn("h-2 w-2 shrink-0 rounded-full", STATUS_DOT[status])}
+        aria-hidden
+      />
       {STATUS_LABELS[status]}
     </span>
   );
@@ -52,6 +45,6 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 
 export function purchaseStatusLabel(status: string): string {
   if (status === "All Statuses") return status;
-  if (status === "counter_sent") return "Counter Sent";
+  if (status === "counter_sent") return "Counter sent";
   return status.charAt(0).toUpperCase() + status.slice(1);
 }

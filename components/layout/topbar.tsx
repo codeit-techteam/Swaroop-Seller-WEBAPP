@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/popover";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useComplianceStore } from "@/store/complianceStore";
 import { useDashboardStore } from "@/store/dashboardStore";
 import { useInventoryStore } from "@/store/inventoryStore";
 import { usePerformanceStore } from "@/store/performanceStore";
@@ -41,7 +40,6 @@ interface TopbarProps {
 export function Topbar({ onMenuClick, className }: TopbarProps) {
   const pathname = usePathname();
   const isInventory = pathname.startsWith(ROUTES.INVENTORY);
-  const isCompliance = pathname.startsWith(ROUTES.COMPLIANCE);
   const isPerformance = pathname.startsWith(ROUTES.PERFORMANCE_DASHBOARD);
   const isProfile = pathname.startsWith(ROUTES.PROFILE);
   const marketIndex = useDashboardStore((s) => s.marketIndex);
@@ -49,8 +47,6 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
   const setDashboardSearch = useDashboardStore((s) => s.setSearch);
   const inventorySearch = useInventoryStore((s) => s.filters.search);
   const setInventorySearch = useInventoryStore((s) => s.setSearch);
-  const complianceSearch = useComplianceStore((s) => s.filters.search);
-  const setComplianceSearch = useComplianceStore((s) => s.setSearch);
   const performanceSearch = usePerformanceStore((s) => s.globalSearch);
   const setPerformanceSearch = usePerformanceStore((s) => s.setGlobalSearch);
   const profileSearch = useProfileStore((s) => s.searchQuery);
@@ -66,36 +62,27 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
   );
   const getUnreadCount = usePerformanceStore((s) => s.getUnreadCount);
   const getSearchResults = usePerformanceStore((s) => s.getSearchResults);
-  const [selectedDate, setSelectedDate] = useState<Date>(
-    new Date("2024-05-15"),
-  );
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [dateOpen, setDateOpen] = useState(false);
 
   const placeholder = useMemo(() => {
     if (isInventory) return "Quick search inventory...";
-    if (isCompliance) return "Search certifications...";
     if (isPerformance) return "Global Trade Search...";
     if (isProfile) return "Search orders, docs...";
     return "Search orders, inventory or compliance docs...";
-  }, [isCompliance, isInventory, isPerformance, isProfile]);
+  }, [isInventory, isPerformance, isProfile]);
 
   const searchValue = isInventory
     ? inventorySearch
-    : isCompliance
-      ? complianceSearch
-      : isPerformance
-        ? performanceSearch
-        : isProfile
-          ? profileSearch
-          : dashboardSearch;
+    : isPerformance
+      ? performanceSearch
+      : isProfile
+        ? profileSearch
+        : dashboardSearch;
 
   const handleSearchChange = (value: string) => {
     if (isInventory) {
       setInventorySearch(value);
-      return;
-    }
-    if (isCompliance) {
-      setComplianceSearch(value);
       return;
     }
     if (isPerformance) {

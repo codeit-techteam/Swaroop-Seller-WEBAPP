@@ -59,20 +59,25 @@ export function DispatchTable({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm",
+        "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm",
         className,
       )}
     >
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-          Active Dispatch Queue
-        </h3>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-white px-5 py-4">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Active Dispatch Queue
+          </h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {totalItems} shipment{totalItems === 1 ? "" : "s"} in this view
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
           {onOpenFilters ? (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-slate-500"
+              className="h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100"
               onClick={onOpenFilters}
               aria-label="Filters"
             >
@@ -81,13 +86,13 @@ export function DispatchTable({
           ) : null}
           {onExport ? (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500"
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 rounded-xl border-slate-200 text-slate-600"
               onClick={onExport}
-              aria-label="Export"
             >
-              <Download className="h-4 w-4" />
+              <Download className="h-3.5 w-3.5" />
+              Export
             </Button>
           ) : null}
         </div>
@@ -95,30 +100,30 @@ export function DispatchTable({
 
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-slate-50">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          <TableHeader className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
+            <TableRow className="hover:bg-transparent border-slate-100">
+              <TableHead className="h-11 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Order ID
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="h-11 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Buyer
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="h-11 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Material
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="h-11 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Qty
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="h-11 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Destination
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="h-11 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Deadline
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="h-11 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Status
               </TableHead>
-              <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="h-11 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 Action
               </TableHead>
             </TableRow>
@@ -129,7 +134,7 @@ export function DispatchTable({
                   <TableRow key={`skeleton-${index}`}>
                     {Array.from({ length: 8 }).map((__, cell) => (
                       <td key={cell} className="p-4">
-                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full rounded-md" />
                       </td>
                     ))}
                   </TableRow>
@@ -154,7 +159,7 @@ export function DispatchTable({
       </div>
 
       {!isLoading && dispatches.length === 0 ? (
-        <div className="p-6">
+        <div className="p-8">
           <EmptyState
             icon={Truck}
             title="No Dispatch Found"

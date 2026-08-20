@@ -101,7 +101,7 @@ export function UploadBox({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "flex min-h-[140px] flex-col rounded-xl border border-dashed border-slate-200 bg-white p-4 transition-colors",
+        "flex min-h-[160px] flex-col rounded-xl border border-dashed border-slate-200 bg-slate-50/40 p-5 transition-colors hover:border-slate-300 hover:bg-slate-50/70",
         isDragActive && "border-[#1B6EF3] bg-blue-50/50",
         upload.status === "error" && "border-red-300 bg-red-50/30",
         className,

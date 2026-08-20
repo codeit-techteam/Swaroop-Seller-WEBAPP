@@ -3,7 +3,7 @@ import { ReceivablesView } from "@/modules/finance";
 
 export const metadata = createRouteMetadata(
   "Receivables",
-  "Outstanding invoices and collections",
+  "Customer credit receivables and collection tracking",
 );
 
 export default function ReceivablesPage() {

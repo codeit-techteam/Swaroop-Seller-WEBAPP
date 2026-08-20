@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Download,
   FileText,
-  Gem,
   Package,
   Rocket,
   Save,
@@ -227,36 +226,39 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6 pb-28">
-      <div>
+    <div className="relative mx-auto max-w-[1400px] space-y-8 px-4 py-6 md:px-6">
+      <header className="space-y-2">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-500">
           Marketplace Listing
         </p>
-        <h1 className="text-2xl font-bold text-[#0B1F3A]">
+        <h1 className="text-2xl font-bold tracking-tight text-[#0B1F3A] md:text-3xl">
           {editId ? "Edit Trading Offer" : "Create Trading Offer"}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="max-w-2xl text-sm leading-relaxed text-slate-500">
           Convert available inventory into active marketplace listings with
           tiered pricing and bulk discounts.
         </p>
-      </div>
+      </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0">
+          <div className="space-y-8 pb-20">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
           >
-            <div className="mb-5 flex items-center gap-2">
-              <Package className="h-4 w-4 text-[#0B1F3A]" />
-              <h2 className="text-sm font-semibold text-slate-800">
+            <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
+                <Package className="h-4 w-4 text-[#0B1F3A]" />
+              </div>
+              <h2 className="text-base font-semibold text-slate-900">
                 1. Product Selection
               </h2>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Select Product Grade
                 </Label>
@@ -280,7 +282,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Warehouse Location
                 </Label>
@@ -304,28 +306,23 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Available Inventory
                 </Label>
-                <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                      Available Inventory
-                    </p>
-                    <span className="text-lg font-bold text-slate-800">
-                      {formatNumber(formData.availableInventoryMt, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      MT
-                    </span>
-                  </div>
+                <div className="flex h-10 items-center gap-2.5 rounded-md border border-emerald-200 bg-emerald-50/60 px-3">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <span className="text-sm font-semibold text-slate-800">
+                    {formatNumber(formData.availableInventoryMt, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    MT
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Allocation for Offer (MT)
                 </Label>
@@ -357,17 +354,19 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
           >
-            <div className="mb-5 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-[#0B1F3A]" />
-              <h2 className="text-sm font-semibold text-slate-800">
+            <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
+                <FileText className="h-4 w-4 text-[#0B1F3A]" />
+              </div>
+              <h2 className="text-base font-semibold text-slate-900">
                 2. Offer Details
               </h2>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-1.5">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Base Price (₹/MT)
                 </Label>
@@ -393,7 +392,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   MOQ (Min Order Qty)
                 </Label>
@@ -416,7 +415,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Offer Validity
                 </Label>
@@ -431,11 +430,11 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               </div>
             </div>
 
-            <div className="mt-4 space-y-2">
+            <div className="mt-8 space-y-3 border-t border-slate-100 pt-8">
               <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Payment Terms
               </Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 {paymentOptions.map((option) => {
                   const selected = formData.paymentTerms.includes(option.value);
                   return (
@@ -444,10 +443,10 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                       type="button"
                       onClick={() => togglePaymentTerm(option.value)}
                       className={cn(
-                        "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                        "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
                         selected
-                          ? "border-[#0B1F3A] bg-[#0B1F3A] text-white"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                          ? "border-[#0B1F3A] bg-[#0B1F3A] text-white shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
                       )}
                     >
                       {option.label}
@@ -460,7 +459,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               ) : null}
             </div>
 
-            <div className="mt-4 space-y-1.5">
+            <div className="mt-8 space-y-2 border-t border-slate-100 pt-8">
               <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Offer Remarks
               </Label>
@@ -477,11 +476,8 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
           >
-            <div className="mb-4 flex items-center gap-2">
-              <Gem className="h-4 w-4 text-[#0B1F3A]" />
-            </div>
             <TierBuilder
               tiers={formData.tiers}
               basePrice={formData.basePrice}
@@ -510,62 +506,70 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
             allocationMt={formData.allocationMt}
             basePrice={formData.basePrice}
           />
+          </div>
+
+          <StickyFooter
+            contained
+            left={
+              <span className="text-xs text-slate-400">
+                Changes update buyer preview instantly
+              </span>
+            }
+          >
+            <Button
+              variant="outline"
+              className="h-10 shrink-0"
+              onClick={() => {
+                saveDraft();
+                toast.success("Draft saved.");
+              }}
+            >
+              <Save className="mr-1.5 h-4 w-4" />
+              Save Draft
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 shrink-0"
+              onClick={handleGeneratePdf}
+            >
+              <FileText className="mr-1.5 h-4 w-4" />
+              Generate PDF
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 shrink-0"
+              onClick={() => {
+                if (!validate()) {
+                  toast.error("Please fix validation errors");
+                  return;
+                }
+                const offer = buildPreviewOffer();
+                setPreviewOffer(offer);
+                setPreviewOpen(true);
+              }}
+            >
+              Preview Offer
+            </Button>
+            <Button
+              className="h-10 shrink-0 bg-[#0B1F3A] px-5 hover:bg-[#0B1F3A]/90"
+              onClick={() => {
+                if (!validate()) {
+                  toast.error("Please fix validation errors");
+                  return;
+                }
+                setActivateOpen(true);
+              }}
+            >
+              <Rocket className="mr-1.5 h-4 w-4" />
+              Activate Offer
+            </Button>
+          </StickyFooter>
         </div>
 
         <div className="hidden lg:block">
           <BuyerPreviewCard formData={formData} />
         </div>
       </div>
-
-      <StickyFooter
-        left={
-          <span className="hidden text-xs text-slate-400 sm:inline">
-            Changes update buyer preview instantly
-          </span>
-        }
-      >
-        <Button
-          variant="outline"
-          onClick={() => {
-            saveDraft();
-            toast.success("Draft saved.");
-          }}
-        >
-          <Save className="mr-1.5 h-4 w-4" />
-          Save Draft
-        </Button>
-        <Button variant="outline" onClick={handleGeneratePdf}>
-          <FileText className="mr-1.5 h-4 w-4" />
-          Generate PDF
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (!validate()) {
-              toast.error("Please fix validation errors");
-              return;
-            }
-            const offer = buildPreviewOffer();
-            setPreviewOffer(offer);
-            setPreviewOpen(true);
-          }}
-        >
-          Preview Offer
-        </Button>
-        <Button
-          className="bg-[#0B1F3A] hover:bg-[#0B1F3A]/90"
-          onClick={() => {
-            if (!validate()) {
-              toast.error("Please fix validation errors");
-              return;
-            }
-            setActivateOpen(true);
-          }}
-        >
-          <Rocket className="mr-1.5 h-4 w-4" />
-          Activate Offer
-        </Button>
-      </StickyFooter>
 
       <OfferPreviewModal
         open={previewOpen}

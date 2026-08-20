@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   AlertCircle,
   ClipboardList,
-  Download,
   Filter,
   Plus,
   RefreshCw,
@@ -22,7 +21,6 @@ import {
   ConfirmationDialog,
   LoadingOverlay,
   OfferFilterDrawer,
-  OfferPreviewModal,
   OfferTable,
 } from "@/components/marketplace";
 import { Button } from "@/components/ui/button";
@@ -38,7 +36,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useOfferStore } from "@/store/offerStore";
-import type { Offer, OfferSortBy, OfferTab } from "@/types/offers";
+import type { OfferSortBy, OfferTab } from "@/types/offers";
 
 const tabs: { value: OfferTab; label: string }[] = [
   { value: "all", label: "All" },
@@ -69,18 +67,18 @@ function SummaryMetricCard({
       whileHover={{ y: -2 }}
       className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
             {label}
           </p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">
+          <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
             <AnimatedNumber value={value} />
           </p>
         </div>
         <div
           className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-lg",
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
             iconClassName,
           )}
         >
@@ -93,8 +91,6 @@ function SummaryMetricCard({
 
 export function OffersView() {
   const [filterOpen, setFilterOpen] = useState(false);
-  const [previewOffer, setPreviewOffer] = useState<Offer | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
 
   const offers = useOfferStore((s) => s.offers);
   const filters = useOfferStore((s) => s.filters);
@@ -108,12 +104,9 @@ export function OffersView() {
   const setPage = useOfferStore((s) => s.setPage);
   const setSortBy = useOfferStore((s) => s.setSortBy);
   const toggleVisibility = useOfferStore((s) => s.toggleVisibility);
-  const pauseOffer = useOfferStore((s) => s.pauseOffer);
   const resumeOffer = useOfferStore((s) => s.resumeOffer);
   const deleteOffer = useOfferStore((s) => s.deleteOffer);
-  const duplicateOffer = useOfferStore((s) => s.duplicateOffer);
   const syncData = useOfferStore((s) => s.syncData);
-  const exportCsv = useOfferStore((s) => s.exportCsv);
   const openConfirmDialog = useOfferStore((s) => s.openConfirmDialog);
   const closeConfirmDialog = useOfferStore((s) => s.closeConfirmDialog);
   const getFilteredOffers = useOfferStore((s) => s.getFilteredOffers);
@@ -132,10 +125,6 @@ export function OffersView() {
     if (!offerId) return;
 
     switch (type) {
-      case "pause":
-        pauseOffer(offerId);
-        toast.success("Offer Paused");
-        break;
       case "resume":
         resumeOffer(offerId);
         toast.success("Offer Resumed");
@@ -144,22 +133,11 @@ export function OffersView() {
         deleteOffer(offerId);
         toast.success("Offer Deleted");
         break;
-      case "duplicate": {
-        const dup = duplicateOffer(offerId);
-        if (dup) toast.success("Offer duplicated successfully.");
-        break;
-      }
     }
     closeConfirmDialog();
   };
 
   const confirmConfig = {
-    pause: {
-      title: "Pause Offer",
-      description:
-        "This offer will be hidden from the marketplace. You can resume it later.",
-      confirmLabel: "Yes, Pause",
-    },
     resume: {
       title: "Resume Offer",
       description:
@@ -172,11 +150,6 @@ export function OffersView() {
         "This action cannot be undone. The offer will be permanently removed.",
       confirmLabel: "Delete",
     },
-    duplicate: {
-      title: "Duplicate Offer",
-      description: "Create a copy of this offer as a new draft?",
-      confirmLabel: "Duplicate",
-    },
     activate: {
       title: "Activate Offer",
       description: "Make this offer live on the marketplace?",
@@ -188,30 +161,26 @@ export function OffersView() {
   const dialogConfig = dialogType ? confirmConfig[dialogType] : null;
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6">
+    <div className="mx-auto max-w-[1400px] space-y-6 px-4 py-6 md:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs text-slate-500">Trading Platform / Offers</p>
-          <h1 className="text-2xl font-bold text-[#0B1F3A]">
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Marketplace &gt; Active Offers
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Active Offers Management
           </h1>
+          <p className="text-sm text-slate-500">
+            Monitor live listings, review status, and manage marketplace
+            visibility.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              exportCsv();
-              toast.success("CSV Exported");
-            }}
-          >
-            <Download className="mr-1.5 h-4 w-4" />
-            Export CSV
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             disabled={isSyncing}
+            className="h-9 border-slate-200 bg-white"
             onClick={async () => {
               await syncData();
               toast.success("Offers synchronized.");
@@ -224,18 +193,18 @@ export function OffersView() {
           </Button>
           <Button
             size="sm"
-            className="bg-[#0B1F3A] hover:bg-[#0B1F3A]/90"
+            className="h-9 bg-[#0B1F3A] hover:bg-[#122846]"
             asChild
           >
             <Link href={ROUTES.OFFERS_CREATE}>
               <Plus className="mr-1.5 h-4 w-4" />
-              CREATE NEW OFFER
+              Create New Offer
             </Link>
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryMetricCard
           label="Total Live Offers"
           value={summary.totalLive}
@@ -266,64 +235,68 @@ export function OffersView() {
         />
       </div>
 
-      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="Search Offer ID, Grade, Category, or Warehouse..."
-            value={filters.search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="space-y-5 border-b border-slate-100 px-5 py-5 md:px-6">
+          <div className="relative max-w-2xl">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="Search Offer ID, Grade, Category, or Warehouse..."
+              value={filters.search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-10 border-slate-200 bg-slate-50 pl-9 shadow-none focus-visible:ring-[#1B6EF3]"
+            />
+          </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Tabs
-            value={filters.tab}
-            onValueChange={(value) => setTab(value as OfferTab)}
-          >
-            <TabsList className="h-9 bg-slate-100">
-              {tabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="text-xs data-[state=active]:bg-white"
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Tabs
+              value={filters.tab}
+              onValueChange={(value) => setTab(value as OfferTab)}
+            >
+              <TabsList className="h-10 gap-1 bg-slate-100 p-1">
+                {tabs.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="px-3.5 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
 
-          <div className="flex items-center gap-2">
-            <Select
-              value={filters.sortBy}
-              onValueChange={(value) => setSortBy(value as OfferSortBy)}
-            >
-              <SelectTrigger className="h-9 w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="oldest">Oldest</SelectItem>
-                <SelectItem value="price_desc">Highest Price</SelectItem>
-                <SelectItem value="price_asc">Lowest Price</SelectItem>
-                <SelectItem value="moq">MOQ</SelectItem>
-                <SelectItem value="grade">Product Grade</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setFilterOpen(true)}
-            >
-              <Filter className="mr-1.5 h-4 w-4" />
-              Advanced Filters
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={filters.sortBy}
+                onValueChange={(value) => setSortBy(value as OfferSortBy)}
+              >
+                <SelectTrigger className="h-9 w-[180px] border-slate-200 bg-white text-sm">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="price_desc">Highest Price</SelectItem>
+                  <SelectItem value="price_asc">Lowest Price</SelectItem>
+                  <SelectItem value="moq">MOQ</SelectItem>
+                  <SelectItem value="grade">Product Grade</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 border-slate-200 bg-white"
+                onClick={() => setFilterOpen(true)}
+              >
+                <Filter className="mr-1.5 h-4 w-4" />
+                Advanced Filters
+              </Button>
+            </div>
           </div>
         </div>
 
         <OfferTable
+          embedded
           offers={paginatedOffers}
           emptyMessage={
             isEmptyCatalog
@@ -332,14 +305,8 @@ export function OffersView() {
           }
           showCreateCta={isEmptyCatalog || filteredOffers.length === 0}
           onToggleVisibility={toggleVisibility}
-          onPause={(id) => openConfirmDialog("pause", id)}
           onResume={(id) => openConfirmDialog("resume", id)}
-          onDuplicate={(id) => openConfirmDialog("duplicate", id)}
           onDelete={(id) => openConfirmDialog("delete", id)}
-          onView={(offer) => {
-            setPreviewOffer(offer);
-            setPreviewOpen(true);
-          }}
         />
 
         {filteredOffers.length > 0 ? (
@@ -357,12 +324,6 @@ export function OffersView() {
       <OfferFilterDrawer
         open={filterOpen}
         onClose={() => setFilterOpen(false)}
-      />
-
-      <OfferPreviewModal
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        offer={previewOffer}
       />
 
       {dialogConfig && dialogType ? (

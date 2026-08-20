@@ -1,5 +1,4 @@
 import {
-  Building2,
   ClipboardList,
   FileBarChart,
   FileText,
@@ -8,7 +7,6 @@ import {
   ListChecks,
   MessageSquare,
   Package,
-  Scale,
   ShieldCheck,
   ShoppingCart,
   Tag,
@@ -191,20 +189,6 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: "logistics.view",
         hideForSeller: true,
       },
-      {
-        label: "Logistics",
-        href: ROUTES.LOGISTICS,
-        icon: Package,
-        permission: "logistics.view",
-        hideForSeller: true,
-      },
-      {
-        label: "Inventory Reservations",
-        href: ROUTES.INVENTORY_RESERVATIONS,
-        icon: Warehouse,
-        permission: "inventory.view",
-        hideForSeller: true,
-      },
     ],
   },
   {
@@ -214,12 +198,6 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         label: "Payments",
         href: ROUTES.PAYMENTS,
-        icon: Wallet,
-        permission: "finance.view",
-      },
-      {
-        label: "Settlements",
-        href: ROUTES.SETTLEMENTS,
         icon: Wallet,
         permission: "finance.view",
       },
@@ -242,14 +220,6 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "COMPLIANCE",
     items: [
       {
-        label: "Compliance Center",
-        href: ROUTES.COMPLIANCE,
-        icon: ShieldCheck,
-        permission: "compliance.view",
-        alert: true,
-        hideForSeller: true,
-      },
-      {
         label: "KYC",
         href: ROUTES.KYC,
         icon: FileText,
@@ -263,13 +233,6 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: "compliance.view",
         hideForSeller: true,
       },
-      {
-        label: "Disputes",
-        href: ROUTES.DISPUTES,
-        icon: Scale,
-        permission: "compliance.view",
-        hideForSeller: true,
-      },
     ],
   },
   {
@@ -277,15 +240,9 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "ADMINISTRATION",
     items: [
       {
-        label: "Users",
+        label: "Customer",
         href: ROUTES.USERS,
         icon: Users,
-        permission: "users.view",
-      },
-      {
-        label: "Sellers / Suppliers",
-        href: ROUTES.SUPPLIERS,
-        icon: Building2,
         permission: "users.view",
       },
     ],

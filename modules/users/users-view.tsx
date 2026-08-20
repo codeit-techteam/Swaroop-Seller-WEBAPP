@@ -79,11 +79,11 @@ export function UsersView() {
 
   return (
     <OperationsShell
-      title="Users"
+      title="Customer"
       subtitle="Operations directory with frontend-only roles. Authentication is not enforced yet."
       actions={
         <Button className="bg-[#0B1F3A] hover:bg-[#122846]" onClick={() => setOpen(true)}>
-          Invite user
+          Invite customer
         </Button>
       }
     >
@@ -103,8 +103,8 @@ export function UsersView() {
           "Last Active",
           "Actions",
         ]}
-        emptyTitle="No users found"
-        emptyDescription="Invite an operations user to populate this directory."
+        emptyTitle="No customers found"
+        emptyDescription="Invite a customer to populate this directory."
         page={table.page}
         totalPages={table.totalPages}
         totalItems={table.filtered.length}
@@ -152,7 +152,7 @@ export function UsersView() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite operations user</DialogTitle>
+            <DialogTitle>Invite customer</DialogTitle>
           </DialogHeader>
           <form
             className="space-y-3"

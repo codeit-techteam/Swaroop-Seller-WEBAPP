@@ -18,6 +18,7 @@ const cards: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   iconClassName: string;
+  accentClassName: string;
   valueClassName?: string;
   pad?: boolean;
 }[] = [
@@ -25,13 +26,15 @@ const cards: {
     key: "readyForDispatch",
     label: "Ready For Dispatch",
     icon: PackageCheck,
-    iconClassName: "bg-slate-100 text-slate-700",
+    iconClassName: "bg-sky-50 text-sky-600",
+    accentClassName: "from-sky-400 to-sky-500",
   },
   {
     key: "vehiclePending",
     label: "Vehicle Pending",
     icon: Truck,
     iconClassName: "bg-amber-50 text-amber-600",
+    accentClassName: "from-amber-400 to-orange-400",
     valueClassName: "text-amber-600",
     pad: true,
   },
@@ -40,6 +43,7 @@ const cards: {
     label: "Loading",
     icon: Warehouse,
     iconClassName: "bg-teal-50 text-teal-600",
+    accentClassName: "from-teal-400 to-emerald-500",
     valueClassName: "text-teal-600",
     pad: true,
   },
@@ -47,13 +51,15 @@ const cards: {
     key: "dispatchedToday",
     label: "Dispatched Today",
     icon: Truck,
-    iconClassName: "bg-slate-100 text-slate-700",
+    iconClassName: "bg-indigo-50 text-indigo-600",
+    accentClassName: "from-indigo-400 to-blue-500",
   },
   {
     key: "deliveredToday",
     label: "Delivered Today",
     icon: CheckCircle2,
     iconClassName: "bg-emerald-50 text-emerald-600",
+    accentClassName: "from-emerald-400 to-green-500",
     valueClassName: "text-emerald-600",
   },
   {
@@ -61,6 +67,7 @@ const cards: {
     label: "Delayed",
     icon: AlertTriangle,
     iconClassName: "bg-red-50 text-red-600",
+    accentClassName: "from-rose-400 to-red-500",
     valueClassName: "text-red-600",
     pad: true,
   },
@@ -90,18 +97,24 @@ export function DispatchSummaryCards({
             key={card.key}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05, duration: 0.3 }}
-            whileHover={{ y: -2 }}
-            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            transition={{ delay: index * 0.04, duration: 0.35, ease: "easeOut" }}
+            whileHover={{ y: -3 }}
+            className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
           >
-            <div className="flex items-start justify-between gap-2">
+            <div
+              className={cn(
+                "absolute inset-x-0 top-0 h-1 bg-gradient-to-r",
+                card.accentClassName,
+              )}
+            />
+            <div className="flex items-start justify-between gap-2 pt-0.5">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                   {card.label}
                 </p>
                 <p
                   className={cn(
-                    "mt-2 text-2xl font-bold tabular-nums text-slate-900",
+                    "mt-2.5 text-[28px] font-bold leading-none tracking-tight tabular-nums text-slate-900",
                     card.valueClassName,
                   )}
                 >
@@ -114,11 +127,11 @@ export function DispatchSummaryCards({
               </div>
               <div
                 className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
                   card.iconClassName,
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-[18px] w-[18px]" />
               </div>
             </div>
           </motion.div>

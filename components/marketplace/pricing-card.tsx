@@ -25,7 +25,7 @@ function PriceInput({
   error?: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </Label>
@@ -53,13 +53,13 @@ export function PricingCard({ pricing, onChange, errors }: PricingCardProps) {
     pricing.basePrice + pricing.advancePrice + pricing.onLoading;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center gap-2">
+    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-7">
+      <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
         <Receipt className="h-4 w-4 text-[#0B1F3A]" />
         <h3 className="text-sm font-semibold text-slate-800">Pricing (₹/MT)</h3>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         <PriceInput
           label="Base Price"
           value={pricing.basePrice}
@@ -67,7 +67,7 @@ export function PricingCard({ pricing, onChange, errors }: PricingCardProps) {
           error={errors?.basePrice}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <PriceInput
             label="Advance Payment"
             value={pricing.advancePrice}
@@ -80,7 +80,7 @@ export function PricingCard({ pricing, onChange, errors }: PricingCardProps) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <PriceInput
             label="Credit 15 Days"
             value={pricing.credit15Days}
@@ -93,7 +93,7 @@ export function PricingCard({ pricing, onChange, errors }: PricingCardProps) {
           />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             On Delivery Price
           </Label>

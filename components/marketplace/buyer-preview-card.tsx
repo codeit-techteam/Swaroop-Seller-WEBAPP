@@ -39,19 +39,19 @@ export function BuyerPreviewCard({ formData }: BuyerPreviewCardProps) {
       layout
       initial={{ opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      className="sticky top-24 space-y-4"
+      className="sticky top-20 space-y-4"
     >
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 bg-gradient-to-br from-[#0B1F3A] to-[#1B6EF3] px-4 py-3">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md">
+        <div className="border-b border-slate-100 bg-gradient-to-br from-[#0B1F3A] to-[#1B6EF3] px-5 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-100">
             Live Buyer Preview
           </p>
-          <p className="text-sm font-medium text-white">
+          <p className="mt-0.5 text-sm font-medium text-white">
             How buyers will see this offer
           </p>
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-5 p-5">
           <div className="flex items-start gap-3">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50">
               <FlaskConical className="h-6 w-6 text-[#1B6EF3]" />
@@ -72,11 +72,11 @@ export function BuyerPreviewCard({ formData }: BuyerPreviewCardProps) {
             </div>
           </div>
 
-          <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3">
+          <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
               From
             </p>
-            <p className="text-2xl font-bold text-[#0B1F3A]">
+            <p className="mt-1 text-2xl font-bold text-[#0B1F3A]">
               {formatCurrency(stats.buyerVisiblePrice || formData.basePrice)}
               <span className="text-sm font-normal text-slate-400">/MT</span>
             </p>
@@ -88,30 +88,30 @@ export function BuyerPreviewCard({ formData }: BuyerPreviewCardProps) {
             ) : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-              <Package className="mb-1 h-3.5 w-3.5 text-slate-400" />
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <Package className="mb-1.5 h-3.5 w-3.5 text-slate-400" />
               <p className="text-slate-400">MOQ</p>
               <p className="font-semibold text-slate-800">
                 {formData.moq || 0} MT
               </p>
             </div>
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-              <MapPin className="mb-1 h-3.5 w-3.5 text-slate-400" />
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <MapPin className="mb-1.5 h-3.5 w-3.5 text-slate-400" />
               <p className="text-slate-400">Warehouse</p>
               <p className="truncate font-semibold text-slate-800">
                 {formData.warehouseName || "—"}
               </p>
             </div>
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-              <Calendar className="mb-1 h-3.5 w-3.5 text-slate-400" />
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <Calendar className="mb-1.5 h-3.5 w-3.5 text-slate-400" />
               <p className="text-slate-400">Valid Until</p>
               <p className="font-semibold text-slate-800">
                 {formData.validUntil || "—"}
               </p>
             </div>
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-              <Package className="mb-1 h-3.5 w-3.5 text-slate-400" />
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <Package className="mb-1.5 h-3.5 w-3.5 text-slate-400" />
               <p className="text-slate-400">Allocation</p>
               <p className="font-semibold text-slate-800">
                 {formatNumber(formData.allocationMt || 0, {

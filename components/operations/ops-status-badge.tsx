@@ -73,7 +73,53 @@ const MAP: Record<string, string> = {
   EXHAUSTED: "border-red-200 bg-red-50 text-red-700",
 };
 
-export function OpsStatusBadge({ status }: { status: string }) {
+interface OpsStatusBadgeProps {
+  status: string;
+  minimal?: boolean;
+}
+
+const DOT_MAP: Record<string, string> = {
+  NEW: "bg-blue-500",
+  UNDER_REVIEW: "bg-amber-500",
+  SELLER_SOURCING: "bg-sky-500",
+  QUOTATION_RECEIVED: "bg-indigo-500",
+  NEGOTIATION: "bg-violet-500",
+  APPROVAL_PENDING: "bg-orange-500",
+  PENDING_APPROVAL: "bg-orange-500",
+  APPROVED: "bg-emerald-500",
+  REJECTED: "bg-red-500",
+  NORMAL: "bg-slate-400",
+  HIGH: "bg-orange-500",
+  URGENT: "bg-red-500",
+  RFQ_SENT: "bg-blue-500",
+  QUOTE_PENDING: "bg-amber-500",
+  UNASSIGNED: "bg-slate-400",
+  NONE: "bg-slate-300",
+};
+
+function formatStatusLabel(status: string) {
+  return status
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+export function OpsStatusBadge({ status, minimal = false }: OpsStatusBadgeProps) {
+  if (minimal) {
+    return (
+      <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-600">
+        <span
+          className={cn(
+            "h-2 w-2 shrink-0 rounded-full",
+            DOT_MAP[status] ?? "bg-slate-400",
+          )}
+          aria-hidden
+        />
+        {formatStatusLabel(status)}
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(

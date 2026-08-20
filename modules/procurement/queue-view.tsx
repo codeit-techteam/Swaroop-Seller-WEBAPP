@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { OperationsShell, OpsStatusBadge, OpsTable } from "@/components/operations";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,7 @@ import { ROUTES } from "@/lib/constants";
 import { formatCompactInr, formatDate, formatNumber } from "@/lib/utils";
 import { ApproveDialog } from "@/modules/procurement/approve-dialog";
 import { AssignSellerDialog } from "@/modules/procurement/assign-seller-dialog";
+import { ProcurementQueueActions } from "@/modules/procurement/procurement-queue-actions";
 import { QuoteDrawer } from "@/modules/procurement/quote-drawer";
 import { RejectDialog } from "@/modules/procurement/reject-dialog";
 import { computeProcurementSummary } from "@/modules/procurement/selectors";
@@ -126,7 +126,7 @@ export function ProcurementQueueView() {
         statusOptions={STATUSES}
         extraFilters={
           <Select value={priority} onValueChange={setPriority}>
-            <SelectTrigger className="h-9 w-[150px]">
+            <SelectTrigger className="h-9 w-[150px] border-slate-200 bg-white text-sm">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -176,148 +176,93 @@ export function ProcurementQueueView() {
         {table.paginated.map((item) => {
           const ownQuote = item.offers.find((offer) => offer.supplierId === sellerId);
           return (
-            <TableRow key={item.id}>
-              <TableCell>
+            <TableRow key={item.id} className="hover:bg-slate-50/50">
+              <TableCell className="px-4 py-4">
                 <Link
                   href={`${ROUTES.PROCUREMENT_PURCHASE_REQUESTS}/${item.requestId}`}
-                  className="font-medium text-[#1B6EF3] hover:underline"
+                  className="font-semibold text-[#1B6EF3] hover:underline"
                 >
                   {item.requestId}
                 </Link>
               </TableCell>
-              <TableCell>{item.buyer}</TableCell>
+              <TableCell className="px-4 py-4 text-slate-700">{item.buyer}</TableCell>
               {isSeller ? (
                 <>
-                  <TableCell className="font-medium">
+                  <TableCell className="px-4 py-4 font-medium text-slate-800">
                     {item.commodity} {item.grade}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-4 tabular-nums text-slate-700">
                     {formatNumber(item.quantityMt)} {item.quantityUnit}
                   </TableCell>
-                  <TableCell>{formatDate(item.requestedDeliveryDate)}</TableCell>
-                  <TableCell>
-                    <OpsStatusBadge status={ownQuote?.status ?? "QUOTE PENDING"} />
+                  <TableCell className="px-4 py-4 text-slate-600">
+                    {formatDate(item.requestedDeliveryDate)}
                   </TableCell>
-                  <TableCell>
-                    <OpsStatusBadge status={item.negotiationStatus ?? "NONE"} />
+                  <TableCell className="px-4 py-4">
+                    <OpsStatusBadge
+                      minimal
+                      status={ownQuote?.status ?? "QUOTE PENDING"}
+                    />
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
+                    <OpsStatusBadge
+                      minimal
+                      status={item.negotiationStatus ?? "NONE"}
+                    />
                   </TableCell>
                 </>
               ) : (
                 <>
-                  <TableCell className="font-medium">{item.commodity}</TableCell>
-                  <TableCell>{item.grade}</TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-4 font-medium text-slate-800">
+                    {item.commodity}
+                  </TableCell>
+                  <TableCell className="px-4 py-4 text-slate-600">{item.grade}</TableCell>
+                  <TableCell className="px-4 py-4 tabular-nums text-slate-700">
                     {formatNumber(item.quantityMt)} {item.quantityUnit}
                   </TableCell>
-                  <TableCell>{formatDate(item.requestedDeliveryDate)}</TableCell>
-                  <TableCell className="tabular-nums">
+                  <TableCell className="px-4 py-4 text-slate-600">
+                    {formatDate(item.requestedDeliveryDate)}
+                  </TableCell>
+                  <TableCell className="px-4 py-4 tabular-nums text-slate-800">
                     {formatCompactInr(item.estimatedCost)}
                   </TableCell>
-                  <TableCell>
-                    <OpsStatusBadge status={item.sellerStatus ?? "UNASSIGNED"} />
+                  <TableCell className="px-4 py-4">
+                    <OpsStatusBadge minimal status={item.sellerStatus ?? "UNASSIGNED"} />
                   </TableCell>
-                  <TableCell>
-                    <OpsStatusBadge status={item.priority} />
+                  <TableCell className="px-4 py-4">
+                    <OpsStatusBadge minimal status={item.priority} />
                   </TableCell>
-                  <TableCell>{formatDate(item.createdAt)}</TableCell>
-                  <TableCell>
-                    <OpsStatusBadge status={item.status} />
+                  <TableCell className="px-4 py-4 text-slate-600">
+                    {formatDate(item.createdAt)}
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
+                    <OpsStatusBadge minimal status={item.status} />
                   </TableCell>
                 </>
               )}
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs" asChild>
-                    <Link href={`${ROUTES.PROCUREMENT_PURCHASE_REQUESTS}/${item.requestId}`}>
-                      View
-                    </Link>
-                  </Button>
-                  {isAdmin ? (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => {
-                          reviewRequest(item.requestId);
-                          toast.success(`${item.requestId} moved to under review.`);
-                        }}
-                      >
-                        Review
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setAssignItem(item)}
-                      >
-                        Assign Seller
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() =>
-                          router.push(
-                            `${ROUTES.PROCUREMENT_SELLER_COMPARISON}?pr=${item.requestId}`,
-                          )
-                        }
-                      >
-                        Compare
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => {
-                          startNegotiation(item.requestId);
-                          router.push(
-                            `${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`,
-                          );
-                        }}
-                      >
-                        Negotiate
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setApproveItem(item)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs text-red-600"
-                        onClick={() => setRejectItem(item)}
-                      >
-                        Reject
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setQuoteItem(item)}
-                      >
-                        Submit Quote
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        asChild
-                      >
-                        <Link href={`${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`}>
-                          Negotiate
-                        </Link>
-                      </Button>
-                    </>
-                  )}
-                </div>
+              <TableCell className="px-4 py-4">
+                <ProcurementQueueActions
+                  item={item}
+                  isAdmin={isAdmin}
+                  onReview={() => {
+                    reviewRequest(item.requestId);
+                    toast.success(`${item.requestId} moved to under review.`);
+                  }}
+                  onAssignSeller={() => setAssignItem(item)}
+                  onCompare={() =>
+                    router.push(
+                      `${ROUTES.PROCUREMENT_SELLER_COMPARISON}?pr=${item.requestId}`,
+                    )
+                  }
+                  onNegotiate={() => {
+                    startNegotiation(item.requestId);
+                    router.push(
+                      `${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`,
+                    );
+                  }}
+                  onApprove={() => setApproveItem(item)}
+                  onReject={() => setRejectItem(item)}
+                  onSubmitQuote={() => setQuoteItem(item)}
+                />
               </TableCell>
             </TableRow>
           );

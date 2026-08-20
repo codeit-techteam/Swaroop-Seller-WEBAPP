@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ interface SummaryCardProps {
   decimals?: number;
   valueClassName?: string;
   className?: string;
+  href?: string;
 }
 
 export function SummaryCard({
@@ -25,8 +27,9 @@ export function SummaryCard({
   decimals = 0,
   valueClassName,
   className,
+  href,
 }: SummaryCardProps) {
-  return (
+  const card = (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -34,6 +37,8 @@ export function SummaryCard({
       transition={{ duration: 0.25 }}
       className={cn(
         "rounded-xl border border-slate-200 bg-white p-4 shadow-sm",
+        href &&
+          "cursor-pointer transition-colors hover:border-[#1B6EF3]/40 hover:shadow-md",
         className,
       )}
     >
@@ -54,6 +59,14 @@ export function SummaryCard({
         />
       </p>
     </motion.div>
+  );
+
+  if (!href) return card;
+
+  return (
+    <Link href={href} className="block h-full focus-visible:outline-none">
+      {card}
+    </Link>
   );
 }
 

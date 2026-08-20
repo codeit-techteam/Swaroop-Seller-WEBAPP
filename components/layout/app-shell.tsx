@@ -31,7 +31,7 @@ export function AppShell({ children, className }: AppShellProps) {
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar onMenuClick={mobileNav.open} />
-        <main className={cn("relative flex-1 overflow-y-auto", className)}>
+        <main className={cn("relative flex-1 overflow-y-auto pb-20", className)}>
           {children}
         </main>
       </div>

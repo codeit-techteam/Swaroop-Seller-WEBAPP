@@ -5,9 +5,25 @@ export type PaymentStatus =
   | "OVERDUE"
   | "FAILED";
 
+export type PaymentMode =
+  | "ADVANCE"
+  | "ON_LOADING"
+  | "ON_DELIVERY"
+  | "CREDIT";
+
+export type PaymentTrackStepStatus =
+  | "completed"
+  | "current"
+  | "upcoming"
+  | "failed";
+
 export type ReceivableStatus = "OPEN" | "PARTIAL" | "COLLECTED" | "OVERDUE";
 
-export type CreditPolicyStatus = "ACTIVE" | "UNDER_REVIEW" | "EXHAUSTED" | "EXPIRED";
+export type CreditPolicyStatus =
+  | "ACTIVE"
+  | "UNDER_REVIEW"
+  | "EXHAUSTED"
+  | "EXPIRED";
 
 export interface FinanceSummary {
   totalReceivables: number;
@@ -17,27 +33,40 @@ export interface FinanceSummary {
   creditExposure: number;
 }
 
+export interface PaymentTrackStep {
+  key: string;
+  label: string;
+  description?: string;
+  status: PaymentTrackStepStatus;
+  at?: string;
+}
+
 export interface PaymentRecord {
   id: string;
   paymentId: string;
   orderId: string;
   counterparty: string;
   amount: number;
-  mode: "NEFT" | "RTGS" | "LC" | "UPI";
+  mode: PaymentMode;
   status: PaymentStatus;
   dueDate: string;
   paidAt?: string;
+  track: PaymentTrackStep[];
+  creditDays?: number;
+  direction?: "INBOUND" | "OUTBOUND";
 }
 
 export interface ReceivableRecord {
   id: string;
   invoiceId: string;
-  buyer: string;
+  customer: string;
   amount: number;
   outstanding: number;
   agingDays: number;
   status: ReceivableStatus;
   dueDate: string;
+  creditDays: number;
+  lastPaymentAt?: string;
 }
 
 export interface CreditInsurancePolicy {
@@ -50,3 +79,17 @@ export interface CreditInsurancePolicy {
   status: CreditPolicyStatus;
   validUntil: string;
 }
+
+export const PAYMENT_MODES: PaymentMode[] = [
+  "ADVANCE",
+  "ON_LOADING",
+  "ON_DELIVERY",
+  "CREDIT",
+];
+
+export const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = {
+  ADVANCE: "Advance",
+  ON_LOADING: "On Loading",
+  ON_DELIVERY: "On Delivery",
+  CREDIT: "Credit",
+};

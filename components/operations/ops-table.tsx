@@ -67,18 +67,19 @@ export function OpsTable({
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       {hideControls ? null : (
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3">
-        <div className="relative min-w-[220px] flex-1">
+      <div className="space-y-4 border-b border-slate-100 px-5 py-5 md:px-6">
+        <div className="relative max-w-2xl">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             value={search}
             onChange={(event) => onSearch(event.target.value)}
             placeholder={searchPlaceholder}
-            className="h-9 pl-9"
+            className="h-10 border-slate-200 bg-slate-50 pl-9 shadow-none focus-visible:ring-[#1B6EF3]"
           />
         </div>
+        <div className="flex flex-wrap items-center gap-2">
         <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger className="h-9 w-[180px]">
+          <SelectTrigger className="h-9 w-[180px] border-slate-200 bg-white text-sm">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -91,6 +92,7 @@ export function OpsTable({
         </Select>
         {extraFilters}
         {toolbar}
+        </div>
       </div>
       )}
       {rowCount === 0 ? (
@@ -105,7 +107,7 @@ export function OpsTable({
                 {headers.map((header) => (
                   <TableHead
                     key={header}
-                    className="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                    className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                   >
                     {header}
                   </TableHead>

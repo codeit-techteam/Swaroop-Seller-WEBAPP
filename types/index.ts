@@ -195,22 +195,6 @@ export type {
   WarehouseCode,
 } from "./purchase-requests";
 export type {
-  PaymentDetails,
-  PaymentMode,
-  Settlement,
-  SettlementAudit,
-  SettlementDialogType,
-  SettlementFilters,
-  SettlementSort,
-  SettlementSortKey,
-  SettlementStatus,
-  SettlementSummary,
-  SettlementTimelineStep,
-  SettlementTimelineStepKey,
-  SettlementTimelineStepStatus,
-  WarehouseCode as SettlementWarehouseCode,
-} from "./settlements";
-export type {
   MarkDeliveredFormData,
   Shipment,
   ShipmentDialogType,

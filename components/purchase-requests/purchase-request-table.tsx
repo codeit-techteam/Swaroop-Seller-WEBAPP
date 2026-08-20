@@ -25,6 +25,7 @@ interface PurchaseRequestTableProps {
   totalPages: number;
   isLoading?: boolean;
   hasFilters?: boolean;
+  embedded?: boolean;
   onPageChange: (page: number) => void;
   onSelect: (request: PurchaseRequest) => void;
   onAccept: (request: PurchaseRequest) => void;
@@ -45,6 +46,7 @@ export function PurchaseRequestTable({
   totalPages,
   isLoading,
   hasFilters,
+  embedded = false,
   onPageChange,
   onSelect,
   onAccept,
@@ -58,7 +60,9 @@ export function PurchaseRequestTable({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm",
+        embedded
+          ? "overflow-hidden"
+          : "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm",
         className,
       )}
     >
@@ -66,25 +70,25 @@ export function PurchaseRequestTable({
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-slate-50">
             <TableRow className="hover:bg-transparent">
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Request ID
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Product Grade
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Quantity
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Warehouse Pickup
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Dispatch Deadline
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Status
               </TableHead>
-              <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <TableHead className="px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Actions
               </TableHead>
             </TableRow>

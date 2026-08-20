@@ -20,7 +20,7 @@ function DeadlineCell({
 }) {
   if (deadlineLabel || isDelayed) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-red-600">
+      <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-2 py-1 text-sm font-semibold text-red-600">
         <Clock3 className="h-3.5 w-3.5" />
         {deadlineLabel ?? format(parseISO(deadline), "dd MMM, HH:mm")}
       </span>
@@ -28,7 +28,7 @@ function DeadlineCell({
   }
 
   return (
-    <span className="text-sm text-slate-600">
+    <span className="text-sm tabular-nums text-slate-600">
       {format(parseISO(deadline), "dd MMM, HH:mm")}
     </span>
   );
@@ -69,50 +69,62 @@ export function DispatchRow({
     onClick: () => void;
     className: string;
   } = {
-    label: "VIEW DISPATCH",
+    label: "View",
     onClick: onView,
-    className: "bg-[#0B1F3A] hover:bg-[#16345A]",
+    className:
+      "bg-slate-900 text-white hover:bg-slate-800 shadow-sm shadow-slate-900/10",
   };
 
   if (needsTruck) {
     primaryAction = {
-      label: "ASSIGN TRUCK",
+      label: "Assign Truck",
       onClick: onAssignTruck,
-      className: "bg-[#0B1F3A] hover:bg-[#16345A]",
+      className:
+        "bg-[#0B1F3A] text-white hover:bg-[#16345A] shadow-sm shadow-slate-900/10",
     };
   } else if (needsEway) {
     primaryAction = {
-      label: "GENERATE E-WAY",
+      label: "Generate E-Way",
       onClick: onGenerateEway,
-      className: "bg-teal-600 hover:bg-teal-700",
+      className:
+        "bg-teal-600 text-white hover:bg-teal-700 shadow-sm shadow-teal-600/20",
     };
   } else if (canRelease) {
     primaryAction = {
-      label: "RELEASE SHIPMENT",
+      label: "Release",
       onClick: onRelease,
-      className: "bg-teal-600 hover:bg-teal-700",
+      className:
+        "bg-teal-600 text-white hover:bg-teal-700 shadow-sm shadow-teal-600/20",
     };
   }
 
   return (
     <TableRow
       className={cn(
-        "cursor-pointer transition-colors",
-        active ? "bg-[#E8F1FF]/60" : "hover:bg-slate-50",
+        "group relative cursor-pointer border-slate-100 transition-colors",
+        active
+          ? "bg-[#E8F1FF]/70 hover:bg-[#E8F1FF]/90"
+          : "hover:bg-slate-50/80",
       )}
       onClick={onSelect}
     >
-      <TableCell className="font-semibold text-slate-900">
-        {dispatch.orderNumber}
+      <TableCell className="relative font-semibold text-slate-900">
+        {active ? (
+          <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-[#1B6EF3]" />
+        ) : null}
+        <span className="font-mono text-[13px] tracking-tight">
+          {dispatch.orderNumber}
+        </span>
       </TableCell>
-      <TableCell className="max-w-[180px] truncate text-sm text-slate-700">
+      <TableCell className="max-w-[180px] truncate text-sm font-medium text-slate-700">
         {dispatch.buyerCompany}
       </TableCell>
       <TableCell>
         <MaterialBadge material={dispatch.material} />
       </TableCell>
-      <TableCell className="text-sm font-medium text-slate-700">
-        {dispatch.quantityMt.toFixed(1)} MT
+      <TableCell className="text-sm font-semibold tabular-nums text-slate-800">
+        {dispatch.quantityMt.toFixed(1)}{" "}
+        <span className="font-medium text-slate-400">MT</span>
       </TableCell>
       <TableCell className="max-w-[160px] truncate text-sm text-slate-600">
         {dispatch.destination}
@@ -131,7 +143,7 @@ export function DispatchRow({
         <Button
           size="sm"
           className={cn(
-            "h-8 px-3 text-[11px] font-bold uppercase",
+            "h-8 rounded-lg px-3 text-[11px] font-semibold tracking-wide opacity-90 transition-all group-hover:opacity-100",
             primaryAction.className,
           )}
           onClick={primaryAction.onClick}

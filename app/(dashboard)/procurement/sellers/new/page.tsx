@@ -15,11 +15,11 @@ export default function NewSellerPage() {
       open={open}
       onClose={() => {
         setOpen(false);
-        router.push(ROUTES.SUPPLIERS);
+        router.push(ROUTES.PROCUREMENT_QUEUE);
       }}
       onAdded={(name) => {
         toast.success(`${name} saved.`);
-        router.push(ROUTES.SUPPLIERS);
+        router.push(ROUTES.PROCUREMENT_QUEUE);
       }}
     />
   );

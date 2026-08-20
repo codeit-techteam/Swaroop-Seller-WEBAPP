@@ -1,12 +1,8 @@
 "use client";
 
 import {
-  Copy,
-  Eye,
   FlaskConical,
   MoreHorizontal,
-  Pause,
-  Pencil,
   Play,
   Plus,
   Trash2,
@@ -21,7 +17,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -40,24 +35,20 @@ interface OfferTableProps {
   offers: Offer[];
   emptyMessage?: string;
   showCreateCta?: boolean;
+  embedded?: boolean;
   onToggleVisibility: (offerId: string) => void;
-  onPause: (offerId: string) => void;
   onResume: (offerId: string) => void;
-  onDuplicate: (offerId: string) => void;
   onDelete: (offerId: string) => void;
-  onView: (offer: Offer) => void;
 }
 
 export function OfferTable({
   offers,
   emptyMessage = "No offers available.",
   showCreateCta = false,
+  embedded = false,
   onToggleVisibility,
-  onPause,
   onResume,
-  onDuplicate,
   onDelete,
-  onView,
 }: OfferTableProps) {
   if (offers.length === 0) {
     return (
@@ -83,32 +74,38 @@ export function OfferTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div
+      className={
+        embedded
+          ? "overflow-x-auto"
+          : "overflow-hidden rounded-xl border border-slate-200 bg-white"
+      }
+    >
       <Table>
         <TableHeader>
           <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Offer ID
             </TableHead>
-            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Product
             </TableHead>
-            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Product Grade
             </TableHead>
-            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Pricing (₹/MT)
             </TableHead>
-            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               MOQ
             </TableHead>
-            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Visibility
             </TableHead>
-            <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Status
             </TableHead>
-            <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <TableHead className="px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Actions
             </TableHead>
           </TableRow>
@@ -116,14 +113,14 @@ export function OfferTable({
         <TableBody>
           {offers.map((offer) => (
             <TableRow key={offer.id} className="hover:bg-slate-50/50">
-              <TableCell>
+              <TableCell className="px-4 py-4">
                 <p className="font-semibold text-slate-800">{offer.offerId}</p>
                 <p className="text-xs text-slate-400">
                   {offer.quantityMt} MT allocated
                 </p>
               </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
+              <TableCell className="px-4 py-4">
+                <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
                     <FlaskConical className="h-4 w-4 text-[#1B6EF3]" />
                   </div>
@@ -137,16 +134,16 @@ export function OfferTable({
                   </div>
                 </div>
               </TableCell>
-              <TableCell className="text-slate-600">
+              <TableCell className="px-4 py-4 text-slate-600">
                 {offer.productGrade}
               </TableCell>
-              <TableCell className="font-semibold tabular-nums text-slate-800">
+              <TableCell className="px-4 py-4 font-semibold tabular-nums text-slate-800">
                 {formatCurrency(offer.basePrice)}
               </TableCell>
-              <TableCell className="tabular-nums text-slate-600">
+              <TableCell className="px-4 py-4 tabular-nums text-slate-600">
                 {offer.moq} MT
               </TableCell>
-              <TableCell>
+              <TableCell className="px-4 py-4">
                 <VisibilitySwitch
                   checked={offer.visibility}
                   onCheckedChange={() => {
@@ -157,40 +154,11 @@ export function OfferTable({
                   }}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell className="px-4 py-4">
                 <OfferStatusBadge status={offer.status} />
               </TableCell>
-              <TableCell>
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => onView(offer)}
-                    title="View"
-                  >
-                    <Eye className="h-4 w-4 text-slate-500" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    asChild
-                    title="Edit"
-                  >
-                    <Link href={`${ROUTES.OFFERS_EDIT}/${offer.id}`}>
-                      <Pencil className="h-4 w-4 text-slate-500" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => onDuplicate(offer.id)}
-                    title="Duplicate"
-                  >
-                    <Copy className="h-4 w-4 text-slate-500" />
-                  </Button>
+              <TableCell className="px-4 py-4">
+                <div className="flex items-center justify-end">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -198,32 +166,12 @@ export function OfferTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onView(offer)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`${ROUTES.OFFERS_EDIT}/${offer.id}`}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onDuplicate(offer.id)}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
                       {offer.status === "paused" ? (
                         <DropdownMenuItem onClick={() => onResume(offer.id)}>
                           <Play className="mr-2 h-4 w-4" />
                           Resume
                         </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem onClick={() => onPause(offer.id)}>
-                          <Pause className="mr-2 h-4 w-4" />
-                          Pause
-                        </DropdownMenuItem>
-                      )}
+                      ) : null}
                       <DropdownMenuItem
                         onClick={() => onDelete(offer.id)}
                         className="text-red-600"

@@ -7,6 +7,7 @@ import {
   paymentsMock,
   receivablesMock,
 } from "@/mock/finance";
+import { buildPaymentTrack } from "@/lib/utils/payment-track";
 import type {
   CreditInsurancePolicy,
   PaymentRecord,
@@ -29,9 +30,19 @@ export const useFinanceStore = create<FinanceState>()(
       policies: creditPoliciesMock,
       markPayment: (id, status) =>
         set((state) => ({
-          payments: state.payments.map((item) =>
-            item.id === id ? { ...item, status } : item,
-          ),
+          payments: state.payments.map((item) => {
+            if (item.id !== id) return item;
+            const paidAt =
+              status === "SETTLED"
+                ? (item.paidAt ?? new Date().toISOString().slice(0, 10))
+                : item.paidAt;
+            return {
+              ...item,
+              status,
+              paidAt,
+              track: buildPaymentTrack(item.mode, status, item.dueDate, paidAt),
+            };
+          }),
         })),
     }),
     { name: "finance-store" },

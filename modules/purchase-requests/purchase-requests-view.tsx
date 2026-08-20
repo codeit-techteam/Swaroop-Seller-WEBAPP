@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Download, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -59,7 +59,6 @@ export function PurchaseRequestsView() {
     (s) => s.submitCounterOffer,
   );
   const refreshData = usePurchaseRequestStore((s) => s.refreshData);
-  const exportCsv = usePurchaseRequestStore((s) => s.exportCsv);
   const downloadDocument = usePurchaseRequestStore((s) => s.downloadDocument);
   const getFilteredRequests = usePurchaseRequestStore(
     (s) => s.getFilteredRequests,
@@ -91,11 +90,6 @@ export function PurchaseRequestsView() {
   const handleRefresh = async () => {
     await refreshData();
     toast.success("Purchase Requests Updated");
-  };
-
-  const handleExport = () => {
-    exportCsv();
-    toast.success("CSV Exported");
   };
 
   const handleAcceptConfirm = () => {
@@ -138,60 +132,52 @@ export function PurchaseRequestsView() {
     COUNTER_PAYMENT_TERMS.find((t) => t.value === term)?.label ?? term ?? "—";
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-6 md:px-6">
+    <div className="mx-auto max-w-[1400px] space-y-6 px-4 py-6 md:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Purchase Requests
+            Marketplace &gt; Purchase Requests
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Purchase Request Inbox
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
+          <p className="max-w-2xl text-sm text-slate-500">
             Manage incoming material enquiries allocated by PetroTrade
             Procurement.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="h-10 gap-2 border-[#1B6EF3] text-[#1B6EF3] hover:bg-[#E8F1FF]"
-            onClick={handleExport}
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button
-            className="h-10 gap-2 bg-[#1B6EF3] hover:bg-[#1558C8]"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw
-              className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-            />
-            Refresh Data
-          </Button>
-        </div>
+        <Button
+          className="h-9 gap-2 bg-[#1B6EF3] hover:bg-[#1558C8]"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw
+            className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+          />
+          Refresh Data
+        </Button>
       </div>
 
       <PurchaseSummaryCards summary={summary} />
-
-      <PurchaseFilterBar
-        filters={filters}
-        onFilterChange={setFilter}
-        onSearchChange={setSearch}
-        onClearAll={() => {
-          resetFilters();
-          toast.success("Filters cleared");
-        }}
-      />
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
+        className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
       >
+        <PurchaseFilterBar
+          filters={filters}
+          onFilterChange={setFilter}
+          onSearchChange={setSearch}
+          onClearAll={() => {
+            resetFilters();
+            toast.success("Filters cleared");
+          }}
+        />
+
         <PurchaseRequestTable
+          embedded
           requests={paginated}
           selectedId={selectedRequest?.id}
           totalItems={filtered.length}

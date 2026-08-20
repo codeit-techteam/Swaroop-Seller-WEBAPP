@@ -152,24 +152,32 @@ export function DispatchOperationsView({
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-5 px-4 py-6 md:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="relative mx-auto max-w-[1600px] space-y-5 px-4 py-6 md:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-[radial-gradient(ellipse_at_top,_rgba(27,110,243,0.06),_transparent_55%)]" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="flex flex-wrap items-start justify-between gap-4"
+      >
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
             Operations
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            Dispatch Operations Center
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 md:text-[28px]">
+            Dispatch Operations
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Manage dispatch workflow from payment approval to shipment release
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500">
+            Manage the full dispatch workflow from payment approval through
+            shipment release
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             asChild
             variant="outline"
-            className="h-10 gap-2 border-slate-200"
+            className="h-10 gap-2 rounded-xl border-slate-200 bg-white shadow-sm"
           >
             <Link href={ROUTES.VEHICLE_SLOT_BOOKING}>
               <CalendarDays className="h-4 w-4" />
@@ -177,7 +185,7 @@ export function DispatchOperationsView({
             </Link>
           </Button>
           <Button
-            className="h-10 gap-2 bg-[#1B6EF3] hover:bg-[#1558C8]"
+            className="h-10 gap-2 rounded-xl bg-[#1B6EF3] shadow-md shadow-[#1B6EF3]/25 hover:bg-[#1558C8]"
             onClick={handleRefresh}
             disabled={isRefreshing}
           >
@@ -187,16 +195,20 @@ export function DispatchOperationsView({
             Refresh
           </Button>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.05 }}
+      >
         <SearchBar
           value={filters.search}
           onChange={setSearch}
-          className="w-full lg:max-w-md"
+          className="w-full lg:max-w-lg"
           placeholder="Search order, material, truck, buyer, vehicle..."
         />
-      </div>
+      </motion.div>
 
       <DispatchSummaryCards summary={summary} />
 
@@ -216,9 +228,9 @@ export function DispatchOperationsView({
       />
 
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.35, delay: 0.08 }}
       >
         <DispatchTable
           dispatches={paginated}

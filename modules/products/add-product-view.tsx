@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   ClipboardList,
   Download,
+  FileUp,
   Info,
   Microscope,
   Plus,
@@ -129,15 +130,17 @@ export function AddProductView() {
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6 pb-24">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0B1F3A]">Add New Product</h1>
-          <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-6 md:px-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 md:gap-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight text-[#0B1F3A]">
+            Add New Product
+          </h1>
+          <p className="text-sm text-slate-500">
             Add new product grades and inventory for trading
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2.5">
           <Button variant="outline" size="sm">
             <Download className="mr-1.5 h-4 w-4" />
             Export Templates
@@ -158,17 +161,24 @@ export function AddProductView() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
       >
-        <div className="mb-5 flex items-center gap-2">
-          <Info className="h-4 w-4 text-[#0B1F3A]" />
-          <h2 className="text-sm font-semibold text-slate-800">
-            Product Information
-          </h2>
+        <div className="mb-6 flex items-center gap-2.5 border-b border-slate-100 pb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
+            <Info className="h-4 w-4 text-[#0B1F3A]" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-800">
+              Product Information
+            </h2>
+            <p className="text-xs text-slate-500">
+              Basic details about the product grade
+            </p>
+          </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
+        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+          <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Product Category
             </Label>
@@ -192,7 +202,7 @@ export function AddProductView() {
             ) : null}
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Product Grade
             </Label>
@@ -206,7 +216,7 @@ export function AddProductView() {
             ) : null}
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Manufacturer / Brand
             </Label>
@@ -220,7 +230,7 @@ export function AddProductView() {
             ) : null}
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Origin Country
             </Label>
@@ -244,20 +254,35 @@ export function AddProductView() {
             ) : null}
           </div>
 
-          <div className="space-y-1.5 sm:col-span-2">
+          <div className="space-y-2 sm:col-span-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Description
             </Label>
             <Textarea
               placeholder="Detailed product description, usage cases, and quality highlights..."
-              rows={3}
+              rows={4}
+              className="min-h-[100px] resize-y"
               value={draft.description}
               onChange={(e) => updateDraft({ description: e.target.value })}
             />
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <div className="mt-8 border-t border-slate-100 pt-8">
+          <div className="mb-5 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+              <FileUp className="h-4 w-4 text-slate-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800">
+                Documents & Attachments
+              </h3>
+              <p className="text-xs text-slate-500">
+                Upload product image, datasheet, and quality certificates
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-3">
           {draft.uploads.map((upload) => (
             <FileUploader
               key={upload.id}
@@ -276,10 +301,11 @@ export function AddProductView() {
               }
             />
           ))}
+          </div>
         </div>
       </motion.div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         <InventoryCard
           inventory={draft.inventory}
           onChange={(data) =>
@@ -300,17 +326,24 @@ export function AddProductView() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
       >
-        <div className="mb-5 flex items-center gap-2">
-          <Microscope className="h-4 w-4 text-[#0B1F3A]" />
-          <h2 className="text-sm font-semibold text-slate-800">
-            Technical Specifications
-          </h2>
+        <div className="mb-6 flex items-center gap-2.5 border-b border-slate-100 pb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
+            <Microscope className="h-4 w-4 text-[#0B1F3A]" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-800">
+              Technical Specifications
+            </h2>
+            <p className="text-xs text-slate-500">
+              Physical properties and material characteristics
+            </p>
+          </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5">
+        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-3">
+          <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               MFI (G/10MIN)
             </Label>
@@ -327,7 +360,7 @@ export function AddProductView() {
               }
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Density (G/CM³)
             </Label>
@@ -344,7 +377,7 @@ export function AddProductView() {
               }
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Application
             </Label>
@@ -361,13 +394,14 @@ export function AddProductView() {
               }
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-3">
+          <div className="space-y-2 sm:col-span-3">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Technical Specifications / Material Notes
             </Label>
             <Textarea
               placeholder="Enter detailed physical properties, melting point, tensile strength, environmental impact notes..."
               rows={4}
+              className="min-h-[120px] resize-y"
               value={draft.technicalSpecs.materialNotes}
               onChange={(e) =>
                 updateDraft({

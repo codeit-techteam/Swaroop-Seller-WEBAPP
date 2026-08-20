@@ -1,19 +1,10 @@
 "use client";
 
-import {
-  ClipboardList,
-  FileText,
-  Filter,
-  MoreHorizontal,
-  PackagePlus,
-  Plus,
-  ShoppingCart,
-} from "lucide-react";
+import { Filter, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
 import {
-  ActionCard,
   ActionDrawer,
   ActivityCard,
   ErpPagination,
@@ -115,23 +106,38 @@ export function DashboardView() {
           title="Total Inventory"
           value={metrics.availableInventory}
           suffix={metrics.availableInventoryUnit}
+          href={ROUTES.INVENTORY}
         />
-        <SummaryCard title="Active Offers" value={metrics.activeOffers} />
+        <SummaryCard
+          title="Active Offers"
+          value={metrics.activeOffers}
+          href={ROUTES.OFFERS}
+        />
         <SummaryCard
           title="Pending Requests"
           value={metrics.pendingRequests}
           decimals={0}
           prefix=""
+          href={ROUTES.PURCHASE_REQUESTS}
         />
-        <SummaryCard title="Active Orders" value={metrics.activeOrders} />
+        <SummaryCard
+          title="Active Orders"
+          value={metrics.activeOrders}
+          href={ROUTES.ORDERS}
+        />
         <SummaryCard
           title="Pending Settlement"
           value={metrics.pendingSettlement}
           prefix="₹"
           suffix="Cr"
           decimals={1}
+          href={ROUTES.PAYMENTS}
         />
-        <SummaryCard title="Dispatch Pending" value={metrics.dispatchPending} />
+        <SummaryCard
+          title="Dispatch Pending"
+          value={metrics.dispatchPending}
+          href={ROUTES.DISPATCH}
+        />
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -258,7 +264,7 @@ export function DashboardView() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-slate-900">
@@ -278,37 +284,6 @@ export function DashboardView() {
         </div>
 
         <ActivityCard logs={activityLogs.slice(0, 6)} />
-
-        <div className="rounded-xl bg-[#0B1F3A] p-4 text-white shadow-sm">
-          <h3 className="text-sm font-semibold">Command Center</h3>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <ActionCard
-              label="Create Offer"
-              icon={Plus}
-              href={ROUTES.OFFERS_CREATE}
-            />
-            <ActionCard
-              label="Update Stock"
-              icon={PackagePlus}
-              href={ROUTES.INVENTORY}
-            />
-            <ActionCard
-              label="Create Purchase Request"
-              icon={ClipboardList}
-              href={ROUTES.PURCHASE_REQUESTS}
-            />
-            <ActionCard
-              label="Upload KYC"
-              icon={FileText}
-              href={ROUTES.KYC}
-            />
-            <ActionCard
-              label="View Orders"
-              icon={ShoppingCart}
-              href={ROUTES.ORDERS}
-            />
-          </div>
-        </div>
       </div>
 
       <FilterDrawer />

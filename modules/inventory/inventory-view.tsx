@@ -1,6 +1,6 @@
 "use client";
 
-import { History, MoreHorizontal, Package, Pencil } from "lucide-react";
+import { MoreHorizontal, Package } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -104,23 +104,7 @@ function InventoryRow({
         />
       </TableCell>
       <TableCell onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => toast.success(`History for ${item.sku}`)}
-          >
-            <History className="h-4 w-4 text-slate-500" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => toast.success(`Edit ${item.sku}`)}
-          >
-            <Pencil className="h-4 w-4 text-slate-500" />
-          </Button>
+        <div className="flex items-center justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -130,21 +114,11 @@ function InventoryRow({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onOpen}>View</DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => toast.success(`Editing ${item.productName}`)}
-              >
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
                 onClick={() =>
                   toast.success(`Stock update for ${item.productName}`)
                 }
               >
                 Update
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => toast.success(`History for ${item.productName}`)}
-              >
-                History
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -204,13 +178,6 @@ export function InventoryView() {
         </div>
         <div className="flex items-center gap-2">
           <ExportDropdown label="Report" variant="outline" />
-          <Button
-            variant="outline"
-            className="border-slate-200"
-            asChild
-          >
-            <Link href={ROUTES.INVENTORY_RESERVATIONS}>Reserve Stock</Link>
-          </Button>
           <Button className="gap-2 bg-[#0B1F3A] hover:bg-[#122846]" asChild>
             <Link href={ROUTES.INVENTORY_ADD_PRODUCT}>+ Add Stock</Link>
           </Button>
@@ -242,7 +209,7 @@ export function InventoryView() {
         <SummaryCard title="Warehouses" value={summary.warehouses} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
           <Select
             value={filters.grade}
@@ -325,45 +292,6 @@ export function InventoryView() {
           >
             Reset
           </Button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <span className="font-semibold uppercase tracking-wide text-slate-400">
-            Bulk Actions:
-          </span>
-          <button
-            type="button"
-            className="font-medium text-slate-700 hover:text-[#1B6EF3]"
-            onClick={() => toast.success("Import started (mock)")}
-          >
-            Import
-          </button>
-          <button
-            type="button"
-            className="font-medium text-slate-700 hover:text-[#1B6EF3]"
-            onClick={() =>
-              toast.success(
-                selectedIds.length
-                  ? `Exported ${selectedIds.length} items (mock)`
-                  : "Exported all filtered items (mock)",
-              )
-            }
-          >
-            Export
-          </button>
-          <button
-            type="button"
-            className="font-medium text-slate-700 hover:text-[#1B6EF3]"
-            onClick={() =>
-              toast.success(
-                selectedIds.length
-                  ? `Adjust stock for ${selectedIds.length} items (mock)`
-                  : "Select rows to adjust stock",
-              )
-            }
-          >
-            Adjust Stock
-          </button>
         </div>
       </div>
 

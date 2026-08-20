@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Copy, GripVertical, Plus, Trash2 } from "lucide-react";
+import { Copy, Gem, GripVertical, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -219,17 +219,22 @@ export function TierBuilder({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-slate-800">
-          3. Bulk Pricing Builder
-        </span>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-          ✨ Dynamic Savings Enabled
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
+            <Gem className="h-4 w-4 text-[#0B1F3A]" />
+          </div>
+          <h2 className="text-base font-semibold text-slate-900">
+            3. Bulk Pricing Builder
+          </h2>
+        </div>
+        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+          Dynamic Savings Enabled
         </span>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="flex gap-4 overflow-x-auto pb-4">
         {tiers.map((tier, index) => (
           <PricingTierCard
             key={tier.id}
