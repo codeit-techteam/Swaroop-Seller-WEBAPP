@@ -72,7 +72,7 @@ export const useDashboardStore = create<DashboardState>()(
       totalTransactionEntries: dashboardMock.totalTransactionEntries,
       search: "",
       transactionPage: 1,
-      pageSize: 4,
+      pageSize: 6,
       sortKey: "orderId",
       sortDirection: "asc",
       filters: defaultFilters,

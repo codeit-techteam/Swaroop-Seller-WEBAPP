@@ -13,6 +13,20 @@ export type {
   TableColumn,
 } from "./common";
 export type {
+  CustomerAccountStatus,
+  CustomerCreditStatus,
+  CustomerDraft,
+  CustomerKycStatus,
+  CustomerProfile,
+  CustomerSegment,
+  CustomerType,
+} from "./customers";
+export type {
+  AuditLogEntry,
+  CustomerNotification,
+  SupportTicket,
+} from "./cx-ops";
+export type {
   ActivityLog,
   ActivityLogStatus,
   CommandAction,
@@ -72,6 +86,13 @@ export type {
   StockMovement,
   StockMovementStatus,
 } from "./inventory";
+export type {
+  CatalogCategory,
+  CatalogProduct,
+  CmsBanner,
+  MarketplaceOffer,
+  PublishedMarketplaceSnapshot,
+} from "./marketplace-cms";
 export type { Notification } from "./notifications";
 export type {
   AdminFeedback,

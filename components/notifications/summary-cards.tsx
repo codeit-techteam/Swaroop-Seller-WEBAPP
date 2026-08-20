@@ -12,7 +12,6 @@ const cards: {
   highlight?: boolean;
 }[] = [
   { key: "newPurchaseRequests", label: "New Purchase Requests" },
-  { key: "priceRevisions", label: "Price Revisions" },
   { key: "complianceAlerts", label: "Compliance Alerts", highlight: true },
   { key: "dispatchUpdates", label: "Dispatch Updates" },
   { key: "settlementUpdates", label: "Settlement Updates" },
@@ -25,12 +24,7 @@ interface SummaryCardsProps {
 
 export function SummaryCards({ summary, className }: SummaryCardsProps) {
   return (
-    <div
-      className={cn(
-        "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
-        className,
-      )}
-    >
+    <div className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-4", className)}>
       {cards.map((card, index) => {
         const value = summary[card.key];
         return (

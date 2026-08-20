@@ -1,6 +1,12 @@
 "use client";
 
-import { AlertTriangle, BadgeCheck, ChevronDown, LogOut, Package } from "lucide-react";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  ChevronDown,
+  LogOut,
+  Package,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -32,9 +38,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
   const user = useAuthStore((s) => s.user);
   const role = user?.role ?? CURRENT_USER.role;
   const navSections = useMemo(() => getVisibleNavSections(role), [role]);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    [ROUTES.PROCUREMENT]: true,
-  });
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const handleLogoutConfirm = () => {
     setLogoutOpen(false);
@@ -68,7 +72,10 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
 
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
         {navSections.map((section, sectionIndex) => (
-          <div key={section.id ?? `section-${sectionIndex}`} className="space-y-1">
+          <div
+            key={section.id ?? `section-${sectionIndex}`}
+            className="space-y-1"
+          >
             {section.title && !collapsed ? (
               <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 {section.title}
@@ -102,7 +109,12 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                       {isActive ? (
                         <span className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-[#1B6EF3]" />
                       ) : null}
-                      <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#1B6EF3]" : "text-slate-400")} />
+                      <Icon
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          isActive ? "text-[#1B6EF3]" : "text-slate-400",
+                        )}
+                      />
                       {!collapsed ? (
                         <>
                           <Link

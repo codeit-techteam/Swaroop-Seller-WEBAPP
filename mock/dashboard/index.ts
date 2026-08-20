@@ -248,15 +248,24 @@ export const commandActionsMock: CommandAction[] = [
   },
   {
     id: "cmd-5",
-    label: "Generate Report",
-    action: "reports",
-    href: "/reports",
-  },
-  {
-    id: "cmd-6",
     label: "View Orders",
     action: "view-orders",
     href: "/orders",
+  },
+  {
+    id: "cmd-6",
+    label: "Add Customer",
+    href: "/customers",
+  },
+  {
+    id: "cmd-7",
+    label: "Add Product",
+    href: "/marketplace/catalog",
+  },
+  {
+    id: "cmd-8",
+    label: "Create Notification",
+    href: "/customers/notifications",
   },
 ];
 

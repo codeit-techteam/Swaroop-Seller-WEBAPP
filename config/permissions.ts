@@ -21,7 +21,17 @@ export type Permission =
   | "reports.view"
   | "users.view"
   | "users.manage"
-  | "profile.view";
+  | "profile.view"
+  | "customers.view"
+  | "customers.manage"
+  | "catalog.view"
+  | "catalog.manage"
+  | "cms.view"
+  | "cms.manage"
+  | "support.view"
+  | "support.manage"
+  | "notifications.manage"
+  | "audit.view";
 
 const ALL_PERMISSIONS: Permission[] = [
   "dashboard.view",
@@ -45,6 +55,16 @@ const ALL_PERMISSIONS: Permission[] = [
   "users.view",
   "users.manage",
   "profile.view",
+  "customers.view",
+  "customers.manage",
+  "catalog.view",
+  "catalog.manage",
+  "cms.view",
+  "cms.manage",
+  "support.view",
+  "support.manage",
+  "notifications.manage",
+  "audit.view",
 ];
 
 const VIEW_ONLY: Permission[] = ALL_PERMISSIONS.filter((permission) =>
@@ -103,6 +123,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "logistics.view",
     "compliance.view",
     "profile.view",
+    "customers.view",
+    "catalog.view",
+    "support.view",
   ],
 };
 

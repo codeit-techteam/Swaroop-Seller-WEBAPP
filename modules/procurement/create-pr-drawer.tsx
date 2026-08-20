@@ -24,6 +24,7 @@ import {
   WAREHOUSES,
 } from "@/modules/procurement/catalog";
 import { nextPrId } from "@/modules/procurement/selectors";
+import { useCustomerStore } from "@/store/customerStore";
 import { useProcurementStore } from "@/store/procurementStore";
 import { useUsersStore } from "@/store/usersStore";
 import type { ProcurementPriority } from "@/types/procurement";
@@ -89,6 +90,20 @@ export function CreatePrDrawer({
     (s) => s.createPurchaseRequest,
   );
   const suppliers = useUsersStore((s) => s.suppliers);
+  const customers = useCustomerStore((s) => s.customers);
+  const buyerOptions = useMemo(
+    () => [
+      ...customers.map((customer) => ({
+        name: customer.name,
+        company: customer.companyName,
+        location: customer.city,
+      })),
+      ...BUYERS.filter(
+        (buyer) => !customers.some((customer) => customer.name === buyer.name),
+      ),
+    ],
+    [customers],
+  );
   const previewId = useMemo(() => nextPrId(items), [items]);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -155,7 +170,9 @@ export function CreatePrDrawer({
   const submit = (asDraft: boolean) => {
     if (!asDraft && !validate()) return;
     if (asDraft && !form.commodity && !form.buyer) {
-      setErrors({ commodity: "Add at least a commodity or buyer to save a draft." });
+      setErrors({
+        commodity: "Add at least a commodity or buyer to save a draft.",
+      });
       return;
     }
     const id = createPurchaseRequest({ ...payload, asDraft });
@@ -188,7 +205,9 @@ export function CreatePrDrawer({
     >
       <div className="space-y-5">
         <section className="rounded-lg border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Request Details</h3>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Request Details
+          </h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Request ID</Label>
@@ -297,14 +316,16 @@ export function CreatePrDrawer({
         </section>
 
         <section className="rounded-lg border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Buyer Details</h3>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Buyer Details
+          </h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Buyer / Customer</Label>
               <Select
                 value={form.buyer || undefined}
                 onValueChange={(value) => {
-                  const buyer = BUYERS.find((row) => row.name === value);
+                  const buyer = buyerOptions.find((row) => row.name === value);
                   patch("buyer", value);
                   patch("buyerCompany", buyer?.company ?? "");
                   patch("destination", buyer?.location ?? form.destination);
@@ -314,7 +335,7 @@ export function CreatePrDrawer({
                   <SelectValue placeholder="Select buyer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {BUYERS.map((buyer) => (
+                  {buyerOptions.map((buyer) => (
                     <SelectItem key={buyer.name} value={buyer.name}>
                       {buyer.name}
                     </SelectItem>
@@ -461,7 +482,9 @@ export function CreatePrDrawer({
               <Textarea
                 className="mt-1.5"
                 value={form.internalRemarks}
-                onChange={(event) => patch("internalRemarks", event.target.value)}
+                onChange={(event) =>
+                  patch("internalRemarks", event.target.value)
+                }
               />
             </div>
           </div>

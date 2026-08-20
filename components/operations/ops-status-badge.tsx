@@ -64,6 +64,15 @@ const MAP: Record<string, string> = {
   ONBOARDING: "border-blue-200 bg-blue-50 text-blue-700",
   HOLD: "border-amber-200 bg-amber-50 text-amber-700",
   INACTIVE: "border-slate-200 bg-slate-50 text-slate-600",
+  SCHEDULED: "border-blue-200 bg-blue-50 text-blue-700",
+  PAUSED: "border-amber-200 bg-amber-50 text-amber-700",
+  ARCHIVED: "border-slate-200 bg-slate-100 text-slate-500",
+  PUBLISHED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  IN_PROGRESS: "border-indigo-200 bg-indigo-50 text-indigo-700",
+  WAITING_FOR_CUSTOMER: "border-amber-200 bg-amber-50 text-amber-700",
+  SENT: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  LOW: "border-slate-200 bg-slate-50 text-slate-600",
+  MEDIUM: "border-blue-200 bg-blue-50 text-blue-700",
   READY: "border-emerald-200 bg-emerald-50 text-emerald-700",
   GENERATING: "border-blue-200 bg-blue-50 text-blue-700",
   AWAITING_EVIDENCE: "border-amber-200 bg-amber-50 text-amber-700",
@@ -104,7 +113,10 @@ function formatStatusLabel(status: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export function OpsStatusBadge({ status, minimal = false }: OpsStatusBadgeProps) {
+export function OpsStatusBadge({
+  status,
+  minimal = false,
+}: OpsStatusBadgeProps) {
   if (minimal) {
     return (
       <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-600">

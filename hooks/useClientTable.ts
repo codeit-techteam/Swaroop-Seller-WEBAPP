@@ -7,6 +7,7 @@ interface UseClientTableOptions<T> {
   pageSize?: number;
   searchFields: (row: T) => string[];
   getStatus?: (row: T) => string | undefined;
+  initialStatus?: string;
 }
 
 export function useClientTable<T>({
@@ -14,9 +15,10 @@ export function useClientTable<T>({
   pageSize = 8,
   searchFields,
   getStatus,
+  initialStatus = "ALL",
 }: UseClientTableOptions<T>) {
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
+  const [status, setStatus] = useState(initialStatus || "ALL");
   const [page, setPage] = useState(1);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 

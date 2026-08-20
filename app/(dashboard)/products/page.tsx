@@ -1,17 +1,7 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import {
-  createRouteMetadata,
-  RoutePlaceholder,
-} from "@/components/common/route-placeholder";
-
-export const metadata: Metadata = createRouteMetadata(
-  "Products",
-  "Manage product catalog",
-);
+import { ROUTES } from "@/lib/constants";
 
 export default function ProductsPage() {
-  return (
-    <RoutePlaceholder title="Products" description="Manage product catalog" />
-  );
+  redirect(ROUTES.MARKETPLACE_CATALOG);
 }

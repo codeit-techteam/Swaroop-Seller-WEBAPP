@@ -1,16 +1,9 @@
 "use client";
 
 import { format } from "date-fns";
-import {
-  Bell,
-  ChevronDown,
-  Clock3,
-  Menu,
-  Search,
-  TrendingUp,
-} from "lucide-react";
+import { Bell, ChevronDown, Clock3, Menu, Search } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -39,10 +32,10 @@ interface TopbarProps {
 
 export function Topbar({ onMenuClick, className }: TopbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const isInventory = pathname.startsWith(ROUTES.INVENTORY);
   const isPerformance = pathname.startsWith(ROUTES.PERFORMANCE_DASHBOARD);
   const isProfile = pathname.startsWith(ROUTES.PROFILE);
-  const marketIndex = useDashboardStore((s) => s.marketIndex);
   const dashboardSearch = useDashboardStore((s) => s.search);
   const setDashboardSearch = useDashboardStore((s) => s.setSearch);
   const inventorySearch = useInventoryStore((s) => s.filters.search);
@@ -69,7 +62,7 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
     if (isInventory) return "Quick search inventory...";
     if (isPerformance) return "Global Trade Search...";
     if (isProfile) return "Search orders, docs...";
-    return "Search orders, inventory or compliance docs...";
+    return "Search customers, orders, PRs, products, offers…";
   }, [isInventory, isPerformance, isProfile]);
 
   const searchValue = isInventory
@@ -130,13 +123,22 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
 
       <div className="relative mx-auto w-full max-w-xl flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <Input
-          value={searchValue}
-          onChange={(event) => handleSearchChange(event.target.value)}
-          placeholder={placeholder}
-          className="h-10 border-slate-200 bg-slate-50 pl-9 text-sm shadow-none focus-visible:ring-[#1B6EF3]"
-          aria-label="Global search"
-        />
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const value = searchValue.trim();
+            if (value.length < 2) return;
+            router.push(`${ROUTES.SEARCH}?q=${encodeURIComponent(value)}`);
+          }}
+        >
+          <Input
+            value={searchValue}
+            onChange={(event) => handleSearchChange(event.target.value)}
+            placeholder={placeholder}
+            className="h-10 border-slate-200 bg-slate-50 pl-9 text-sm shadow-none focus-visible:ring-[#1B6EF3]"
+            aria-label="Global search"
+          />
+        </form>
         {isPerformance && searchResults.length > 0 ? (
           <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
             {searchResults.map((result) => (
@@ -155,16 +157,6 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
           </div>
         ) : null}
       </div>
-
-      {!isInventory && !isProfile ? (
-        <div className="hidden items-center gap-1.5 whitespace-nowrap text-sm lg:flex">
-          <span className="text-slate-500">Market Index:</span>
-          <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
-            {marketIndex.commodity} +{marketIndex.changePercent.toFixed(1)}%
-            <TrendingUp className="h-3.5 w-3.5" />
-          </span>
-        </div>
-      ) : null}
 
       <div className="flex shrink-0 items-center gap-1">
         {isPerformance ? (

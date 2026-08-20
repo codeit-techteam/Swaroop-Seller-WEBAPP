@@ -22,6 +22,7 @@ export const STORAGE_KEYS = {
   USER_PREFERENCES: "petrotrade_user_preferences",
   THEME: "petrotrade_theme",
   ONBOARDING: "petrotrade-onboarding",
+  CX_PUBLISHED: "petrotrade_cx_published",
 } as const;
 
 export const ROUTES = {
@@ -78,11 +79,26 @@ export const ROUTES = {
   NOTIFICATIONS: "/notifications",
   DOCUMENT_CENTER: "/document-center",
   DOCUMENTS: "/document-center",
-  USERS: "/users",
   SETTINGS: "/settings",
   PROFILE: "/profile",
   SEARCH: "/search",
   LOGOUT: "/login",
+  CUSTOMERS: "/customers",
+  CUSTOMER_DETAIL: "/customers",
+  CUSTOMER_REQUESTS: "/customers/requests",
+  CUSTOMER_ORDERS: "/customers/orders",
+  CUSTOMER_SUPPORT: "/customers/support",
+  CUSTOMER_NOTIFICATIONS: "/customers/notifications",
+  MARKETPLACE_CATALOG: "/marketplace/catalog",
+  MARKETPLACE_CATEGORIES: "/marketplace/categories",
+  MARKETPLACE_PRICING: "/marketplace/pricing",
+  MARKETPLACE_OFFERS: "/marketplace/offers",
+  CMS_HOME: "/cms/home",
+  CMS_BANNERS: "/cms/banners",
+  CMS_MEDIA: "/cms/media",
+  CMS_VIDEOS: "/cms/videos",
+  CMS_PROMOTIONS: "/cms/promotions",
+  AUDIT_LOGS: "/audit-logs",
 } as const;
 
 export const QUERY_KEYS = {
@@ -101,6 +117,8 @@ export const QUERY_KEYS = {
   SEARCH: "search",
   PROCUREMENT: "procurement",
   FINANCE: "finance",
-  USERS: "users",
   KYC: "kyc",
+  CUSTOMERS: "customers",
+  CATALOG: "catalog",
+  CMS: "cms",
 } as const;

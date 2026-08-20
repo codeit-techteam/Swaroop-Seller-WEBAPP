@@ -1,13 +1,8 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { PriceRevisionView } from "@/modules/price-revision";
+import { ROUTES } from "@/lib/constants";
 
-export const metadata: Metadata = {
-  title: "Price Revision Requests | PetroTrade Seller",
-  description:
-    "Manage platform-initiated pricing adjustments and market-driven negotiations for your marketplace offers.",
-};
-
+/** Price Revisions is temporarily hidden from the frontend. */
 export default function PriceRevisionPage() {
-  return <PriceRevisionView />;
+  redirect(ROUTES.DASHBOARD);
 }

@@ -40,7 +40,7 @@ export function ActivityCard({
         href={viewAllHref}
         className="mt-4 text-sm font-medium text-[#1B6EF3] hover:underline"
       >
-        View All Audit Logs
+        View all activity
       </Link>
     </div>
   );

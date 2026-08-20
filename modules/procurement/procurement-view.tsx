@@ -102,10 +102,11 @@ export function ProcurementWorkbenchView() {
           statusOptions={STATUSES}
           headers={[
             "PO / PR ID",
+            "Customer",
             "Commodity",
-            "Buyer",
+            "Location",
             "Supplier",
-            "Est. Cost",
+            "Offer / Price",
             "Qty",
             "Status",
             "Action",
@@ -129,20 +130,26 @@ export function ProcurementWorkbenchView() {
                   {item.requestId}
                 </Link>
               </TableCell>
+              <TableCell>
+                <p>{item.buyer}</p>
+                <p className="text-xs text-slate-400">{item.buyerCompany}</p>
+              </TableCell>
               <TableCell className="font-medium text-slate-800">
                 {commodityLabel(item)}
               </TableCell>
-              <TableCell>{item.buyer}</TableCell>
+              <TableCell>{item.destination}</TableCell>
               <TableCell>{item.supplier}</TableCell>
               <TableCell className="tabular-nums">
-                {formatCompactInr(item.estimatedCost)}
+                {formatCompactInr(item.unitPrice)}
               </TableCell>
               <TableCell className="tabular-nums">
                 {formatNumber(item.quantityMt)} {item.quantityUnit}
               </TableCell>
               <TableCell>
                 {item.status === "NEGOTIATION" ? (
-                  <Link href={`${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`}>
+                  <Link
+                    href={`${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`}
+                  >
                     <OpsStatusBadge status={item.status} />
                   </Link>
                 ) : (
@@ -183,7 +190,9 @@ export function ProcurementWorkbenchView() {
         </OpsTable>
 
         <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-900">Quick Actions</h3>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Quick Actions
+          </h3>
           <div className="grid grid-cols-2 gap-2">
             <ActionCard
               label="New PR"
@@ -211,8 +220,8 @@ export function ProcurementWorkbenchView() {
             />
           </div>
           <p className="text-xs leading-5 text-slate-500">
-            This workbench is the Admin ↔ Seller operating system. Customers never
-            negotiate directly with sellers.
+            This workbench is the Admin ↔ Seller operating system. Customers
+            never negotiate directly with sellers.
           </p>
         </div>
       </div>

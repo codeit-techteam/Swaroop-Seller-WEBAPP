@@ -1,15 +1,17 @@
-import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import {
-  createRouteMetadata,
-  RoutePlaceholder,
-} from "@/components/common/route-placeholder";
+import { createRouteMetadata } from "@/components/common";
+import { GlobalSearchView } from "@/modules/search";
 
-export const metadata: Metadata = createRouteMetadata(
+export const metadata = createRouteMetadata(
   "Search",
-  "Global search",
+  "Global operations search",
 );
 
 export default function SearchPage() {
-  return <RoutePlaceholder title="Search" description="Global search" />;
+  return (
+    <Suspense>
+      <GlobalSearchView />
+    </Suspense>
+  );
 }

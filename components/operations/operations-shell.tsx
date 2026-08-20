@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 import { SummaryCard } from "@/components/erp";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,9 @@ export interface OpsKpi {
   prefix?: string;
   decimals?: number;
   valueClassName?: string;
+  icon?: ComponentType<{ className?: string }>;
+  hint?: string;
+  accent?: "default" | "blue" | "amber" | "emerald" | "rose";
 }
 
 interface OperationsShellProps {
@@ -32,7 +35,12 @@ export function OperationsShell({
   className,
 }: OperationsShellProps) {
   return (
-    <div className={cn("mx-auto max-w-[1400px] space-y-5 px-4 py-5 md:px-6", className)}>
+    <div
+      className={cn(
+        "mx-auto max-w-[1400px] space-y-5 px-4 py-5 md:px-6",
+        className,
+      )}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -40,13 +48,18 @@ export function OperationsShell({
           </h1>
           <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
       {kpis?.length ? (
         <div
           className={cn(
-            "grid gap-3 sm:grid-cols-2",
-            kpis.length >= 5 ? "lg:grid-cols-5 xl:grid-cols-6" : "lg:grid-cols-4",
+            "grid gap-3",
+            kpis.length <= 2 && "sm:grid-cols-2",
+            kpis.length === 3 && "sm:grid-cols-3",
+            kpis.length === 4 && "sm:grid-cols-2 lg:grid-cols-4",
+            kpis.length >= 5 && "sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6",
           )}
         >
           {kpis.map((kpi) => (

@@ -21,10 +21,7 @@ import { cn } from "@/lib/utils";
 import { useDashboardStore } from "@/store/dashboardStore";
 import type { CommandAction } from "@/types/dashboard";
 
-const actionIcons: Record<
-  NonNullable<CommandAction["action"]>,
-  typeof Tag
-> = {
+const actionIcons: Record<NonNullable<CommandAction["action"]>, typeof Tag> = {
   "create-offer": Tag,
   "update-stock": PackagePlus,
   "create-pr": ClipboardList,
@@ -43,12 +40,10 @@ const HIDDEN_FAB_PREFIXES = [
   "/receivables",
   "/payments",
   "/credit-insurance",
+  "/marketplace",
 ];
 
-const HIDDEN_FAB_PATTERNS = [
-  /^\/offers\/edit\/.+/,
-  /^\/offers\/preview\/.+/,
-];
+const HIDDEN_FAB_PATTERNS = [/^\/offers\/edit\/.+/, /^\/offers\/preview\/.+/];
 
 function shouldHideFab(pathname: string): boolean {
   if (HIDDEN_FAB_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
@@ -146,11 +141,7 @@ export function FloatingActionButton() {
           aria-label={fabOpen ? "Close quick actions" : "Open quick actions"}
           aria-expanded={fabOpen}
         >
-          {fabOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Plus className="h-5 w-5" />
-          )}
+          {fabOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
         </motion.button>
       </div>
     </>

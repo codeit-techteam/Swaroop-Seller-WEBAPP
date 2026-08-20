@@ -18,7 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import {
@@ -62,7 +69,9 @@ function Card({
   className?: string;
 }) {
   return (
-    <section className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className ?? ""}`}>
+    <section
+      className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className ?? ""}`}
+    >
       <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
@@ -99,10 +108,12 @@ export function ProcurementDetailView({ id }: { id: string }) {
       >
         <EmptyState
           title="Record not found"
-          description="Return to the procurement workbench and select another item."
+          description="Return to purchase requests and select another item."
           action={
             <Button asChild>
-              <Link href={ROUTES.PROCUREMENT}>Back to workbench</Link>
+              <Link href={ROUTES.PURCHASE_REQUESTS}>
+                Back to purchase requests
+              </Link>
             </Button>
           }
         />
@@ -134,12 +145,20 @@ export function ProcurementDetailView({ id }: { id: string }) {
           <Button variant="outline" asChild>
             <Link href={ROUTES.PROCUREMENT_QUEUE}>Back to queue</Link>
           </Button>
-          <Button variant="outline" disabled={locked} onClick={() => setEditOpen(true)}>
+          <Button
+            variant="outline"
+            disabled={locked}
+            onClick={() => setEditOpen(true)}
+          >
             Edit
           </Button>
           {isAdmin ? (
             <>
-              <Button variant="outline" disabled={locked} onClick={() => setAssignOpen(true)}>
+              <Button
+                variant="outline"
+                disabled={locked}
+                onClick={() => setAssignOpen(true)}
+              >
                 Assign Seller
               </Button>
               <Button
@@ -147,7 +166,9 @@ export function ProcurementDetailView({ id }: { id: string }) {
                 disabled={locked}
                 onClick={() => {
                   startNegotiation(item.requestId);
-                  router.push(`${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`);
+                  router.push(
+                    `${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`,
+                  );
                 }}
               >
                 Start Negotiation
@@ -174,7 +195,9 @@ export function ProcurementDetailView({ id }: { id: string }) {
                 Submit Quote
               </Button>
               <Button variant="outline" asChild>
-                <Link href={`${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`}>
+                <Link
+                  href={`${ROUTES.PROCUREMENT_NEGOTIATION}/${item.requestId}`}
+                >
                   Negotiate
                 </Link>
               </Button>
@@ -225,11 +248,16 @@ export function ProcurementDetailView({ id }: { id: string }) {
             />
             <Info label="Potential Savings" value={formatCompactInr(savings)} />
             {isAdmin ? (
-              <Info label="Internal margin" value={formatCompactInr(item.margin ?? item.commission)} />
+              <Info
+                label="Internal margin"
+                value={formatCompactInr(item.margin ?? item.commission)}
+              />
             ) : null}
             <Info
               label="Final PO Value"
-              value={formatCompactInr(item.negotiatedValue || item.estimatedCost)}
+              value={formatCompactInr(
+                item.negotiatedValue || item.estimatedCost,
+              )}
             />
           </dl>
         </Card>
@@ -265,7 +293,7 @@ export function ProcurementDetailView({ id }: { id: string }) {
               value={
                 item.offers[0]
                   ? `${item.offers[0].moq} ${item.quantityUnit}`
-                  : supplier?.moq ?? "—"
+                  : (supplier?.moq ?? "—")
               }
             />
             <Info
@@ -275,8 +303,12 @@ export function ProcurementDetailView({ id }: { id: string }) {
             <Info label="KYC Status" value={supplier?.kyc ?? "PENDING"} />
           </dl>
         </Card>
-        <Card title={isAdmin ? "Offer Comparison" : "Your quotation"} className="lg:col-span-3">
-          {sellerVisibleOffers(item, isSeller ? sellerId : undefined).length === 0 ? (
+        <Card
+          title={isAdmin ? "Offer Comparison" : "Your quotation"}
+          className="lg:col-span-3"
+        >
+          {sellerVisibleOffers(item, isSeller ? sellerId : undefined).length ===
+          0 ? (
             <p className="text-sm text-slate-500">No supplier offers yet.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -293,7 +325,10 @@ export function ProcurementDetailView({ id }: { id: string }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sellerVisibleOffers(item, isSeller ? sellerId : undefined).map((offer) => (
+                  {sellerVisibleOffers(
+                    item,
+                    isSeller ? sellerId : undefined,
+                  ).map((offer) => (
                     <TableRow key={offer.id}>
                       <TableCell className="font-medium">
                         {offer.supplierName}
@@ -312,32 +347,32 @@ export function ProcurementDetailView({ id }: { id: string }) {
                       <TableCell>
                         <div className="flex gap-1">
                           {isAdmin ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 px-2 text-xs"
-                            disabled={offer.status === "ACCEPTED"}
-                            onClick={() => {
-                              acceptOffer(item.requestId, offer.id);
-                              toast.success("Offer accepted.");
-                            }}
-                          >
-                            Accept
-                          </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={offer.status === "ACCEPTED"}
+                              onClick={() => {
+                                acceptOffer(item.requestId, offer.id);
+                                toast.success("Offer accepted.");
+                              }}
+                            >
+                              Accept
+                            </Button>
                           ) : null}
                           {isAdmin ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs text-red-600"
-                            disabled={offer.status === "REJECTED"}
-                            onClick={() => {
-                              rejectOffer(item.requestId, offer.id);
-                              toast.success("Offer rejected.");
-                            }}
-                          >
-                            Reject
-                          </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-red-600"
+                              disabled={offer.status === "REJECTED"}
+                              onClick={() => {
+                                rejectOffer(item.requestId, offer.id);
+                                toast.success("Offer rejected.");
+                              }}
+                            >
+                              Reject
+                            </Button>
                           ) : null}
                         </div>
                       </TableCell>
@@ -364,7 +399,10 @@ export function ProcurementDetailView({ id }: { id: string }) {
             {(item.documents ?? [])
               .filter((doc) => isAdmin || doc.visibleToSeller)
               .map((doc) => (
-                <li key={doc.id} className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
+                <li
+                  key={doc.id}
+                  className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2"
+                >
                   <span>{doc.name}</span>
                   <OpsStatusBadge status={doc.kind} />
                 </li>
@@ -375,7 +413,11 @@ export function ProcurementDetailView({ id }: { id: string }) {
             size="sm"
             variant="outline"
             onClick={() => {
-              addDocument(item.requestId, `Upload ${Date.now()}.pdf`, isSeller ? "QUOTATION" : "COMMERCIAL");
+              addDocument(
+                item.requestId,
+                `Upload ${Date.now()}.pdf`,
+                isSeller ? "QUOTATION" : "COMMERCIAL",
+              );
               toast.success("Document recorded.");
             }}
           >
@@ -383,47 +425,47 @@ export function ProcurementDetailView({ id }: { id: string }) {
           </Button>
         </Card>
         {isAdmin ? (
-        <Card title="Internal Notes">
-          <div className="space-y-3">
-            <Textarea
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="Add an internal note"
-            />
-            <Button
-              size="sm"
-              className="bg-[#1B6EF3] hover:bg-[#1558C8]"
-              onClick={() => {
-                if (!note.trim()) {
-                  toast.error("Enter a note before saving.");
-                  return;
-                }
-                addNote(item.requestId, note.trim());
-                setNote("");
-                toast.success("Note added.");
-              }}
-            >
-              Add note
-            </Button>
-            {item.notes.length === 0 ? (
-              <p className="text-sm text-slate-500">No notes yet.</p>
-            ) : (
-              <ul className="space-y-2">
-                {item.notes.map((row) => (
-                  <li
-                    key={row.id}
-                    className="rounded-md border border-slate-100 bg-slate-50 p-3 text-sm"
-                  >
-                    <p className="text-slate-800">{row.text}</p>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      {row.author} · {formatDateTime(row.createdAt)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </Card>
+          <Card title="Internal Notes">
+            <div className="space-y-3">
+              <Textarea
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="Add an internal note"
+              />
+              <Button
+                size="sm"
+                className="bg-[#1B6EF3] hover:bg-[#1558C8]"
+                onClick={() => {
+                  if (!note.trim()) {
+                    toast.error("Enter a note before saving.");
+                    return;
+                  }
+                  addNote(item.requestId, note.trim());
+                  setNote("");
+                  toast.success("Note added.");
+                }}
+              >
+                Add note
+              </Button>
+              {item.notes.length === 0 ? (
+                <p className="text-sm text-slate-500">No notes yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {item.notes.map((row) => (
+                    <li
+                      key={row.id}
+                      className="rounded-md border border-slate-100 bg-slate-50 p-3 text-sm"
+                    >
+                      <p className="text-slate-800">{row.text}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        {row.author} · {formatDateTime(row.createdAt)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Card>
         ) : null}
         <Card title="Audit History" className="lg:col-span-3">
           <Timeline

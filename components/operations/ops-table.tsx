@@ -67,33 +67,35 @@ export function OpsTable({
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       {hideControls ? null : (
-      <div className="space-y-4 border-b border-slate-100 px-5 py-5 md:px-6">
-        <div className="relative max-w-2xl">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={search}
-            onChange={(event) => onSearch(event.target.value)}
-            placeholder={searchPlaceholder}
-            className="h-10 border-slate-200 bg-slate-50 pl-9 shadow-none focus-visible:ring-[#1B6EF3]"
-          />
+        <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:px-6">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(event) => onSearch(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-10 border-slate-200 bg-slate-50 pl-9 shadow-none focus-visible:ring-[#1B6EF3]"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={status} onValueChange={onStatusChange}>
+              <SelectTrigger className="h-10 w-[180px] border-slate-200 bg-white text-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option === "ALL"
+                      ? "All statuses"
+                      : option.replaceAll("_", " ")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {extraFilters}
+            {toolbar}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-        <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger className="h-9 w-[180px] border-slate-200 bg-white text-sm">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option === "ALL" ? "All statuses" : option.replaceAll("_", " ")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {extraFilters}
-        {toolbar}
-        </div>
-      </div>
       )}
       {rowCount === 0 ? (
         <div className="p-6">

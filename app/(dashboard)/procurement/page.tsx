@@ -1,11 +1,8 @@
-import { createRouteMetadata } from "@/components/common";
-import { ProcurementWorkbenchView } from "@/modules/procurement";
+import { redirect } from "next/navigation";
 
-export const metadata = createRouteMetadata(
-  "Procurement Workbench",
-  "Operations queue for purchase requests and purchase orders",
-);
+import { ROUTES } from "@/lib/constants";
 
+/** Procurement Workbench is temporarily hidden from the frontend. */
 export default function ProcurementPage() {
-  return <ProcurementWorkbenchView />;
+  redirect(ROUTES.DASHBOARD);
 }

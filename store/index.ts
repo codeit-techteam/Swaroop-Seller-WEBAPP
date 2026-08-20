@@ -1,9 +1,13 @@
 export { useAnalyticsStore } from "./analyticsStore";
 export { useAuthStore } from "./authStore";
+export { useCmsStore } from "./cmsStore";
+export { useCustomerStore } from "./customerStore";
+export { useCxOpsStore } from "./cxOpsStore";
 export { useDispatchStore } from "./dispatchStore";
 export { useDocumentStore } from "./documentStore";
 export { useFinanceStore } from "./financeStore";
 export { useInventoryStore } from "./inventoryStore";
+export { useMarketplaceCmsStore } from "./marketplaceCmsStore";
 export { useNotificationStore } from "./notificationStore";
 export { useOfferReviewStore } from "./offerReviewStore";
 export { useOfferStore } from "./offerStore";
