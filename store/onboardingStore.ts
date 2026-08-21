@@ -91,6 +91,19 @@ export const useOnboardingStore = create<OnboardingStore>()(
 
       resetOnboarding: () => set(initialOnboardingState),
 
+      clearOnboardingProgress: () => {
+        const { mobileNumber, countryCode, isOtpVerified } = get();
+        set({
+          ...initialOnboardingState,
+          mobileNumber,
+          countryCode,
+          isOtpVerified,
+          documents: initialOnboardingState.documents.map((doc) => ({
+            ...doc,
+          })),
+        });
+      },
+
       getProgress: () => {
         const { currentStep, completedSteps } = get();
         if (currentStep === "submitted") return 100;
@@ -113,6 +126,11 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "petrotrade-onboarding",
+      version: 2,
+      migrate: () => ({
+        ...initialOnboardingState,
+        documents: initialOnboardingState.documents.map((doc) => ({ ...doc })),
+      }),
       partialize: (state) => ({
         mobileNumber: state.mobileNumber,
         countryCode: state.countryCode,

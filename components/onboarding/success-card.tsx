@@ -94,19 +94,30 @@ export function EstimatedReviewBanner({
 
 interface LockedDashboardButtonProps {
   onClick?: () => void;
+  locked?: boolean;
+  label?: string;
 }
 
-export function LockedDashboardButton({ onClick }: LockedDashboardButtonProps) {
+export function LockedDashboardButton({
+  onClick,
+  locked = true,
+  label,
+}: LockedDashboardButtonProps) {
   return (
     <Button
       variant="outline"
       className="w-full"
       onClick={onClick}
       type="button"
-      disabled
-      title="Dashboard will be available after KYC approval"
+      disabled={locked}
+      title={
+        locked
+          ? "Dashboard will be available after KYC approval"
+          : "Go to dashboard"
+      }
     >
-      Back To Dashboard (Locked)
+      {label ??
+        (locked ? "Back To Dashboard (Locked)" : "Back To Dashboard")}
     </Button>
   );
 }

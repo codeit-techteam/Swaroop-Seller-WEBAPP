@@ -25,6 +25,10 @@ import { useOnboardingStore } from "@/store/onboardingStore";
 export default function SellerLoginPage() {
   const router = useRouter();
   const setMobileNumber = useOnboardingStore((s) => s.setMobileNumber);
+  // const clearOnboardingProgress = useOnboardingStore(
+  //   (s) => s.clearOnboardingProgress,
+  // );
+  // const setOtpVerified = useOnboardingStore((s) => s.setOtpVerified);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -35,6 +39,12 @@ export default function SellerLoginPage() {
     setMobileNumber(values.mobileNumber);
     router.push(ROUTES.SELLER_OTP);
   };
+
+  // const handleRegister = () => {
+  //   clearOnboardingProgress();
+  //   setOtpVerified(true);
+  //   router.push(ROUTES.ONBOARDING_COMPANY);
+  // };
 
   return (
     <div className="flex min-h-screen min-w-[1024px]">
@@ -143,15 +153,16 @@ export default function SellerLoginPage() {
               </form>
             </Form>
 
-            <p className="mt-8 text-center text-sm">
+            {/* <p className="mt-8 text-center text-sm">
               New to PetroTrade?{" "}
-              <Link
-                href={ROUTES.ONBOARDING_COMPANY}
+              <button
+                type="button"
+                onClick={handleRegister}
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
                 Register your business
-              </Link>
-            </p>
+              </button>
+            </p> */}
           </motion.div>
         </div>
 

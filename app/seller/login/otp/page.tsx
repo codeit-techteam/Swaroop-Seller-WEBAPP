@@ -55,7 +55,7 @@ export default function SellerOtpPage() {
       if (values.otp === MOCK_OTP || values.otp.length === 6) {
         setOtpVerified(true);
         toast.success("Mobile number verified successfully");
-        router.push(ROUTES.ONBOARDING_COMPANY);
+        router.push(ROUTES.DASHBOARD);
       } else {
         form.setError("otp", { message: "Invalid OTP. Try 123456 for demo." });
         toast.error("Invalid OTP");

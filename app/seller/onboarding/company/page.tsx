@@ -40,6 +40,7 @@ import { useOnboardingStore } from "@/store/onboardingStore";
 
 const GST_PATTERN =
   /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 
 function GstVerifyField() {
   const form = useFormContext<CompanyFormValues>();
@@ -112,9 +113,32 @@ function GstVerifyField() {
   );
 }
 
-function PanNumberField() {
+function PanVerifyField() {
   const form = useFormContext<CompanyFormValues>();
+  const pan = useOnboardingStore((s) => s.pan);
+  const updatePan = useOnboardingStore((s) => s.updatePan);
   const updateCompany = useOnboardingStore((s) => s.updateCompany);
+  const { verifyPan } = useMockVerification();
+
+  const handleVerifyPan = async () => {
+    const panNumber = form.getValues("panNumber").trim().toUpperCase();
+    form.setValue("panNumber", panNumber);
+
+    if (!panNumber) {
+      toast.error("Enter a PAN number to verify");
+      return;
+    }
+
+    if (!PAN_PATTERN.test(panNumber)) {
+      form.setError("panNumber", { message: "Enter a valid PAN number" });
+      toast.error("Enter a valid PAN number");
+      return;
+    }
+
+    await verifyPan(panNumber);
+    updateCompany({ panNumber });
+    toast.success("PAN verified against the income tax registry");
+  };
 
   return (
     <FormField
@@ -126,17 +150,33 @@ function PanNumberField() {
             PAN Number{" "}
             <span className="font-normal text-muted-foreground">(Optional)</span>
           </FormLabel>
-          <FormControl>
-            <Input
-              placeholder="e.g., ABCDE1234F"
-              {...field}
-              onChange={(event) => {
-                const value = event.target.value.toUpperCase();
-                field.onChange(value);
-                updateCompany({ panNumber: value });
-              }}
-            />
-          </FormControl>
+          <div className="flex gap-3">
+            <FormControl>
+              <Input
+                placeholder="e.g., ABCDE1234F"
+                {...field}
+                onChange={(event) => {
+                  const value = event.target.value.toUpperCase();
+                  field.onChange(value);
+                  updatePan({ panNumber: value, status: "idle" });
+                  updateCompany({ panNumber: value });
+                }}
+              />
+            </FormControl>
+            <Button
+              type="button"
+              onClick={handleVerifyPan}
+              disabled={pan.status === "loading"}
+              className="shrink-0"
+            >
+              {pan.status === "loading" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Verify PAN
+            </Button>
+          </div>
           <FormMessage />
         </FormItem>
       )}
@@ -200,6 +240,50 @@ function GstVerificationResult() {
   );
 }
 
+function PanVerificationResult() {
+  const pan = useOnboardingStore((s) => s.pan);
+
+  if (pan.status === "loading") {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-primary/30 bg-primary/5 py-8 md:col-span-2">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-3 text-sm text-muted-foreground">
+          Connecting to income tax registry for PAN verification...
+        </p>
+      </div>
+    );
+  }
+
+  if (pan.status !== "verified") return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      className="space-y-4 rounded-lg border border-success/30 bg-success/5 p-4 md:col-span-2"
+    >
+      <VerificationStatusBadge status="verified" label="PAN Verified" />
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <p className="text-xs font-semibold uppercase text-muted-foreground">
+            Holder Name
+          </p>
+          <p className="font-bold">{pan.holderName}</p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase text-muted-foreground">
+            PAN Status
+          </p>
+          <p className="flex items-center gap-2 font-bold text-success">
+            <span className="h-2 w-2 rounded-full bg-success" />
+            {pan.panStatus}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function CompanyPage() {
   const router = useRouter();
   const company = useOnboardingStore((s) => s.company);
@@ -221,7 +305,7 @@ export default function CompanyPage() {
     companyName: company.companyName,
     gstNumber: gst.gstNumber || company.gstNumber,
     panNumber: company.panNumber,
-    businessType: company.businessType || "private_limited",
+    businessType: company.businessType,
     contactName: company.contactName,
     designation: company.designation,
     phone: company.phone || mobileNumber,
@@ -266,13 +350,15 @@ export default function CompanyPage() {
               placeholder="Enter registered company name"
             />
             <GstVerifyField />
-            <PanNumberField />
+            <PanVerifyField />
             <FormSelect<CompanyFormValues>
               name="businessType"
               label="Business Type"
+              placeholder="Select business type"
               options={businessTypeOptions}
             />
             <GstVerificationResult />
+            <PanVerificationResult />
           </div>
         </section>
 
@@ -309,16 +395,19 @@ export default function CompanyPage() {
             <FormSelect<CompanyFormValues>
               name="industry"
               label="Industry"
+              placeholder="Select industry"
               options={industryOptions}
             />
             <FormSelect<CompanyFormValues>
               name="yearsInBusiness"
               label="Years in Business"
+              placeholder="Select years"
               options={yearsInBusinessOptions}
             />
             <FormSelect<CompanyFormValues>
               name="annualTurnover"
               label="Annual Turnover"
+              placeholder="Select turnover"
               options={annualTurnoverOptions}
             />
           </div>

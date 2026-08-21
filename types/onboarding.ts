@@ -138,6 +138,7 @@ export interface OnboardingActions {
   updateReview: (data: Partial<ReviewData>) => void;
   submitOnboarding: () => void;
   resetOnboarding: () => void;
+  clearOnboardingProgress: () => void;
   getProgress: () => number;
   isStepAccessible: (step: OnboardingStepId) => boolean;
 }

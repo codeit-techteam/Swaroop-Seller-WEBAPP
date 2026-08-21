@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Clock, FileCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   EstimatedReviewBanner,
@@ -16,6 +16,8 @@ import { ROUTES } from "@/lib/constants";
 import { submissionSummary } from "@/mock/onboarding/onboardingMock";
 import { useOnboardingStore } from "@/store/onboardingStore";
 
+const DASHBOARD_REDIRECT_SECONDS = 5;
+
 export default function SubmittedPage() {
   const router = useRouter();
   const isSubmitted = useOnboardingStore((s) => s.isSubmitted);
@@ -24,6 +26,7 @@ export default function SubmittedPage() {
   const documents = useOnboardingStore((s) => s.documents);
   const bank = useOnboardingStore((s) => s.bank);
   const setCurrentStep = useOnboardingStore((s) => s.setCurrentStep);
+  const [secondsLeft, setSecondsLeft] = useState(DASHBOARD_REDIRECT_SECONDS);
 
   useEffect(() => {
     if (!isSubmitted) {
@@ -31,6 +34,20 @@ export default function SubmittedPage() {
       return;
     }
     setCurrentStep("submitted");
+
+    // Temporary: treat KYC as approved and send sellers to dashboard.
+    const redirectTimer = window.setTimeout(() => {
+      router.push(ROUTES.DASHBOARD);
+    }, DASHBOARD_REDIRECT_SECONDS * 1000);
+
+    const countdownTimer = window.setInterval(() => {
+      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => {
+      window.clearTimeout(redirectTimer);
+      window.clearInterval(countdownTimer);
+    };
   }, [isSubmitted, router, setCurrentStep]);
 
   const uploadedCount = documents.filter((d) => d.status !== "empty").length;
@@ -85,12 +102,15 @@ export default function SubmittedPage() {
           />
         </section>
 
-        <LockedDashboardButton />
+        <LockedDashboardButton
+          locked={false}
+          label={`Redirecting to Dashboard in ${secondsLeft}s`}
+          onClick={() => router.push(ROUTES.DASHBOARD)}
+        />
 
         <p className="text-center text-xs text-muted-foreground">
-          Dashboard access will be unlocked once your KYC verification is
-          approved. You will receive an email notification at{" "}
-          {company.email || "your registered email"}.
+          Redirecting you to the dashboard shortly. You will also receive an
+          email notification at {company.email || "your registered email"}.
         </p>
       </div>
     </motion.div>
