@@ -8,7 +8,10 @@ interface StickyFooterProps {
   children: ReactNode;
   className?: string;
   left?: ReactNode;
-  /** When true, footer stays within the parent column instead of spanning the viewport */
+  /**
+   * When true, footer is reserved in document flow at the end of the column
+   * (no mid-form overlay). Prefer this inside long forms.
+   */
   contained?: boolean;
 }
 
@@ -22,7 +25,7 @@ export function StickyFooter({
     return (
       <div
         className={cn(
-          "sticky bottom-0 z-20 -mx-4 mt-6 border-t border-slate-200 bg-[#F4F7F9]/95 px-4 py-3.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] backdrop-blur-md sm:-mx-6 sm:px-6 sm:py-4",
+          "mt-8 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm sm:px-5",
           className,
         )}
       >

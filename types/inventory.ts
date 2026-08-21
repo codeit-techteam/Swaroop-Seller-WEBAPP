@@ -46,7 +46,7 @@ export interface InventorySummary {
   totalInventory: number;
   available: number;
   reserved: number;
-  warehouses: number;
+  origins: number;
   lowStock: number;
   outOfStock: number;
   unit: string;
@@ -56,14 +56,14 @@ export interface InventoryFilters {
   search: string;
   grade: string;
   category: string;
-  warehouse: string;
+  origin: string;
   status: string;
 }
 
 export type InventorySortKey =
   | "productName"
   | "category"
-  | "warehouseName"
+  | "origin"
   | "availableMt"
   | "offerPrice"
   | "status";

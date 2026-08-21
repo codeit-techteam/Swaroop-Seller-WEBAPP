@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CreateOfferView } from "@/modules/offers";
 
 export const metadata: Metadata = {
-  title: "Edit Trading Offer | PetroTrade Seller",
+  title: "Edit Trading Offer | PetroTrade ADMIN PANEL",
   description: "Edit an existing marketplace trading offer",
 };
 

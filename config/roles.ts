@@ -20,7 +20,7 @@ export const USER_ROLES: UserRole[] = [
 ];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  ADMIN: "Seller + Admin",
+  ADMIN: "ADMIN PANEL",
   OPERATIONS: "Operations Manager",
   PROCUREMENT: "Procurement Manager",
   FINANCE: "Finance Manager",

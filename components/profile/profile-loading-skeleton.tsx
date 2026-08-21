@@ -14,25 +14,16 @@ export function ProfileLoadingSkeleton({ className }: { className?: string }) {
             <Skeleton className="h-4 w-full max-w-md" />
             <Skeleton className="h-4 w-4/5 max-w-sm" />
           </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-28" />
-            <Skeleton className="h-10 w-36" />
-          </div>
+          <Skeleton className="h-10 w-28" />
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <SkeletonCard rows={3} />
-          <SkeletonCard rows={4} />
-        </div>
-        <div className="space-y-6">
-          <SkeletonCard rows={4} />
-          <SkeletonCard rows={3} />
-        </div>
+        <SkeletonCard rows={4} />
+        <SkeletonCard rows={4} />
       </div>
 
-      <Skeleton className="h-20 w-full rounded-xl" />
+      <Skeleton className="h-16 w-full rounded-xl" />
     </div>
   );
 }
@@ -40,7 +31,10 @@ export function ProfileLoadingSkeleton({ className }: { className?: string }) {
 function SkeletonCard({ rows }: { rows: number }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
-      <Skeleton className="mb-4 h-5 w-40" />
+      <div className="mb-4 space-y-2">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-3 w-52" />
+      </div>
       <div className="space-y-3">
         {Array.from({ length: rows }).map((_, i) => (
           <Skeleton key={i} className="h-12 w-full rounded-lg" />

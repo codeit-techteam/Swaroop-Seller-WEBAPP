@@ -1,8 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CalendarDays, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 
@@ -19,7 +18,6 @@ import {
 } from "@/components/dispatch";
 import { LoadingOverlay } from "@/components/marketplace/loading-overlay";
 import { Button } from "@/components/ui/button";
-import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useDispatchStore } from "@/store/dispatchStore";
 import type { DispatchOrder } from "@/types/dispatch";
@@ -64,7 +62,6 @@ export function DispatchOperationsView({
   const generateEway = useDispatchStore((s) => s.generateEway);
   const releaseShipment = useDispatchStore((s) => s.releaseShipment);
   const refreshData = useDispatchStore((s) => s.refreshData);
-  const exportCsv = useDispatchStore((s) => s.exportCsv);
   const downloadDocument = useDispatchStore((s) => s.downloadDocument);
   const previewDocument = useDispatchStore((s) => s.previewDocument);
   const getFilteredDispatches = useDispatchStore(
@@ -102,11 +99,6 @@ export function DispatchOperationsView({
   const handleRefresh = async () => {
     await refreshData();
     toast.success("Dispatch queue updated");
-  };
-
-  const handleExport = () => {
-    exportCsv();
-    toast.success("CSV exported");
   };
 
   const openFor =
@@ -175,16 +167,6 @@ export function DispatchOperationsView({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            asChild
-            variant="outline"
-            className="h-10 gap-2 rounded-xl border-slate-200 bg-white shadow-sm"
-          >
-            <Link href={ROUTES.VEHICLE_SLOT_BOOKING}>
-              <CalendarDays className="h-4 w-4" />
-              Slot Booking
-            </Link>
-          </Button>
-          <Button
             className="h-10 gap-2 rounded-xl bg-[#1B6EF3] shadow-md shadow-[#1B6EF3]/25 hover:bg-[#1558C8]"
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -247,7 +229,6 @@ export function DispatchOperationsView({
           onGenerateEway={openFor("generate_eway")}
           onRelease={openFor("release")}
           onView={selectDispatch}
-          onExport={handleExport}
         />
       </motion.div>
 

@@ -1,7 +1,5 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +22,8 @@ export function Pagination({
 }: PaginationProps) {
   const start = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalItems);
+  const canGoPrev = page > 1;
+  const canGoNext = page < totalPages && totalItems > 0;
 
   return (
     <div
@@ -35,26 +35,35 @@ export function Pagination({
       <p className="text-xs text-slate-500">
         Showing {start}-{end} of {totalItems} shipments
       </p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <Button
+          type="button"
           variant="outline"
-          size="icon"
-          className="h-8 w-8"
-          disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
-          aria-label="Previous page"
+          size="sm"
+          className="h-8 border-slate-200"
+          disabled={!canGoPrev}
+          onClick={() => {
+            if (canGoPrev) onPageChange(page - 1);
+          }}
         >
-          <ChevronLeft className="h-4 w-4" />
+          Previous
         </Button>
         <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}
-          aria-label="Next page"
+          type="button"
+          variant={canGoNext ? "default" : "outline"}
+          size="sm"
+          className={cn(
+            "h-8",
+            canGoNext
+              ? "bg-[#1B6EF3] text-white hover:bg-[#1558C8]"
+              : "border-slate-200",
+          )}
+          disabled={!canGoNext}
+          onClick={() => {
+            if (canGoNext) onPageChange(page + 1);
+          }}
         >
-          <ChevronRight className="h-4 w-4" />
+          Next
         </Button>
       </div>
     </div>

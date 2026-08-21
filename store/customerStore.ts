@@ -6,6 +6,7 @@ import { customerService } from "@/services/customerService";
 import { auditService } from "@/services/cxOpsService";
 import type {
   CustomerAccountStatus,
+  CustomerDocumentType,
   CustomerDraft,
   CustomerKycStatus,
   CustomerProfile,
@@ -29,6 +30,18 @@ interface CustomerState {
     id: string,
     status: CustomerKycStatus,
     rejectionReason?: string,
+  ) => Promise<void>;
+  setDocumentStatus: (
+    customerId: string,
+    documentId: string,
+    status: CustomerKycStatus,
+    rejectionReason?: string,
+  ) => Promise<void>;
+  uploadDocument: (
+    customerId: string,
+    type: CustomerDocumentType,
+    fileName: string,
+    sizeLabel?: string,
   ) => Promise<void>;
   getCustomer: (id: string) => CustomerProfile | undefined;
 }
@@ -103,6 +116,50 @@ export const useCustomerStore = create<CustomerState>()(
           entityId: id,
           oldValue: previous?.kycStatus,
           newValue: status,
+        });
+        set({ customers: await customerService.list() });
+      },
+      setDocumentStatus: async (
+        customerId,
+        documentId,
+        status,
+        rejectionReason,
+      ) => {
+        await customerService.setDocumentStatus(
+          customerId,
+          documentId,
+          status,
+          rejectionReason,
+        );
+        auditService.log({
+          actor: "Amit Shah",
+          role: "ADMIN",
+          action:
+            status === "VERIFIED"
+              ? "KYC_APPROVE"
+              : status === "REJECTED"
+                ? "KYC_REJECT"
+                : "KYC_UPDATE",
+          entity: "CustomerDocument",
+          entityId: documentId,
+          newValue: status,
+        });
+        set({ customers: await customerService.list() });
+      },
+      uploadDocument: async (customerId, type, fileName, sizeLabel) => {
+        await customerService.uploadDocument(
+          customerId,
+          type,
+          fileName,
+          sizeLabel,
+        );
+        auditService.log({
+          actor: "Amit Shah",
+          role: "ADMIN",
+          action: "CUSTOMER_UPDATE",
+          entity: "CustomerDocument",
+          entityId: customerId,
+          newValue: type,
         });
         set({ customers: await customerService.list() });
       },

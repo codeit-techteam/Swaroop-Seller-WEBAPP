@@ -78,6 +78,14 @@ export interface CreditInsurancePolicy {
   utilized: number;
   status: CreditPolicyStatus;
   validUntil: string;
+  /** Inclusive policy start date (ISO). */
+  validFrom?: string;
+  /** Cover product label shown in the detail drawer. */
+  coverType?: string;
+  /** Last underwriting / review date (ISO). */
+  lastReviewedAt?: string;
+  /** Optional ops note for risk context. */
+  notes?: string;
 }
 
 export const PAYMENT_MODES: PaymentMode[] = [

@@ -217,7 +217,7 @@ export function buildTimelineForStatus(
       id: "tl-viewed",
       stage: "viewed_by_seller",
       title: "Viewed by Seller",
-      description: "Revision opened in seller portal",
+      description: "Revision opened in ADMIN PANEL",
       actor: "Reliance Poly Industries",
       timestamp: timestamps.viewedAt,
     },

@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ProfileDocument, ProfileDocumentStatus } from "@/types/profile";
 
+/** GST statutory docs are not shown when Admin and Seller are the same entity. */
+export function isProfileVisibleDocument(document: ProfileDocument): boolean {
+  return document.type !== "gst";
+}
+
 interface DocumentCardProps {
   document: ProfileDocument;
   index?: number;
@@ -62,17 +67,17 @@ export function DocumentCard({
       whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)" }}
       onClick={() => onPreview(document.id)}
       className={cn(
-        "group flex w-full flex-col rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:border-[#1B6EF3]/30",
+        "group flex w-full flex-col rounded-xl border border-slate-200 bg-white p-3.5 text-left transition-colors hover:border-[#1B6EF3]/30",
         className,
       )}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F4F8FF] text-[#1B6EF3]">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F4F8FF] text-[#1B6EF3]">
             <FileText className="h-4 w-4" />
           </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-800">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-slate-800">
               {document.title}
             </p>
             <p className="truncate text-[10px] text-slate-400">
@@ -90,7 +95,7 @@ export function DocumentCard({
         </span>
       </div>
 
-      <div className="mt-auto flex items-center justify-between pt-2">
+      <div className="mt-auto flex items-center justify-between border-t border-slate-50 pt-2.5">
         <p
           className={cn(
             "text-[10px] font-medium",
@@ -122,7 +127,7 @@ export function DocumentAddCard({
       whileHover={{ scale: 1.01 }}
       onClick={onAdd}
       className={cn(
-        "flex min-h-[120px] w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-4 text-center transition-colors hover:border-[#1B6EF3]/40 hover:bg-[#F4F8FF]/50",
+        "flex min-h-[108px] w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-4 text-center transition-colors hover:border-[#1B6EF3]/40 hover:bg-[#F4F8FF]/50",
         className,
       )}
     >
@@ -151,6 +156,8 @@ export function DocumentsCenter({
   onAddIso,
   className,
 }: DocumentsCenterProps) {
+  const visibleDocuments = documents.filter(isProfileVisibleDocument);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -161,17 +168,22 @@ export function DocumentsCenter({
         className,
       )}
     >
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-[#1B6EF3]" />
-          <h3 className="text-sm font-semibold text-slate-900">
-            Documents Center
-          </h3>
+      <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <div className="flex items-start gap-2">
+          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#1B6EF3]" />
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Documents Center
+            </h3>
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              Operational certificates &amp; compliance files
+            </p>
+          </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 gap-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+          className="h-8 shrink-0 gap-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
           onClick={onUpload}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -180,7 +192,7 @@ export function DocumentsCenter({
       </div>
 
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
-        {documents.map((doc, index) => (
+        {visibleDocuments.map((doc, index) => (
           <DocumentCard
             key={doc.id}
             document={doc}
@@ -188,7 +200,7 @@ export function DocumentsCenter({
             onPreview={onPreview}
           />
         ))}
-        <DocumentAddCard label="Add ISO Certificate" onAdd={onAddIso} />
+        <DocumentAddCard label="Add Certificate" onAdd={onAddIso} />
       </div>
     </motion.div>
   );

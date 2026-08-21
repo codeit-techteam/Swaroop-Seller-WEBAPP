@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { CheckCircle2, Lock } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -52,7 +52,7 @@ export default function SellerLoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
               <span className="text-xl font-bold">P</span>
             </div>
-            <span className="text-lg font-semibold">PetroTrade Seller</span>
+            <span className="text-lg font-semibold">PetroTrade ADMIN PANEL</span>
           </div>
 
           <div className="my-auto max-w-md">
@@ -88,11 +88,6 @@ export default function SellerLoginPage() {
               ))}
             </ul>
           </div>
-
-          <p className="text-xs text-white/40">
-            © 2024 PetroTrade Global. All Rights Reserved. Industrial Integrity
-            Guaranteed.
-          </p>
         </div>
       </div>
 
@@ -104,10 +99,10 @@ export default function SellerLoginPage() {
             className="mx-auto w-full max-w-md"
           >
             <h2 className="text-2xl font-bold text-foreground">
-              Seller Portal Login
+              ADMIN PANEL Login
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Access your seller dashboard, inventory and orders.
+              Access your ADMIN PANEL dashboard, inventory and orders.
             </p>
 
             <Form {...form}>
@@ -147,28 +142,6 @@ export default function SellerLoginPage() {
                 </Button>
               </form>
             </Form>
-
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Secure Access
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-center gap-4">
-              <div className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                GST Verified
-              </div>
-              <div className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm">
-                <Lock className="h-4 w-4 text-primary" />
-                Secure Login
-              </div>
-            </div>
 
             <p className="mt-8 text-center text-sm">
               New to PetroTrade?{" "}

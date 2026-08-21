@@ -28,15 +28,58 @@ export interface CustomerAddress {
   isDefault?: boolean;
 }
 
+export type CustomerDocumentType =
+  | "GST"
+  | "PAN"
+  | "AADHAAR"
+  | "CANCELLED_CHEQUE"
+  | "ADDRESS_PROOF"
+  | "KYC"
+  | "INVOICE"
+  | "PO"
+  | "ORDER"
+  | "DELIVERY"
+  | "OTHER";
+
 export interface CustomerDocument {
   id: string;
-  type:
-    "GST" | "PAN" | "KYC" | "INVOICE" | "PO" | "ORDER" | "DELIVERY" | "OTHER";
+  type: CustomerDocumentType;
   name: string;
   status: CustomerKycStatus;
   uploadedAt: string;
   sizeLabel: string;
+  fileName: string;
+  previewUrl: string;
+  previewMimeType: "application/pdf" | "image/png" | "image/jpeg";
+  verifiedBy?: string;
+  rejectionReason?: string;
 }
+
+export const CUSTOMER_DOCUMENT_TYPE_LABELS: Record<
+  CustomerDocumentType,
+  string
+> = {
+  GST: "GST Certificate",
+  PAN: "PAN Card",
+  AADHAAR: "Aadhaar Card",
+  CANCELLED_CHEQUE: "Cancelled Cheque",
+  ADDRESS_PROOF: "Address Proof",
+  KYC: "KYC Document",
+  INVOICE: "Invoice",
+  PO: "Purchase Order",
+  ORDER: "Order Document",
+  DELIVERY: "Delivery Document",
+  OTHER: "Other",
+};
+
+/** Standard documents collected during customer onboarding. */
+export const ONBOARDING_DOCUMENT_TYPES: CustomerDocumentType[] = [
+  "GST",
+  "PAN",
+  "AADHAAR",
+  "CANCELLED_CHEQUE",
+  "ADDRESS_PROOF",
+];
 
 export interface CustomerCredit {
   limit: number;

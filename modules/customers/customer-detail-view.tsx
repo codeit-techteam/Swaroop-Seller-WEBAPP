@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 
 import { ConfirmActionDialog } from "@/components/cx";
 import { SummaryCard } from "@/components/erp";
+import { CustomerDocsDrawer } from "@/components/kyc";
 import { OperationsShell, OpsStatusBadge } from "@/components/operations";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +61,7 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
   const policies = useFinanceStore((s) => s.policies);
   const prs = useProcurementStore((s) => s.items);
   const [editOpen, setEditOpen] = useState(false);
+  const [docsOpen, setDocsOpen] = useState(false);
   const [kycAction, setKycAction] = useState<CustomerKycStatus | null>(null);
   const [reason, setReason] = useState("");
   const [pendingStatus, setPendingStatus] = useState<
@@ -264,7 +266,7 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
               `${item.commodity} ${item.grade}`,
               `${item.quantityMt} MT`,
               item.status,
-              `${ROUTES.PROCUREMENT}/${item.requestId}`,
+              ROUTES.CUSTOMER_REQUESTS,
             ])}
           />
         </TabsContent>
@@ -325,16 +327,19 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
               doc.type,
               doc.uploadedAt,
               doc.status,
-              ROUTES.DOCUMENT_CENTER,
+              "#",
             ])}
           />
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => setDocsOpen(true)}>
+              View documents
+            </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={() => setKycAction("VERIFIED")}
             >
-              Verify
+              Verify KYC
             </Button>
             <Button
               size="sm"
@@ -431,6 +436,12 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
         }}
       />
 
+      <CustomerDocsDrawer
+        open={docsOpen}
+        customer={customer}
+        onClose={() => setDocsOpen(false)}
+      />
+
       <ConfirmActionDialog
         open={Boolean(pendingStatus)}
         title={
@@ -499,23 +510,31 @@ function RelatedTable({ rows, empty }: { rows: string[][]; empty: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row[0]}>
-              <TableCell>
-                <Link
-                  href={row[4] ?? "#"}
-                  className="font-medium text-[#1B6EF3] hover:underline"
-                >
-                  {row[0]}
-                </Link>
-              </TableCell>
-              <TableCell>{row[1]}</TableCell>
-              <TableCell>{row[2]}</TableCell>
-              <TableCell>
-                <OpsStatusBadge status={row[3] ?? ""} />
-              </TableCell>
-            </TableRow>
-          ))}
+          {rows.map((row) => {
+            const href = row[4];
+            const isLink = Boolean(href && href !== "#");
+            return (
+              <TableRow key={row[0]}>
+                <TableCell>
+                  {isLink ? (
+                    <Link
+                      href={href!}
+                      className="font-medium text-[#1B6EF3] hover:underline"
+                    >
+                      {row[0]}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-slate-800">{row[0]}</span>
+                  )}
+                </TableCell>
+                <TableCell>{row[1]}</TableCell>
+                <TableCell>{row[2]}</TableCell>
+                <TableCell>
+                  <OpsStatusBadge status={row[3] ?? ""} />
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

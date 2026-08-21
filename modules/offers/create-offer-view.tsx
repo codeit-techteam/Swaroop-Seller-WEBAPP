@@ -2,8 +2,10 @@
 
 import { motion } from "framer-motion";
 import {
+  AlertCircle,
   CheckCircle2,
   Download,
+  Eye,
   FileText,
   Package,
   Rocket,
@@ -58,6 +60,12 @@ const paymentOptions: { value: PaymentTerm; label: string }[] = [
   { value: "credit_30", label: "30 Days Credit" },
 ];
 
+const FORM_STEPS = [
+  { id: 1, label: "Product" },
+  { id: 2, label: "Pricing" },
+  { id: 3, label: "Tiers" },
+] as const;
+
 interface CreateOfferViewProps {
   editId?: string;
 }
@@ -84,6 +92,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
   const [activateOpen, setActivateOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [previewOffer, setPreviewOffer] = useState<Offer | null>(null);
 
   const liveStats = useMemo(() => computeLivePricing(formData), [formData]);
@@ -95,6 +104,26 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
         : undefined,
     [formData.tiers],
   );
+
+  const hasInventory = formData.availableInventoryMt > 0;
+  const hasProduct = Boolean(formData.productId);
+
+  const stepCompletion = useMemo(() => {
+    const productDone = Boolean(formData.productId && formData.warehouseId);
+    const pricingDone = Boolean(
+      formData.basePrice > 0 &&
+        formData.moq > 0 &&
+        formData.validUntil &&
+        formData.paymentTerms.length > 0,
+    );
+    const tiersDone =
+      formData.tiers.length > 0 &&
+      formData.tiers.every((t) => t.unitPrice > 0) &&
+      !tiersOverlap(formData.tiers);
+    return { 1: productDone, 2: pricingDone, 3: tiersDone };
+  }, [formData]);
+
+  const completedSteps = Object.values(stepCompletion).filter(Boolean).length;
 
   useEffect(() => {
     if (editId) {
@@ -226,39 +255,100 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
   };
 
   return (
-    <div className="relative mx-auto max-w-[1400px] space-y-8 px-4 py-6 md:px-6">
-      <header className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-500">
-          Marketplace Listing
-        </p>
-        <h1 className="text-2xl font-bold tracking-tight text-[#0B1F3A] md:text-3xl">
-          {editId ? "Edit Trading Offer" : "Create Trading Offer"}
-        </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-slate-500">
-          Convert available inventory into active marketplace listings with
-          tiered pricing and bulk discounts.
-        </p>
+    <div className="relative mx-auto max-w-[1400px] space-y-6 px-4 py-5 md:px-6 md:py-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-500">
+            Marketplace Listing
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#0B1F3A] md:text-[28px]">
+            {editId ? "Edit Trading Offer" : "Create Trading Offer"}
+          </h1>
+          <p className="max-w-xl text-sm leading-relaxed text-slate-500">
+            Convert available inventory into marketplace listings with tiered
+            pricing and bulk discounts.
+          </p>
+        </div>
+
+        <nav
+          aria-label="Offer creation progress"
+          className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm"
+        >
+          {FORM_STEPS.map((step, index) => {
+            const done = stepCompletion[step.id];
+            return (
+              <div key={step.id} className="flex items-center gap-1">
+                {index > 0 ? (
+                  <div
+                    className={cn(
+                      "mx-0.5 h-px w-4 sm:w-6",
+                      done || completedSteps >= step.id
+                        ? "bg-[#0B1F3A]/30"
+                        : "bg-slate-200",
+                    )}
+                  />
+                ) : null}
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+                    done
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "text-slate-500",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold",
+                      done
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-100 text-slate-500",
+                    )}
+                  >
+                    {done ? (
+                      <CheckCircle2 className="h-3 w-3" />
+                    ) : (
+                      step.id
+                    )}
+                  </span>
+                  <span className="hidden sm:inline">{step.label}</span>
+                </div>
+              </div>
+            );
+          })}
+        </nav>
       </header>
 
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0">
-          <div className="space-y-8 pb-20">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-8">
+        <div className="min-w-0 space-y-5">
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
+            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6"
           >
-            <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
-                <Package className="h-4 w-4 text-[#0B1F3A]" />
+            <div className="mb-5 flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
+                  <Package className="h-4 w-4 text-[#0B1F3A]" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    1. Product Selection
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Choose grade, warehouse, and allocation
+                  </p>
+                </div>
               </div>
-              <h2 className="text-base font-semibold text-slate-900">
-                1. Product Selection
-              </h2>
+              {stepCompletion[1] ? (
+                <span className="hidden items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 sm:inline-flex">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Complete
+                </span>
+              ) : null}
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
+              <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Select Product Grade
                 </Label>
@@ -282,7 +372,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Warehouse Location
                 </Label>
@@ -306,23 +396,56 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Available Inventory
                 </Label>
-                <div className="flex h-10 items-center gap-2.5 rounded-md border border-emerald-200 bg-emerald-50/60 px-3">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                  <span className="text-sm font-semibold text-slate-800">
-                    {formatNumber(formData.availableInventoryMt, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    MT
+                <div
+                  className={cn(
+                    "flex h-10 items-center gap-2.5 rounded-md border px-3",
+                    hasInventory
+                      ? "border-emerald-200 bg-emerald-50/60"
+                      : hasProduct
+                        ? "border-amber-200 bg-amber-50/50"
+                        : "border-slate-200 bg-slate-50",
+                  )}
+                >
+                  {hasInventory ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                  ) : (
+                    <AlertCircle
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        hasProduct ? "text-amber-500" : "text-slate-400",
+                      )}
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      "text-sm font-semibold",
+                      hasInventory
+                        ? "text-slate-800"
+                        : hasProduct
+                          ? "text-amber-800"
+                          : "text-slate-400",
+                    )}
+                  >
+                    {hasProduct
+                      ? `${formatNumber(formData.availableInventoryMt, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })} MT`
+                      : "Select a product"}
                   </span>
+                  {hasProduct && !hasInventory ? (
+                    <span className="ml-auto text-[10px] font-medium text-amber-600">
+                      No stock
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Allocation for Offer (MT)
                 </Label>
@@ -338,6 +461,8 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                       })
                     }
                     className="pr-12"
+                    disabled={!hasProduct}
+                    placeholder={hasProduct ? "0.00" : "—"}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
                     MT
@@ -345,28 +470,50 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 </div>
                 {errors.allocationMt ? (
                   <p className="text-xs text-red-500">{errors.allocationMt}</p>
+                ) : hasInventory && formData.allocationMt > 0 ? (
+                  <p className="text-[11px] text-slate-400">
+                    {formatNumber(
+                      (formData.allocationMt / formData.availableInventoryMt) *
+                        100,
+                      { maximumFractionDigits: 0 },
+                    )}
+                    % of available inventory
+                  </p>
                 ) : null}
               </div>
             </div>
-          </motion.div>
+          </motion.section>
 
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
+            transition={{ delay: 0.04 }}
+            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6"
           >
-            <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
-                <FileText className="h-4 w-4 text-[#0B1F3A]" />
+            <div className="mb-5 flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
+                  <FileText className="h-4 w-4 text-[#0B1F3A]" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    2. Pricing & Logistics
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Base rate, MOQ, validity, and payment terms
+                  </p>
+                </div>
               </div>
-              <h2 className="text-base font-semibold text-slate-900">
-                2. Offer Details
-              </h2>
+              {stepCompletion[2] ? (
+                <span className="hidden items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 sm:inline-flex">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Complete
+                </span>
+              ) : null}
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-5">
+              <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Base Price (₹/MT)
                 </Label>
@@ -392,7 +539,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   MOQ (Min Order Qty)
                 </Label>
@@ -415,7 +562,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Offer Validity
                 </Label>
@@ -430,11 +577,11 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               </div>
             </div>
 
-            <div className="mt-8 space-y-3 border-t border-slate-100 pt-8">
+            <div className="mt-6 space-y-2.5 border-t border-slate-100 pt-6">
               <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Payment Terms
               </Label>
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 {paymentOptions.map((option) => {
                   const selected = formData.paymentTerms.includes(option.value);
                   return (
@@ -443,7 +590,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                       type="button"
                       onClick={() => togglePaymentTerm(option.value)}
                       className={cn(
-                        "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                        "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
                         selected
                           ? "border-[#0B1F3A] bg-[#0B1F3A] text-white shadow-sm"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
@@ -459,24 +606,27 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               ) : null}
             </div>
 
-            <div className="mt-8 space-y-2 border-t border-slate-100 pt-8">
+            <div className="mt-6 space-y-1.5 border-t border-slate-100 pt-6">
               <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Offer Remarks
+                Offer Remarks{" "}
+                <span className="font-normal normal-case tracking-normal text-slate-400">
+                  (optional)
+                </span>
               </Label>
               <Textarea
-                placeholder="Enter special delivery instructions, packaging details, or tax info..."
-                rows={3}
+                placeholder="Special delivery instructions, packaging, or tax notes…"
+                rows={2}
                 value={formData.remarks}
                 onChange={(e) => setFormData({ remarks: e.target.value })}
               />
             </div>
-          </motion.div>
+          </motion.section>
 
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
+            transition={{ delay: 0.08 }}
+            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6"
           >
             <TierBuilder
               tiers={formData.tiers}
@@ -499,21 +649,23 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               onReorderTiers={reorderTiers}
               overlapError={overlapError ?? errors.tiers}
             />
-          </motion.div>
+          </motion.section>
 
           <LivePriceCalculator
             stats={liveStats}
             allocationMt={formData.allocationMt}
             basePrice={formData.basePrice}
           />
-          </div>
 
           <StickyFooter
             contained
             left={
-              <span className="text-xs text-slate-400">
-                Changes update buyer preview instantly
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="hidden h-1.5 w-1.5 rounded-full bg-emerald-500 sm:inline-block" />
+                <span className="text-xs text-slate-500">
+                  Preview updates as you type · {completedSteps}/3 steps ready
+                </span>
+              </div>
             }
           >
             <Button
@@ -533,11 +685,20 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               onClick={handleGeneratePdf}
             >
               <FileText className="mr-1.5 h-4 w-4" />
-              Generate PDF
+              <span className="hidden sm:inline">Generate PDF</span>
+              <span className="sm:hidden">PDF</span>
             </Button>
             <Button
               variant="outline"
-              className="h-10 shrink-0"
+              className="h-10 shrink-0 lg:hidden"
+              onClick={() => setMobilePreviewOpen(true)}
+            >
+              <Eye className="mr-1.5 h-4 w-4" />
+              Preview
+            </Button>
+            <Button
+              variant="outline"
+              className="hidden h-10 shrink-0 lg:inline-flex"
               onClick={() => {
                 if (!validate()) {
                   toast.error("Please fix validation errors");
@@ -570,6 +731,38 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
           <BuyerPreviewCard formData={formData} />
         </div>
       </div>
+
+      <Dialog open={mobilePreviewOpen} onOpenChange={setMobilePreviewOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-md">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Buyer Preview</DialogTitle>
+            <DialogDescription>
+              How buyers will see this offer on the marketplace
+            </DialogDescription>
+          </DialogHeader>
+          <BuyerPreviewCard
+            formData={formData}
+            className="space-y-0"
+          />
+          <div className="border-t border-slate-100 p-4">
+            <Button
+              className="w-full bg-[#0B1F3A] hover:bg-[#0B1F3A]/90"
+              onClick={() => {
+                if (!validate()) {
+                  toast.error("Please fix validation errors");
+                  return;
+                }
+                setMobilePreviewOpen(false);
+                const offer = buildPreviewOffer();
+                setPreviewOffer(offer);
+                setPreviewOpen(true);
+              }}
+            >
+              Open Full Preview
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <OfferPreviewModal
         open={previewOpen}

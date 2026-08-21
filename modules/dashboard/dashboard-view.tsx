@@ -9,13 +9,10 @@ import {
   Filter,
   MoreHorizontal,
   Package,
-  Plus,
   ShieldCheck,
   ShoppingCart,
   Tag,
-  Truck,
   Users,
-  Wallet,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,7 +23,6 @@ import {
   ActionDrawer,
   ActivityCard,
   ErpPagination,
-  ExportDropdown,
   FilterDrawer,
   PriorityCard,
   StatusChip,
@@ -52,7 +48,6 @@ import { ROUTES } from "@/lib/constants";
 import { formatCompactInr, formatNumber } from "@/lib/utils";
 import { useCustomerStore } from "@/store/customerStore";
 import { useDashboardStore } from "@/store/dashboardStore";
-import { useProcurementStore } from "@/store/procurementStore";
 import type { DashboardFilters } from "@/types/dashboard";
 
 function greetingForHour(date = new Date()) {
@@ -203,12 +198,6 @@ export function DashboardView() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild className="bg-[#0B1F3A] hover:bg-[#122846]">
-            <Link href={ROUTES.CUSTOMERS}>
-              <Plus className="h-4 w-4" />
-              Add customer
-            </Link>
-          </Button>
           <Button
             variant="outline"
             className="relative gap-2 border-slate-200 bg-white"
@@ -222,7 +211,6 @@ export function DashboardView() {
               </span>
             ) : null}
           </Button>
-          <ExportDropdown />
         </div>
       </div>
 
@@ -252,7 +240,7 @@ export function DashboardView() {
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <SummaryCard
           title="Total Inventory"
           value={metrics.availableInventory}
@@ -263,53 +251,26 @@ export function DashboardView() {
           hint="Available stock"
         />
         <SummaryCard
-          title="Active Offers"
-          value={metrics.activeOffers}
-          href={ROUTES.OFFERS}
-          icon={Tag}
-          accent="emerald"
-          hint="Live on marketplace"
-        />
-        <SummaryCard
-          title="Pending Requests"
-          value={metrics.pendingRequests}
-          decimals={0}
-          prefix=""
-          href={ROUTES.PURCHASE_REQUESTS}
-          icon={ClipboardList}
-          accent="amber"
-          hint="Awaiting action"
-        />
-        <SummaryCard
           title="Active Orders"
           value={metrics.activeOrders}
           href={ROUTES.ORDERS}
           icon={ShoppingCart}
           accent="blue"
-          hint="In progress"
+          hint="In progress · tap to open"
+          className="border-[#1B6EF3]/30 bg-gradient-to-br from-[#1B6EF3]/10 to-white shadow-md ring-1 ring-[#1B6EF3]/15"
         />
         <SummaryCard
-          title="Pending Settlement"
-          value={metrics.pendingSettlement}
-          prefix="₹"
-          suffix="Cr"
-          decimals={1}
-          href={ROUTES.PAYMENTS}
-          icon={Wallet}
-          accent="rose"
-          hint="Finance queue"
-        />
-        <SummaryCard
-          title="Dispatch Pending"
-          value={metrics.dispatchPending}
-          href={ROUTES.DISPATCH}
-          icon={Truck}
+          title="Pending Request"
+          value={metrics.pendingRequests}
+          href={ROUTES.PURCHASE_REQUESTS}
+          icon={ClipboardList}
           accent="amber"
-          hint="Ready to move"
+          hint="Awaiting review"
         />
+        <CxMetricCards />
       </div>
 
-      <CxExperienceStrip />
+      <QuickActions />
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
@@ -589,112 +550,95 @@ export function DashboardView() {
   );
 }
 
-function CxExperienceStrip() {
+function CxMetricCards() {
   const customers = useCustomerStore((s) => s.customers);
-  const prs = useProcurementStore((s) => s.items);
-  const pendingKyc = customers.filter(
-    (row) => row.kycStatus === "PENDING" || row.kycStatus === "UNDER_REVIEW",
-  ).length;
   const gmv = customers.reduce((sum, row) => sum + row.totalPurchaseValue, 0);
   const orders = customers.reduce((sum, row) => sum + row.totalOrders, 0);
   const aov = orders ? gmv / orders : 0;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-900">
-          Customer experience
-        </h2>
-        <Link
-          href={ROUTES.CUSTOMERS}
-          className="text-sm font-medium text-[#1B6EF3] hover:underline"
-        >
-          Open directory
-        </Link>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <SummaryCard
-          title="Total customers"
-          value={customers.length}
-          href={ROUTES.CUSTOMERS}
-          icon={Users}
-          accent="blue"
-          hint="Customer directory"
-        />
-        <SummaryCard
-          title="Active customers"
-          value={
-            customers.filter((row) => row.accountStatus === "ACTIVE").length
-          }
-          href={`${ROUTES.CUSTOMERS}?status=ACTIVE`}
-          icon={Users}
-          accent="emerald"
-          hint="Live accounts"
-        />
-        <SummaryCard
-          title="Pending KYC"
-          value={pendingKyc}
-          href={`${ROUTES.KYC}?status=PENDING`}
-          icon={ShieldCheck}
-          accent="amber"
-          hint="Awaiting verification"
-        />
-        <SummaryCard
-          title="Pending PRs"
-          value={
-            prs.filter(
-              (row) => row.status === "NEW" || row.status === "UNDER_REVIEW",
-            ).length
-          }
-          href={`${ROUTES.CUSTOMER_REQUESTS}?status=NEW`}
-          icon={ClipboardList}
-          accent="blue"
-          hint="Customer purchase requests"
-        />
-        <SummaryCard
-          title="Avg order value"
-          value={aov / 1_00_000}
-          prefix="₹"
-          suffix="L"
-          decimals={1}
-          href={ROUTES.CUSTOMER_ORDERS}
-          icon={ShoppingCart}
-          accent="emerald"
-          hint="Customer orders"
-        />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link href={ROUTES.MARKETPLACE_CATALOG}>
-            <Package className="h-3.5 w-3.5" />
-            Add product
+    <>
+      <SummaryCard
+        title="Total Customers"
+        value={customers.length}
+        href={ROUTES.CUSTOMERS}
+        icon={Users}
+        accent="blue"
+        hint="Customer directory"
+      />
+      <SummaryCard
+        title="Avg Order Value"
+        value={aov / 1_00_000}
+        prefix="₹"
+        suffix="L"
+        decimals={1}
+        href={ROUTES.CUSTOMER_ORDERS}
+        icon={ShoppingCart}
+        accent="emerald"
+        hint="Customer orders"
+      />
+    </>
+  );
+}
+
+const QUICK_ACTIONS = [
+  {
+    href: ROUTES.MARKETPLACE_CATALOG,
+    label: "Add product",
+    icon: Package,
+    tone: "bg-[#1B6EF3] text-white shadow-sm hover:bg-[#1558C8] hover:shadow-md",
+    iconWrap: "bg-white/20 text-white",
+  },
+  {
+    href: ROUTES.MARKETPLACE_OFFERS,
+    label: "Create offer",
+    icon: Tag,
+    tone: "border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100",
+    iconWrap: "bg-emerald-100 text-emerald-700",
+  },
+  {
+    href: ROUTES.CUSTOMER_NOTIFICATIONS,
+    label: "Create notification",
+    icon: Bell,
+    tone: "border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-300 hover:bg-amber-100",
+    iconWrap: "bg-amber-100 text-amber-700",
+  },
+  {
+    href: ROUTES.PROCUREMENT,
+    label: "Review PR",
+    icon: ClipboardList,
+    tone: "border-sky-200 bg-sky-50 text-sky-800 hover:border-sky-300 hover:bg-sky-100",
+    iconWrap: "bg-sky-100 text-sky-700",
+  },
+  {
+    href: ROUTES.KYC,
+    label: "Review KYC",
+    icon: ShieldCheck,
+    tone: "border-violet-200 bg-violet-50 text-violet-800 hover:border-violet-300 hover:bg-violet-100",
+    iconWrap: "bg-violet-100 text-violet-700",
+  },
+] as const;
+
+function QuickActions() {
+  return (
+    <div className="flex flex-wrap gap-3">
+      {QUICK_ACTIONS.map((action) => {
+        const Icon = action.icon;
+        return (
+          <Link
+            key={action.label}
+            href={action.href}
+            className={`inline-flex items-center gap-2.5 rounded-xl border border-transparent px-4 py-2.5 text-sm font-semibold transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B6EF3] focus-visible:ring-offset-2 ${action.tone}`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-lg ${action.iconWrap}`}
+            >
+              <Icon className="h-4 w-4" />
+            </span>
+            {action.label}
           </Link>
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link href={ROUTES.MARKETPLACE_OFFERS}>
-            <Tag className="h-3.5 w-3.5" />
-            Create offer
-          </Link>
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link href={ROUTES.CUSTOMER_NOTIFICATIONS}>
-            <Bell className="h-3.5 w-3.5" />
-            Create notification
-          </Link>
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link href={ROUTES.PROCUREMENT}>
-            <ClipboardList className="h-3.5 w-3.5" />
-            Review PR
-          </Link>
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link href={ROUTES.KYC}>
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Review KYC
-          </Link>
-        </Button>
-      </div>
+        );
+      })}
     </div>
   );
 }

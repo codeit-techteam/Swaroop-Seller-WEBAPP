@@ -34,16 +34,25 @@ export function ShipmentTabs({
             type="button"
             onClick={() => onChange(tab.key)}
             className={cn(
-              "relative shrink-0 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors",
-              active
-                ? "text-emerald-600"
-                : "text-slate-500 hover:text-slate-800",
+              "relative flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors",
+              active ? "text-[#1B6EF3]" : "text-slate-500 hover:text-slate-800",
             )}
           >
             {tab.label}
-            {count > 0 ? ` (${count})` : ""}
+            {count > 0 ? (
+              <span
+                className={cn(
+                  "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                  active
+                    ? "bg-[#0B1F3A] text-white"
+                    : "bg-slate-100 text-slate-600",
+                )}
+              >
+                {count}
+              </span>
+            ) : null}
             {active ? (
-              <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-emerald-500" />
+              <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-[#1B6EF3]" />
             ) : null}
           </button>
         );

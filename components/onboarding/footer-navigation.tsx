@@ -20,6 +20,7 @@ interface FooterNavigationProps {
   continueDisabled?: boolean;
   isLoading?: boolean;
   continueType?: "button" | "submit";
+  showProgress?: boolean;
   className?: string;
   children?: React.ReactNode;
 }
@@ -36,6 +37,7 @@ export function FooterNavigation({
   continueDisabled = false,
   isLoading = false,
   continueType = "button",
+  showProgress = true,
   className,
   children,
 }: FooterNavigationProps) {
@@ -72,13 +74,15 @@ export function FooterNavigation({
 
         <div className="flex items-center gap-6">
           <AutoSaveIndicator />
-          <div className="hidden min-w-[160px] items-center gap-3 md:flex">
-            <span className="text-xs font-medium text-muted-foreground">
-              Progress
-            </span>
-            <Progress value={progress} className="h-2 w-32" />
-            <span className="text-xs font-semibold">{progress}%</span>
-          </div>
+          {showProgress ? (
+            <div className="hidden min-w-[160px] items-center gap-3 md:flex">
+              <span className="text-xs font-medium text-muted-foreground">
+                Progress
+              </span>
+              <Progress value={progress} className="h-2 w-32" />
+              <span className="text-xs font-semibold">{progress}%</span>
+            </div>
+          ) : null}
           {showContinue ? (
             <Button
               onClick={continueType === "button" ? onContinue : undefined}

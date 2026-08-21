@@ -1,19 +1,56 @@
+import type { Permission } from "@/config/permissions";
+import type { UserRole } from "@/config/roles";
+
+export type AdminAccountStatus = "active" | "invited" | "suspended";
+
+export type ProfileModalType = "edit" | null;
+
+export interface AdminProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  initials: string;
+  avatarUrl?: string;
+  role: UserRole;
+  department: string;
+  employeeId: string;
+  officeLocation: string;
+  joinedAt: string;
+  status: AdminAccountStatus;
+  lastLoginAt: string;
+  permissions: Permission[];
+  lastUpdatedAt: string;
+  lastUpdatedBy: string;
+}
+
+export interface EditProfileForm {
+  name: string;
+  email: string;
+  phone: string;
+  department: string;
+  officeLocation: string;
+  avatarFileName?: string;
+  avatarPreview?: string;
+}
+
+export const defaultEditProfileForm: EditProfileForm = {
+  name: "",
+  email: "",
+  phone: "",
+  department: "",
+  officeLocation: "",
+};
+
+/** @deprecated Legacy seller profile shape — kept for type re-exports during migration */
 export type KycStatus = "verified" | "pending" | "rejected";
-
 export type ProfileDocumentStatus =
-  "active" | "expiring_soon" | "expired" | "pending";
-
+  | "active"
+  | "expiring_soon"
+  | "expired"
+  | "pending";
 export type BankVerificationStatus = "verified" | "pending" | "unverified";
-
 export type ProfileDocumentType = "gst" | "msme" | "coa" | "iso" | "other";
-
-export type ProfileModalType =
-  | "edit"
-  | "preview"
-  | "verification"
-  | "document_upload"
-  | "document_preview"
-  | null;
 
 export interface ProfileDocument {
   id: string;
@@ -81,19 +118,6 @@ export interface SellerProfile {
   lastUpdatedBy: string;
 }
 
-export interface EditProfileForm {
-  companyName: string;
-  email: string;
-  phone: string;
-  address: string;
-  website: string;
-  description: string;
-  warehouse: string;
-  businessCategory: string;
-  logoFileName?: string;
-  logoPreview?: string;
-}
-
 export interface VerificationForm {
   reason: string;
 }
@@ -106,17 +130,6 @@ export interface Profile {
   companyName: string;
   gstNumber: string;
 }
-
-export const defaultEditProfileForm: EditProfileForm = {
-  companyName: "",
-  email: "",
-  phone: "",
-  address: "",
-  website: "",
-  description: "",
-  warehouse: "",
-  businessCategory: "",
-};
 
 export const defaultVerificationForm: VerificationForm = {
   reason: "",

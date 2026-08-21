@@ -80,7 +80,7 @@ export default function SellerOtpPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
               <span className="text-xl font-bold">P</span>
             </div>
-            <span className="text-lg font-semibold">PetroTrade</span>
+            <span className="text-lg font-semibold">PetroTrade ADMIN PANEL</span>
           </div>
 
           <div className="my-auto max-w-sm">
@@ -89,7 +89,7 @@ export default function SellerOtpPage() {
             </h1>
             <p className="mt-4 text-white/60">
               A secondary verification code ensures only authorized personnel
-              access your seller account.
+              access your ADMIN PANEL.
             </p>
           </div>
 
@@ -191,7 +191,7 @@ export default function SellerOtpPage() {
         </motion.div>
 
         <p className="mx-auto mt-12 max-w-md text-center text-xs text-muted-foreground">
-          © 2024 PetroTrade Enterprise Solutions. All rights reserved.
+          © PetroTrade Enterprise Solutions. All rights reserved.
           Institutional Grade Security • ISO 27001 Certified
         </p>
       </div>

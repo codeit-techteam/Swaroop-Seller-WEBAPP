@@ -2,6 +2,8 @@ import { nextId, nowIso } from "@/lib/cx";
 import {
   catalogCategoriesMock,
   catalogProductsMock,
+  DEFAULT_PAYMENT_TERMS,
+  DEFAULT_QUALITY_BADGES,
   marketplaceOffersMock,
 } from "@/mock/marketplace-cms";
 import type {
@@ -14,6 +16,24 @@ import type {
 let products = [...catalogProductsMock];
 let categories = [...catalogCategoriesMock];
 let offers = [...marketplaceOffersMock];
+
+function normalizeBulkPrices(
+  rows: CatalogProduct["bulkPrices"] | undefined,
+  fallback: CatalogProduct["bulkPrices"],
+  sellingPrice: number,
+  moq: number,
+) {
+  if (rows?.length) {
+    return rows.map((row) => ({
+      minQty: Number(row.minQty) || moq,
+      maxQty: row.maxQty == null || row.maxQty === 0 ? null : Number(row.maxQty),
+      price: Number(row.price) || sellingPrice,
+    }));
+  }
+  return fallback.length
+    ? fallback
+    : [{ minQty: moq, maxQty: null, price: sellingPrice }];
+}
 
 export const catalogService = {
   async listProducts() {
@@ -28,6 +48,8 @@ export const catalogService = {
     const existing = input.id
       ? products.find((row) => row.id === input.id)
       : undefined;
+    const sellingPrice = input.sellingPrice ?? existing?.sellingPrice ?? 0;
+    const moq = input.moq ?? existing?.moq ?? 10;
     const next: CatalogProduct = {
       id: existing?.id ?? nextId("prod"),
       sku:
@@ -43,18 +65,49 @@ export const catalogService = {
       videoUrl: input.videoUrl ?? existing?.videoUrl,
       packaging: input.packaging ?? existing?.packaging ?? "Jumbo Bags",
       unit: input.unit ?? existing?.unit ?? "MT",
-      moq: input.moq ?? existing?.moq ?? 10,
+      moq,
       availableQty: input.availableQty ?? existing?.availableQty ?? 0,
       location: input.location ?? existing?.location ?? "",
+      origin: input.origin ?? existing?.origin ?? input.location ?? "",
+      casNumber: input.casNumber ?? existing?.casNumber ?? "",
+      hsnCode: input.hsnCode ?? existing?.hsnCode ?? "",
+      application: input.application ?? existing?.application ?? "",
+      applications: input.applications ?? existing?.applications ?? [],
+      industry:
+        input.industry ?? existing?.industry ?? "Petrochemicals & Packaging",
+      etaLabel: input.etaLabel ?? existing?.etaLabel ?? "2–5 Days",
+      creditEligible: input.creditEligible ?? existing?.creditEligible ?? true,
+      highlights: input.highlights ??
+        existing?.highlights ?? [
+          "PetroTrade Verified",
+          "GST Invoice Available",
+          "Fast Dispatch",
+          "Quality Certified",
+        ],
+      qualityBadges:
+        input.qualityBadges ??
+        existing?.qualityBadges ?? [...DEFAULT_QUALITY_BADGES],
       deliveryAvailable:
         input.deliveryAvailable ?? existing?.deliveryAvailable ?? true,
       specifications: input.specifications ?? existing?.specifications ?? [],
-      sellingPrice: input.sellingPrice ?? existing?.sellingPrice ?? 0,
+      sellingPrice,
       marketPrice: input.marketPrice ?? existing?.marketPrice ?? 0,
       internalCost: input.internalCost ?? existing?.internalCost ?? 0,
       deliveryCharge: input.deliveryCharge ?? existing?.deliveryCharge ?? 0,
+      transportMode:
+        input.transportMode ?? existing?.transportMode ?? "Road Freight (FTL)",
       locationPrices: input.locationPrices ?? existing?.locationPrices ?? [],
-      bulkPrices: input.bulkPrices ?? existing?.bulkPrices ?? [],
+      bulkPrices: normalizeBulkPrices(
+        input.bulkPrices,
+        existing?.bulkPrices ?? [],
+        sellingPrice,
+        moq,
+      ),
+      paymentTerms:
+        input.paymentTerms ??
+        existing?.paymentTerms ??
+        DEFAULT_PAYMENT_TERMS.map((term) => ({ ...term })),
+      documents: input.documents ?? existing?.documents ?? [],
       segmentPrices: input.segmentPrices ?? existing?.segmentPrices ?? [],
       effectiveDate:
         input.effectiveDate ?? existing?.effectiveDate ?? nowIso().slice(0, 10),

@@ -5,7 +5,7 @@ import { CustomerRequestsView } from "@/modules/customers";
 
 export const metadata = createRouteMetadata(
   "Customer requests",
-  "Customer purchase requests in the procurement queue",
+  "Customer purchase requests from APP and WEB",
 );
 
 export default function CustomerRequestsPage() {

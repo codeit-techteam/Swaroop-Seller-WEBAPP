@@ -6,7 +6,6 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useDisclosure, useIsMobile } from "@/hooks";
 import { cn } from "@/lib/utils";
 
-import { FloatingActionButton } from "../erp/floating-action-button";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 
@@ -31,11 +30,10 @@ export function AppShell({ children, className }: AppShellProps) {
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar onMenuClick={mobileNav.open} />
-        <main className={cn("relative flex-1 overflow-y-auto pb-20", className)}>
+        <main className={cn("relative flex-1 overflow-y-auto", className)}>
           {children}
         </main>
       </div>
-      <FloatingActionButton />
     </div>
   );
 }

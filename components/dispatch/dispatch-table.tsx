@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Filter, Truck } from "lucide-react";
+import { Filter, Truck } from "lucide-react";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { DispatchRow } from "@/components/dispatch/dispatch-row";
@@ -32,7 +32,6 @@ interface DispatchTableProps {
   onGenerateEway: (dispatch: DispatchOrder) => void;
   onRelease: (dispatch: DispatchOrder) => void;
   onView: (dispatch: DispatchOrder) => void;
-  onExport?: () => void;
   onOpenFilters?: () => void;
   className?: string;
 }
@@ -52,7 +51,6 @@ export function DispatchTable({
   onGenerateEway,
   onRelease,
   onView,
-  onExport,
   onOpenFilters,
   className,
 }: DispatchTableProps) {
@@ -82,17 +80,6 @@ export function DispatchTable({
               aria-label="Filters"
             >
               <Filter className="h-4 w-4" />
-            </Button>
-          ) : null}
-          {onExport ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 gap-2 rounded-xl border-slate-200 text-slate-600"
-              onClick={onExport}
-            >
-              <Download className="h-3.5 w-3.5" />
-              Export
             </Button>
           ) : null}
         </div>

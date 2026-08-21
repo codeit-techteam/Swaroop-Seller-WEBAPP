@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { DocumentCenterView } from "@/modules/document-center";
 
 export const metadata: Metadata = {
-  title: "Document Center | PetroTrade Seller",
+  title: "Customer Documents | PetroTrade ADMIN PANEL",
   description:
-    "Centralized management for compliance, quality and transactional records.",
+    "Customer onboarding documents from APP/WEB — review, verify and manage uploads.",
 };
 
 export default function DocumentCenterPage() {

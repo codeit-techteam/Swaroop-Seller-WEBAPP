@@ -1,7 +1,14 @@
 "use client";
 
 import { format, parseISO } from "date-fns";
-import { Eye, FileText, MoreHorizontal, Upload } from "lucide-react";
+import {
+  CheckCircle2,
+  Eye,
+  FileText,
+  MoreHorizontal,
+  Truck,
+  Upload,
+} from "lucide-react";
 
 import { StatusBadge } from "@/components/shipments/status-badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +20,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TableCell, TableRow } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Shipment } from "@/types/shipments";
 
@@ -27,6 +39,70 @@ interface ShipmentRowProps {
   onMarkDelivered: () => void;
 }
 
+type PrimaryAction = {
+  label: string;
+  onClick: () => void;
+  variant: "default" | "outline";
+  className?: string;
+};
+
+function getPrimaryAction(
+  shipment: Shipment,
+  handlers: {
+    onView: () => void;
+    onGenerateInvoice: () => void;
+    onGenerateEway: () => void;
+    onUploadPod: () => void;
+    onMarkDelivered: () => void;
+  },
+): PrimaryAction {
+  const canMarkDelivered =
+    shipment.status !== "delivered" && shipment.status !== "pending";
+  const needsInvoice = !shipment.invoiceNumber;
+  const needsEway = !shipment.ewayBillNumber && shipment.status !== "pending";
+  const needsPod =
+    shipment.documents.find((d) => d.type === "pod")?.status === "missing";
+
+  if (needsInvoice && shipment.status !== "pending") {
+    return {
+      label: "Invoice",
+      onClick: handlers.onGenerateInvoice,
+      variant: "default",
+      className: "bg-[#1B6EF3] hover:bg-[#1558C9]",
+    };
+  }
+  if (needsEway) {
+    return {
+      label: "E-Way",
+      onClick: handlers.onGenerateEway,
+      variant: "default",
+      className: "bg-teal-600 hover:bg-teal-700",
+    };
+  }
+  if (needsPod && canMarkDelivered) {
+    return {
+      label: "Upload POD",
+      onClick: handlers.onUploadPod,
+      variant: "outline",
+      className: "border-slate-300 text-slate-700 hover:bg-slate-50",
+    };
+  }
+  if (canMarkDelivered) {
+    return {
+      label: "Deliver",
+      onClick: handlers.onMarkDelivered,
+      variant: "default",
+      className: "bg-emerald-600 hover:bg-emerald-700",
+    };
+  }
+  return {
+    label: "View",
+    onClick: handlers.onView,
+    variant: "outline",
+    className: "border-slate-300 text-slate-700 hover:bg-slate-50",
+  };
+}
+
 export function ShipmentRow({
   shipment,
   active,
@@ -39,82 +115,96 @@ export function ShipmentRow({
 }: ShipmentRowProps) {
   const canMarkDelivered =
     shipment.status !== "delivered" && shipment.status !== "pending";
-  const needsInvoice = !shipment.invoiceNumber;
-  const needsEway = !shipment.ewayBillNumber && shipment.status !== "pending";
-  const needsPod =
-    shipment.documents.find((d) => d.type === "pod")?.status === "missing";
 
-  let primaryLabel = "VIEW SHIPMENT";
-  let primaryAction = onView;
-  let primaryClass = "bg-[#0B1F3A] hover:bg-[#16345A]";
-
-  if (needsInvoice && shipment.status !== "pending") {
-    primaryLabel = "GENERATE INVOICE";
-    primaryAction = onGenerateInvoice;
-    primaryClass = "bg-[#1B6EF3] hover:bg-[#1558C9]";
-  } else if (needsEway) {
-    primaryLabel = "GENERATE E-WAY";
-    primaryAction = onGenerateEway;
-    primaryClass = "bg-teal-600 hover:bg-teal-700";
-  } else if (needsPod && canMarkDelivered) {
-    primaryLabel = "UPLOAD POD";
-    primaryAction = onUploadPod;
-    primaryClass = "bg-[#0B1F3A] hover:bg-[#16345A]";
-  } else if (canMarkDelivered) {
-    primaryLabel = "MARK DELIVERED";
-    primaryAction = onMarkDelivered;
-    primaryClass = "bg-emerald-600 hover:bg-emerald-700";
-  }
+  const primary = getPrimaryAction(shipment, {
+    onView,
+    onGenerateInvoice,
+    onGenerateEway,
+    onUploadPod,
+    onMarkDelivered,
+  });
 
   return (
     <TableRow
       className={cn(
         "cursor-pointer transition-colors",
-        active ? "bg-[#E8F1FF]/60" : "hover:bg-slate-50",
+        active
+          ? "border-l-4 border-l-[#1B6EF3] bg-[#F5F9FF] hover:bg-[#F0F6FF]"
+          : "border-l-4 border-l-transparent hover:bg-slate-50",
       )}
       onClick={onSelect}
     >
-      <TableCell className="font-semibold text-slate-900">
-        {shipment.shipmentId}
+      <TableCell className="align-top">
+        <p className="text-sm font-semibold text-slate-900">
+          {shipment.shipmentId}
+        </p>
+        <div className="mt-1.5">
+          <StatusBadge
+            status={shipment.status}
+            isDelayed={shipment.isDelayed}
+          />
+        </div>
       </TableCell>
-      <TableCell className="text-sm text-slate-700">
-        {shipment.orderId}
+
+      <TableCell className="align-top">
+        <p className="text-sm font-medium text-[#1B6EF3]">{shipment.orderId}</p>
       </TableCell>
-      <TableCell className="max-w-[160px] truncate text-sm text-slate-700">
-        {shipment.buyerCompany}
+
+      <TableCell className="align-top">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="max-w-[220px]">
+              <p className="truncate text-sm font-medium text-slate-800">
+                {shipment.buyerCompany}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-slate-500">
+                {shipment.product}
+              </p>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <p className="font-medium">{shipment.buyerCompany}</p>
+            <p className="text-slate-300">{shipment.product}</p>
+          </TooltipContent>
+        </Tooltip>
       </TableCell>
-      <TableCell className="max-w-[140px] truncate text-sm text-slate-600">
-        {shipment.product}
+
+      <TableCell className="align-top">
+        <p className="text-sm font-semibold tabular-nums text-slate-800">
+          {shipment.quantityMt.toFixed(1)}
+        </p>
       </TableCell>
-      <TableCell className="text-sm font-medium text-slate-700">
-        {shipment.quantityMt.toFixed(1)}
+
+      <TableCell className="align-top">
+        <p className="text-sm font-medium tabular-nums text-slate-800">
+          {shipment.vehicle}
+        </p>
+        <p
+          className="mt-0.5 max-w-[160px] truncate text-xs text-slate-500"
+          title={shipment.transporter}
+        >
+          {shipment.transporter}
+        </p>
       </TableCell>
-      <TableCell className="text-sm text-slate-600">
-        {shipment.vehicle}
+
+      <TableCell className="align-top">
+        <p className="text-sm tabular-nums text-slate-700">
+          {format(parseISO(shipment.dispatchDate), "dd MMM yyyy")}
+        </p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          ETA {format(parseISO(shipment.expectedDelivery), "dd MMM")}
+        </p>
       </TableCell>
-      <TableCell className="max-w-[130px] truncate text-sm text-slate-600">
-        {shipment.transporter}
-      </TableCell>
-      <TableCell className="text-sm text-slate-600">
-        {format(parseISO(shipment.dispatchDate), "dd MMM, yyyy")}
-      </TableCell>
-      <TableCell className="text-sm text-slate-600">
-        {format(parseISO(shipment.expectedDelivery), "dd MMM, yyyy")}
-      </TableCell>
-      <TableCell>
-        <StatusBadge status={shipment.status} isDelayed={shipment.isDelayed} />
-      </TableCell>
-      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+
+      <TableCell className="text-right align-top" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
           <Button
             size="sm"
-            className={cn(
-              "h-8 px-3 text-[11px] font-bold uppercase",
-              primaryClass,
-            )}
-            onClick={primaryAction}
+            variant={primary.variant}
+            className={cn("h-8 px-3 text-xs font-semibold", primary.className)}
+            onClick={primary.onClick}
           >
-            {primaryLabel}
+            {primary.label}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -122,22 +212,23 @@ export function ShipmentRow({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-slate-500"
+                aria-label="More actions"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={onView}>
                 <Eye className="mr-2 h-4 w-4" />
-                View Shipment
+                View shipment
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onGenerateInvoice}>
                 <FileText className="mr-2 h-4 w-4" />
-                Generate Invoice
+                Generate invoice
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onGenerateEway}>
-                <FileText className="mr-2 h-4 w-4" />
-                Generate E-Way
+                <Truck className="mr-2 h-4 w-4" />
+                Generate e-way
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onUploadPod}>
@@ -146,7 +237,8 @@ export function ShipmentRow({
               </DropdownMenuItem>
               {canMarkDelivered ? (
                 <DropdownMenuItem onClick={onMarkDelivered}>
-                  Mark Delivered
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Mark delivered
                 </DropdownMenuItem>
               ) : null}
             </DropdownMenuContent>

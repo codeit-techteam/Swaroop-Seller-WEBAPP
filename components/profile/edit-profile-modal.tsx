@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { EditProfileForm } from "@/types/profile";
 
@@ -43,7 +42,7 @@ export function EditProfileModal({
       const file = acceptedFiles[0];
       if (!file) return;
       const preview = URL.createObjectURL(file);
-      onChange({ logoFileName: file.name, logoPreview: preview });
+      onChange({ avatarFileName: file.name, avatarPreview: preview });
     },
     [onChange],
   );
@@ -67,28 +66,28 @@ export function EditProfileModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Profile Details</DialogTitle>
+          <DialogTitle>Edit Admin Profile</DialogTitle>
           <DialogDescription>
-            Update your company profile information. Changes are saved locally
-            and ready for backend sync.
+            Update your contact details and office information for the ADMIN
+            PANEL.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="companyName">Company Name</Label>
+              <Label htmlFor="name">Full Name</Label>
               <Input
-                id="companyName"
-                value={form.companyName}
-                onChange={(e) => onChange({ companyName: e.target.value })}
+                id="name"
+                value={form.name}
+                onChange={(e) => onChange({ name: e.target.value })}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Work Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -106,53 +105,26 @@ export function EditProfileModal({
                 required
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                rows={2}
-                value={form.address}
-                onChange={(e) => onChange({ address: e.target.value })}
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Input
+                id="department"
+                value={form.department}
+                onChange={(e) => onChange({ department: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
+              <Label htmlFor="officeLocation">Office Location</Label>
               <Input
-                id="website"
-                value={form.website}
-                onChange={(e) => onChange({ website: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="warehouse">Warehouse</Label>
-              <Input
-                id="warehouse"
-                value={form.warehouse}
-                onChange={(e) => onChange({ warehouse: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="businessCategory">Business Category</Label>
-              <Input
-                id="businessCategory"
-                placeholder="Polymers, Industrial Chemicals, Solvents"
-                value={form.businessCategory}
-                onChange={(e) => onChange({ businessCategory: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                rows={3}
-                value={form.description}
-                onChange={(e) => onChange({ description: e.target.value })}
+                id="officeLocation"
+                value={form.officeLocation}
+                onChange={(e) => onChange({ officeLocation: e.target.value })}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Logo Upload</Label>
+            <Label>Profile Photo</Label>
             <div
               {...getRootProps()}
               className={cn(
@@ -160,18 +132,18 @@ export function EditProfileModal({
               )}
             >
               <input {...getInputProps()} />
-              {form.logoPreview ? (
+              {form.avatarPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={form.logoPreview}
-                  alt="Logo preview"
+                  src={form.avatarPreview}
+                  alt="Avatar preview"
                   className="mb-3 h-16 w-16 rounded-lg object-cover"
                 />
               ) : (
                 <Upload className="mb-2 h-8 w-8 text-slate-400" />
               )}
               <p className="text-sm text-slate-600">
-                {form.logoFileName ?? "Drag & drop or browse logo image"}
+                {form.avatarFileName ?? "Drag & drop or browse a photo"}
               </p>
               <Button
                 type="button"

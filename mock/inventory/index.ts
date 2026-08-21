@@ -675,7 +675,7 @@ export const inventorySummaryMock: InventorySummary = {
   totalInventory: 12450,
   available: 8120,
   reserved: 1743,
-  warehouses: 6,
+  origins: 6,
   lowStock: 14,
   outOfStock: 2,
   unit: "MT",
@@ -699,16 +699,14 @@ export const inventoryGrades = [
 
 export const inventoryCategories = ["All Categories", "Polymers", "Resins"];
 
-export const inventoryWarehouses = [
-  "All Warehouses",
-  "Mundra Terminal 3",
-  "Hazira Port Logi-Zone",
-  "Jamnagar Complex",
-  "Dahej Liquid Terminal",
-  "JNPT Warehouse B",
-  "Kandla Bulk Yard",
-  "Panipat Depot",
-  "Mumbai CFS Hub",
+export const inventoryOrigins = [
+  "All Origins",
+  "India (RIL)",
+  "India (Chemplast)",
+  "India (GAIL)",
+  "India (IOCL)",
+  "South Korea (LG)",
+  "India (DCW)",
 ];
 
 export const inventoryStatuses = [

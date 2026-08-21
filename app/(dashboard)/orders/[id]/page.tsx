@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { OrderDetailView } from "@/modules/orders";
 
 export const metadata: Metadata = {
-  title: "Order Details | PetroTrade Seller",
+  title: "Order Details | PetroTrade ADMIN PANEL",
   description: "Review order details, accept or reject allocated orders",
 };
 

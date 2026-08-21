@@ -1,5 +1,7 @@
 export {
+  collectNavHrefs,
   getVisibleNavSections,
+  isNavHrefActive,
   NAV_SECTIONS,
   type NavItem,
   type NavSection,

@@ -1,6 +1,14 @@
 "use client";
 
-import { MoreHorizontal, Plus } from "lucide-react";
+import {
+  Ban,
+  Bell,
+  Eye,
+  FileCheck2,
+  MoreHorizontal,
+  Pencil,
+  ShoppingBag,
+} from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -17,6 +25,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -29,15 +38,13 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table";
 import { useClientTable } from "@/hooks/useClientTable";
 import { ROUTES } from "@/lib/constants";
-import { formatCompactInr } from "@/lib/utils";
+import { cn, formatCompactInr } from "@/lib/utils";
 import { CustomerFormDrawer } from "@/modules/customers/customer-form-drawer";
 import { useCustomerStore } from "@/store/customerStore";
 import { useCxOpsStore } from "@/store/cxOpsStore";
 import {
-  CUSTOMER_TYPE_LABELS,
   type CustomerDraft,
   type CustomerProfile,
-  type CustomerType,
 } from "@/types/customers";
 
 export function CustomersView() {
@@ -48,31 +55,21 @@ export function CustomersView() {
   const updateCustomer = useCustomerStore((s) => s.updateCustomer);
   const setAccountStatus = useCustomerStore((s) => s.setAccountStatus);
   const sendNotification = useCxOpsStore((s) => s.sendNotification);
-  const [typeFilter, setTypeFilter] = useState("ALL");
   const [creditFilter, setCreditFilter] = useState("ALL");
-  const [cityFilter, setCityFilter] = useState("ALL");
-  const [drawer, setDrawer] = useState<CustomerProfile | "new" | null>(null);
+  const [drawer, setDrawer] = useState<CustomerProfile | null>(null);
   const [pending, setPending] = useState<{
     id: string;
     action: "SUSPEND" | "ACTIVATE";
   } | null>(null);
 
-  const cities = useMemo(
-    () => Array.from(new Set(customers.map((row) => row.city))).sort(),
-    [customers],
-  );
-
   const filtered = useMemo(
     () =>
       customers.filter((row) => {
-        if (typeFilter !== "ALL" && row.customerType !== typeFilter)
-          return false;
         if (creditFilter !== "ALL" && row.creditStatus !== creditFilter)
           return false;
-        if (cityFilter !== "ALL" && row.city !== cityFilter) return false;
         return true;
       }),
-    [cityFilter, creditFilter, customers, typeFilter],
+    [creditFilter, customers],
   );
 
   const searchFields = useMemo(
@@ -110,13 +107,13 @@ export function CustomersView() {
       return;
     }
     const created = await createCustomer(draft);
-    toast.success(`${created.companyName} added`);
+    toast.success(`${created.name} added`);
   };
 
   return (
     <OperationsShell
-      title="Customer Management"
-      subtitle="Full customer lifecycle for Customer APP and Customer WEB. Internal seller data is never exposed."
+      title="Customer Directory"
+      subtitle="Browse and manage customer accounts across APP and WEB."
       kpis={[
         { title: "Total customers", value: customers.length },
         {
@@ -137,95 +134,48 @@ export function CustomersView() {
             .length,
         },
       ]}
-      actions={
-        <Button
-          className="bg-[#0B1F3A] hover:bg-[#122846]"
-          onClick={() => setDrawer("new")}
-        >
-          <Plus className="h-4 w-4" />
-          Add customer
-        </Button>
-      }
     >
       <OpsTable
         search={table.search}
         onSearch={table.setSearch}
-        searchPlaceholder="Search ID, name, company, GSTIN, city"
+        searchPlaceholder="Search customer, company, mobile, GSTIN..."
         status={table.status}
         onStatusChange={table.setStatus}
         statusOptions={["ALL", "ACTIVE", "PENDING", "SUSPENDED", "INACTIVE"]}
         extraFilters={
-          <>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="h-9 w-[190px] border-slate-200 bg-white text-sm">
-                <SelectValue placeholder="Customer type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All types</SelectItem>
-                {(Object.keys(CUSTOMER_TYPE_LABELS) as CustomerType[]).map(
-                  (type) => (
-                    <SelectItem key={type} value={type}>
-                      {CUSTOMER_TYPE_LABELS[type]}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
-            <Select value={creditFilter} onValueChange={setCreditFilter}>
-              <SelectTrigger className="h-9 w-[170px] border-slate-200 bg-white text-sm">
-                <SelectValue placeholder="Credit" />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  "ALL",
-                  "APPROVED",
-                  "PENDING",
-                  "UNDER_REVIEW",
-                  "REJECTED",
-                  "SUSPENDED",
-                  "EXPIRED",
-                ].map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {value === "ALL"
-                      ? "All credit"
-                      : value.replaceAll("_", " ")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger className="h-9 w-[150px] border-slate-200 bg-white text-sm">
-                <SelectValue placeholder="City" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All cities</SelectItem>
-                {cities.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
+          <Select value={creditFilter} onValueChange={setCreditFilter}>
+            <SelectTrigger className="h-10 w-[150px] border-slate-200 bg-white text-sm">
+              <SelectValue placeholder="Credit" />
+            </SelectTrigger>
+            <SelectContent>
+              {[
+                "ALL",
+                "APPROVED",
+                "PENDING",
+                "UNDER_REVIEW",
+                "REJECTED",
+                "SUSPENDED",
+                "EXPIRED",
+              ].map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value === "ALL"
+                    ? "All credit"
+                    : value.replaceAll("_", " ")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         }
         headers={[
-          "Customer ID",
-          "Customer / Company",
-          "Type",
-          "Mobile / Email",
-          "GSTIN",
-          "City",
-          "KYC",
+          "Customer",
+          "Contact",
+          "Status",
           "Credit",
-          "Available credit",
-          "Orders",
-          "Purchase value",
-          "Account",
-          "Last active",
+          "Business",
           "Actions",
         ]}
         emptyTitle="No customers found"
-        emptyDescription="Try another filter or add a customer."
+        emptyDescription="Try another search or status filter."
         page={table.page}
         totalPages={table.totalPages}
         totalItems={table.filtered.length}
@@ -234,132 +184,163 @@ export function CustomersView() {
         rowCount={table.paginated.length}
       >
         {table.paginated.map((row) => (
-          <TableRow key={row.id}>
-            <TableCell className="font-medium text-[#1B6EF3]">
-              <Link href={`${ROUTES.CUSTOMERS}/${row.id}`}>
-                {row.customerId}
+          <TableRow
+            key={row.id}
+            className="border-l-4 border-l-transparent transition-colors hover:border-l-[#1B6EF3]/40 hover:bg-slate-50/80"
+          >
+            <TableCell className="align-top">
+              <Link
+                href={`${ROUTES.CUSTOMERS}/${row.id}`}
+                className="group block max-w-[220px]"
+              >
+                <p className="truncate text-sm font-semibold text-slate-900 group-hover:text-[#1B6EF3]">
+                  {row.name}
+                </p>
+                <p
+                  className="mt-0.5 truncate text-xs text-slate-500"
+                  title={row.companyName}
+                >
+                  {row.companyName}
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-[#1B6EF3]">
+                  {row.customerId}
+                </p>
               </Link>
             </TableCell>
-            <TableCell>
-              <p className="font-medium text-slate-800">{row.name}</p>
-              <p className="text-xs text-slate-400">{row.companyName}</p>
+
+            <TableCell className="align-top">
+              <p className="text-sm tabular-nums text-slate-800">{row.mobile}</p>
+              <p
+                className="mt-0.5 max-w-[180px] truncate text-xs text-slate-500"
+                title={row.email}
+              >
+                {row.email}
+              </p>
             </TableCell>
-            <TableCell className="text-xs">
-              {CUSTOMER_TYPE_LABELS[row.customerType]}
-            </TableCell>
-            <TableCell>
-              <p>{row.mobile}</p>
-              <p className="text-xs text-slate-400">{row.email}</p>
-            </TableCell>
-            <TableCell className="font-mono text-xs">{row.gstin}</TableCell>
-            <TableCell>{row.city}</TableCell>
-            <TableCell>
-              <OpsStatusBadge status={row.kycStatus} />
-            </TableCell>
-            <TableCell>
-              <OpsStatusBadge status={row.creditStatus} />
-            </TableCell>
-            <TableCell className="tabular-nums">
-              {formatCompactInr(row.availableCredit)}
-            </TableCell>
-            <TableCell className="tabular-nums">{row.totalOrders}</TableCell>
-            <TableCell className="tabular-nums">
-              {formatCompactInr(row.totalPurchaseValue)}
-            </TableCell>
-            <TableCell>
+
+            <TableCell className="align-top">
               <OpsStatusBadge status={row.accountStatus} />
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                KYC ·{" "}
+                <span className="font-medium capitalize text-slate-700">
+                  {row.kycStatus.replaceAll("_", " ").toLowerCase()}
+                </span>
+              </p>
             </TableCell>
-            <TableCell>{row.lastActive}</TableCell>
-            <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href={`${ROUTES.CUSTOMERS}/${row.id}`}>
-                      View customer
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setDrawer(row)}>
-                    Edit customer
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`${ROUTES.KYC}?customer=${row.id}`}>
-                      Verify KYC
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      setPending({
-                        id: row.id,
-                        action:
-                          row.accountStatus === "SUSPENDED"
-                            ? "ACTIVATE"
-                            : "SUSPEND",
-                      })
-                    }
-                  >
-                    {row.accountStatus === "SUSPENDED" ? "Activate" : "Suspend"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`${ROUTES.CUSTOMER_ORDERS}?customer=${row.id}`}>
-                      View orders
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`${ROUTES.CUSTOMER_REQUESTS}?customer=${row.id}`}
+
+            <TableCell className="align-top">
+              <p className="text-sm font-semibold tabular-nums text-slate-900">
+                {formatCompactInr(row.availableCredit)}
+              </p>
+              <div className="mt-1.5">
+                <OpsStatusBadge status={row.creditStatus} />
+              </div>
+            </TableCell>
+
+            <TableCell className="align-top">
+              <p className="text-sm font-semibold tabular-nums text-slate-900">
+                {row.totalOrders}{" "}
+                <span className="font-normal text-slate-500">orders</span>
+              </p>
+              <p className="mt-0.5 text-xs tabular-nums text-slate-500">
+                {formatCompactInr(row.totalPurchaseValue)} lifetime
+              </p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Active {row.lastActive}
+              </p>
+            </TableCell>
+
+            <TableCell className="align-top">
+              <div className="flex items-center justify-end gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  asChild
+                >
+                  <Link href={`${ROUTES.CUSTOMERS}/${row.id}`}>View</Link>
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-slate-500"
+                      aria-label={`More actions for ${row.name}`}
                     >
-                      View purchase requests
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`${ROUTES.PAYMENTS}?q=${encodeURIComponent(row.companyName)}`}
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link href={`${ROUTES.CUSTOMERS}/${row.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDrawer(row)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit customer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`${ROUTES.KYC}?customer=${row.id}`}>
+                        <FileCheck2 className="mr-2 h-4 w-4" />
+                        Verify KYC
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={`${ROUTES.CUSTOMER_ORDERS}?customer=${row.id}`}
+                      >
+                        <ShoppingBag className="mr-2 h-4 w-4" />
+                        View orders
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        await sendNotification({
+                          title: "Account update",
+                          message: `Hello ${row.name}, please review your PetroTrade account.`,
+                          cta: "Open profile",
+                          targetScreen: "/profile",
+                          channels: ["IN_APP", "PUSH"],
+                          target: "SPECIFIC",
+                          targetValue: row.id,
+                          status: "SENT",
+                          sentAt: new Date().toISOString(),
+                        });
+                        toast.success("Notification sent");
+                      }}
                     >
-                      View payments
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`${ROUTES.CREDIT_INSURANCE}?q=${encodeURIComponent(row.companyName)}`}
+                      <Bell className="mr-2 h-4 w-4" />
+                      Notify customer
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className={cn(
+                        row.accountStatus === "SUSPENDED"
+                          ? "text-emerald-700"
+                          : "text-red-600",
+                      )}
+                      onClick={() =>
+                        setPending({
+                          id: row.id,
+                          action:
+                            row.accountStatus === "SUSPENDED"
+                              ? "ACTIVATE"
+                              : "SUSPEND",
+                        })
+                      }
                     >
-                      View credit
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`${ROUTES.CUSTOMERS}/${row.id}?tab=documents`}>
-                      View documents
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={`${ROUTES.CUSTOMERS}/${row.id}?tab=activity`}>
-                      View activity
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      await sendNotification({
-                        title: "Account update",
-                        message: `Hello ${row.name}, please review your PetroTrade account.`,
-                        cta: "Open profile",
-                        targetScreen: "/profile",
-                        channels: ["IN_APP", "PUSH"],
-                        target: "SPECIFIC",
-                        targetValue: row.id,
-                        status: "SENT",
-                        sentAt: new Date().toISOString(),
-                      });
-                      toast.success("Notification sent");
-                    }}
-                  >
-                    Send notification
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      <Ban className="mr-2 h-4 w-4" />
+                      {row.accountStatus === "SUSPENDED"
+                        ? "Activate account"
+                        : "Suspend account"}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </TableCell>
           </TableRow>
         ))}
@@ -367,7 +348,7 @@ export function CustomersView() {
 
       <CustomerFormDrawer
         open={drawer !== null}
-        customer={drawer && drawer !== "new" ? drawer : undefined}
+        customer={drawer ?? undefined}
         onClose={() => setDrawer(null)}
         onSave={save}
       />

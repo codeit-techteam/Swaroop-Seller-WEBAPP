@@ -23,7 +23,6 @@ export default function SubmittedPage() {
   const company = useOnboardingStore((s) => s.company);
   const documents = useOnboardingStore((s) => s.documents);
   const bank = useOnboardingStore((s) => s.bank);
-  const location = useOnboardingStore((s) => s.location);
   const setCurrentStep = useOnboardingStore((s) => s.setCurrentStep);
 
   useEffect(() => {
@@ -40,7 +39,7 @@ export default function SubmittedPage() {
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="mx-auto max-w-2xl py-8"
+      className="mx-auto max-w-2xl py-10"
     >
       <SuccessCard
         title="KYC Submitted Successfully"
@@ -71,14 +70,6 @@ export default function SubmittedPage() {
           <SubmissionSummaryItem
             label="Bank"
             value={bank.bankName || submissionSummary.bankName}
-          />
-          <SubmissionSummaryItem
-            label="Location"
-            value={
-              location.city
-                ? `${location.city}, ${location.state}`
-                : submissionSummary.location
-            }
           />
           <SubmissionSummaryItem
             label="Submitted On"

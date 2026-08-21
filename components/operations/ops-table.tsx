@@ -109,7 +109,11 @@ export function OpsTable({
                 {headers.map((header) => (
                   <TableHead
                     key={header}
-                    className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                    className={
+                      header === "Actions"
+                        ? "px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                        : "px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                    }
                   >
                     {header}
                   </TableHead>

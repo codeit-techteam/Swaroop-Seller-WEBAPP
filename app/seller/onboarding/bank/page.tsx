@@ -2,10 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { AlertTriangle, FileText, Search } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -14,7 +13,6 @@ import {
   ProgressHeader,
   VerificationStatusBadge,
 } from "@/components/onboarding";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -26,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/constants";
 import { type BankFormValues, bankSchema } from "@/lib/schemas/onboarding";
-import { mockIfscLookup } from "@/mock/onboarding/onboardingMock";
+import { cn } from "@/lib/utils";
 import { useOnboardingStore } from "@/store/onboardingStore";
 
 export default function BankPage() {
@@ -36,7 +34,7 @@ export default function BankPage() {
   const updateBank = useOnboardingStore((s) => s.updateBank);
   const markStepComplete = useOnboardingStore((s) => s.markStepComplete);
   const setCurrentStep = useOnboardingStore((s) => s.setCurrentStep);
-  const [isFetchingBranch, setIsFetchingBranch] = useState(false);
+  const [showAccountNumber, setShowAccountNumber] = useState(false);
 
   useEffect(() => {
     setCurrentStep("bank");
@@ -54,67 +52,12 @@ export default function BankPage() {
     },
   });
 
-  const onDrop = useCallback(
-    (files: File[]) => {
-      const file = files[0];
-      if (!file) return;
-      const preview = file.type.startsWith("image/")
-        ? URL.createObjectURL(file)
-        : undefined;
-      updateBank({
-        cancelledChequeFileName: file.name,
-        cancelledChequeSize: file.size,
-        cancelledChequePreview: preview,
-        manualReviewRequired: true,
-        manualReviewMessage:
-          "Manual Review Required. The name on the cheque slightly differs from the Business Name on record. Our team will verify within 24 hours.",
-      });
-      toast.success("Cancelled cheque uploaded");
-    },
-    [updateBank],
-  );
-
-  const { getRootProps, getInputProps, open } = useDropzone({
-    onDrop,
-    accept: {
-      "application/pdf": [".pdf"],
-      "image/png": [".png"],
-      "image/jpeg": [".jpg"],
-    },
-    maxSize: 5 * 1024 * 1024,
-    multiple: false,
-    noClick: !!bank.cancelledChequeFileName,
-  });
-
-  const handleFetchBranch = async () => {
-    const ifsc = form.getValues("ifscCode").toUpperCase();
-    if (!ifsc.match(/^[A-Z]{4}0[A-Z0-9]{6}$/)) {
-      toast.error("Enter a valid IFSC code");
-      return;
-    }
-    setIsFetchingBranch(true);
-    await new Promise((r) => setTimeout(r, 800));
-    const branch =
-      mockIfscLookup[ifsc] ?? `${ifsc.slice(0, 4)} Bank - Branch Office`;
-    form.setValue("branchName", branch);
-    if (!form.getValues("bankName")) {
-      form.setValue("bankName", ifsc.slice(0, 4) + " Bank");
-    }
-    updateBank({ ifscCode: ifsc, branchName: branch });
-    setIsFetchingBranch(false);
-    toast.success("Branch details fetched");
-  };
-
   const onSubmit = (values: BankFormValues) => {
-    if (!bank.cancelledChequeFileName) {
-      toast.error("Please upload cancelled cheque");
-      return;
-    }
     updateBank({ ...values, isVerified: true });
     markStepComplete("bank");
-    setCurrentStep("location");
+    setCurrentStep("review");
     toast.success("Bank details saved");
-    router.push(ROUTES.ONBOARDING_LOCATION);
+    router.push(ROUTES.ONBOARDING_REVIEW);
   };
 
   return (
@@ -126,7 +69,7 @@ export default function BankPage() {
       <ProgressHeader
         stepId="bank"
         title="Bank Account Verification"
-        description="Step 4 of 5: Provide your business bank account details for payment settlements."
+        description="Step 3 of 4: Provide your business bank account details for payment settlements."
         badge={
           bank.isVerified ? (
             <VerificationStatusBadge
@@ -179,11 +122,36 @@ export default function BankPage() {
                   <FormItem>
                     <FormLabel>Account Number</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter account number"
-                        {...field}
-                      />
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          placeholder="Enter account number"
+                          className={cn(
+                            "pr-10",
+                            !showAccountNumber &&
+                              "[-webkit-text-security:disc]",
+                          )}
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAccountNumber((open) => !open)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          aria-label={
+                            showAccountNumber
+                              ? "Hide account number"
+                              : "Show account number"
+                          }
+                        >
+                          {showAccountNumber ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -196,44 +164,44 @@ export default function BankPage() {
                   <FormItem>
                     <FormLabel>Confirm Account Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="Re-enter account number" {...field} />
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder="Re-enter account number"
+                        {...field}
+                        onPaste={(event) => {
+                          const pasted = event.clipboardData
+                            .getData("text")
+                            .replace(/\s/g, "");
+                          event.preventDefault();
+                          field.onChange(pasted);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="ifscCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>IFSC Code</FormLabel>
-                      <div className="flex gap-2">
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., HDFC0001234"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(e.target.value.toUpperCase())
-                            }
-                          />
-                        </FormControl>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleFetchBranch}
-                          disabled={isFetchingBranch}
-                        >
-                          <Search className="h-4 w-4" />
-                          Fetch Branch
-                        </Button>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="ifscCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>IFSC Code</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., HDFC0001234"
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value.toUpperCase())
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="branchName"
@@ -241,7 +209,7 @@ export default function BankPage() {
                   <FormItem>
                     <FormLabel>Branch Name</FormLabel>
                     <FormControl>
-                      <Input readOnly className="bg-muted" {...field} />
+                      <Input placeholder="Enter branch name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -250,72 +218,8 @@ export default function BankPage() {
             </div>
           </section>
 
-          <section className="rounded-xl border bg-card p-6 shadow-card">
-            <h3 className="mb-4 text-lg font-semibold">
-              Financial Document Upload
-            </h3>
-            <div className="grid gap-6 md:grid-cols-2">
-              <div
-                {...getRootProps()}
-                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-10 hover:border-primary/50 hover:bg-muted/30"
-              >
-                <input {...getInputProps()} />
-                <FileText className="mb-3 h-10 w-10 text-muted-foreground" />
-                <p className="text-sm font-medium">
-                  Drag & drop cancelled cheque
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  PDF, JPEG, PNG up to 5MB
-                </p>
-              </div>
-
-              {bank.cancelledChequeFileName ? (
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  {bank.cancelledChequePreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={bank.cancelledChequePreview}
-                      alt="Cheque preview"
-                      className="mb-3 h-32 w-full rounded object-cover"
-                    />
-                  ) : (
-                    <div className="mb-3 flex h-32 items-center justify-center rounded bg-primary/10">
-                      <FileText className="h-10 w-10 text-primary" />
-                    </div>
-                  )}
-                  <p className="text-sm font-medium">
-                    {bank.cancelledChequeFileName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {bank.cancelledChequeSize
-                      ? `${(bank.cancelledChequeSize / 1024).toFixed(1)} KB`
-                      : null}
-                  </p>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={open}
-                    type="button"
-                    className="px-0"
-                  >
-                    Replace
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          </section>
-
-          {bank.manualReviewRequired && bank.manualReviewMessage ? (
-            <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-              <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
-              <p className="text-sm text-destructive">
-                {bank.manualReviewMessage}
-              </p>
-            </div>
-          ) : null}
-
           <FooterNavigation
-            onPrevious={() => router.push(ROUTES.ONBOARDING_GST_PAN)}
+            onPrevious={() => router.push(ROUTES.ONBOARDING_DOCUMENTS)}
             continueType="submit"
           />
         </form>

@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
 import { CURRENT_USER, ROLE_LABELS } from "@/config";
-import type { AuthState, User } from "@/types/auth";
+import { STORAGE_KEYS, storage } from "@/lib/utils";
+import type { AuthState, AuthTokens, User } from "@/types/auth";
 
 const sessionUser: User = {
   id: CURRENT_USER.id,
@@ -13,13 +14,35 @@ const sessionUser: User = {
   sellerId: CURRENT_USER.sellerId,
 };
 
-export const useAuthStore = create<AuthState>()(
+interface AuthActions {
+  setSession: (user: User, tokens?: AuthTokens | null) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState & AuthActions>()(
   devtools(
-    () => ({
+    (set) => ({
       user: sessionUser,
       tokens: null,
       isAuthenticated: true,
       isLoading: false,
+      setSession: (user, tokens = null) =>
+        set({
+          user,
+          tokens,
+          isAuthenticated: true,
+          isLoading: false,
+        }),
+      logout: () => {
+        storage.remove(STORAGE_KEYS.AUTH_TOKEN);
+        storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
+        set({
+          user: null,
+          tokens: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      },
     }),
     { name: "auth-store" },
   ),

@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
@@ -8,6 +9,7 @@ import {
   OpsStatusBadge,
   OpsTable,
 } from "@/components/operations";
+import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { useClientTable } from "@/hooks/useClientTable";
 import { ROUTES } from "@/lib/constants";
@@ -73,6 +75,7 @@ export function SupportTicketsView() {
           "Status",
           "Agent",
           "Updated",
+          "Actions",
         ]}
         emptyTitle="No tickets"
         emptyDescription="No support tickets match this filter."
@@ -104,6 +107,21 @@ export function SupportTicketsView() {
             </TableCell>
             <TableCell>{row.assignedAgent}</TableCell>
             <TableCell>{formatDate(row.updatedAt)}</TableCell>
+            <TableCell>
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1.5 text-xs"
+                  asChild
+                >
+                  <Link href={`${ROUTES.CUSTOMER_SUPPORT}/${row.id}`}>
+                    <Eye className="h-3.5 w-3.5" />
+                    View ticket
+                  </Link>
+                </Button>
+              </div>
+            </TableCell>
           </TableRow>
         ))}
       </OpsTable>

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
@@ -11,7 +10,6 @@ import {
 } from "@/components/operations";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { useClientTable } from "@/hooks/useClientTable";
-import { ROUTES } from "@/lib/constants";
 import { formatCompactInr, formatNumber } from "@/lib/utils";
 import { useCustomerStore } from "@/store/customerStore";
 import { useProcurementStore } from "@/store/procurementStore";
@@ -64,7 +62,7 @@ export function CustomerRequestsView() {
   return (
     <OperationsShell
       title="Customer purchase requests"
-      subtitle="Customer APP/WEB PRs land in the same Procurement Workbench queue. No duplicate request data."
+      subtitle="Purchase requests from Customer APP and WEB appear here. No duplicate request data."
       kpis={[
         {
           title: "Open PRs",
@@ -100,7 +98,6 @@ export function CustomerRequestsView() {
           "Location",
           "Requested",
           "Status",
-          "Workbench",
         ]}
         emptyTitle="No customer PRs"
         emptyDescription="No purchase requests match the current filter."
@@ -128,14 +125,6 @@ export function CustomerRequestsView() {
             <TableCell>{formatCompactInr(row.unitPrice)}/MT</TableCell>
             <TableCell>
               <OpsStatusBadge status={row.status} />
-            </TableCell>
-            <TableCell>
-              <Link
-                href={`${ROUTES.PROCUREMENT}/${row.requestId}`}
-                className="text-sm font-medium text-[#1B6EF3] hover:underline"
-              >
-                Open workbench
-              </Link>
             </TableCell>
           </TableRow>
         ))}

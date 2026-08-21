@@ -31,7 +31,7 @@ export function CancelSlotModal({
           <DialogTitle>Cancel Slot</DialogTitle>
           <DialogDescription>
             Are you sure you want to cancel {slot?.slotId}? This action cannot
-            be undone from the seller portal.
+            be undone from the ADMIN PANEL.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">

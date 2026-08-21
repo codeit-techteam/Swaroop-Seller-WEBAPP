@@ -253,11 +253,6 @@ export const commandActionsMock: CommandAction[] = [
     href: "/orders",
   },
   {
-    id: "cmd-6",
-    label: "Add Customer",
-    href: "/customers",
-  },
-  {
     id: "cmd-7",
     label: "Add Product",
     href: "/marketplace/catalog",

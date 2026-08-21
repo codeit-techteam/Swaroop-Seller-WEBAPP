@@ -187,6 +187,8 @@ export type {
   UploadStatus,
 } from "./products";
 export type {
+  AdminAccountStatus,
+  AdminProfile,
   BankInformation,
   BankVerificationStatus,
   BusinessIdentity,

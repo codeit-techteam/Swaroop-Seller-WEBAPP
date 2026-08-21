@@ -19,36 +19,24 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     step: 2,
   },
   {
-    id: "gst-pan",
-    label: "GST & PAN Verification",
-    route: "/seller/onboarding/gst-pan",
-    step: 3,
-  },
-  {
     id: "bank",
     label: "Bank Information",
     route: "/seller/onboarding/bank",
-    step: 4,
-  },
-  {
-    id: "location",
-    label: "Operating Locations",
-    route: "/seller/onboarding/location",
-    step: 5,
+    step: 3,
   },
   {
     id: "review",
     label: "Final Review",
     route: "/seller/onboarding/review",
-    step: 6,
+    step: 4,
   },
 ];
 
 export const STEP_PROGRESS: Record<OnboardingStepId, number> = {
-  company: 15,
-  documents: 30,
-  "gst-pan": 45,
-  bank: 60,
+  company: 25,
+  documents: 50,
+  "gst-pan": 50,
+  bank: 75,
   location: 75,
   review: 90,
   submitted: 100,

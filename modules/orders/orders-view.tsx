@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Download, FileSpreadsheet } from "lucide-react";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 
@@ -59,9 +58,7 @@ export function OrdersView() {
   const submitSupportTicket = useOrdersStore((s) => s.submitSupportTicket);
   const refreshData = useOrdersStore((s) => s.refreshData);
   const retryLoad = useOrdersStore((s) => s.retryLoad);
-  const exportCsv = useOrdersStore((s) => s.exportCsv);
   const downloadInvoice = useOrdersStore((s) => s.downloadInvoice);
-  const downloadInvoicesBulk = useOrdersStore((s) => s.downloadInvoicesBulk);
   const downloadDocument = useOrdersStore((s) => s.downloadDocument);
   const printOrder = useOrdersStore((s) => s.printOrder);
   const getFilteredOrders = useOrdersStore((s) => s.getFilteredOrders);
@@ -87,23 +84,6 @@ export function OrdersView() {
     Boolean(filters.dateFrom) ||
     Boolean(filters.dateTo) ||
     filters.orderValue !== "All Values";
-
-  const handleExport = () => {
-    exportCsv();
-    toast.success("CSV Exported");
-  };
-
-  const handleDownloadInvoices = async () => {
-    toast.loading("Downloading invoices...", { id: "bulk-inv" });
-    const count = await downloadInvoicesBulk();
-    if (count === 0) {
-      toast.error("No invoices available", { id: "bulk-inv" });
-      return;
-    }
-    toast.success(`Downloaded ${Math.min(count, 5)} invoice(s)`, {
-      id: "bulk-inv",
-    });
-  };
 
   const handleDownloadInvoice = async (order: Order) => {
     toast.loading("Downloading...", { id: "inv-dl" });
@@ -188,24 +168,6 @@ export function OrdersView() {
             View allocated orders, update dispatch status, and manage
             documentation.
           </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            className="h-10 gap-2 border-slate-200"
-            onClick={handleDownloadInvoices}
-          >
-            <Download className="h-4 w-4" />
-            Download Invoices
-          </Button>
-          <Button
-            variant="outline"
-            className="h-10 gap-2 border-[#1B6EF3] text-[#1B6EF3] hover:bg-[#E8F1FF]"
-            onClick={handleExport}
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Export CSV
-          </Button>
         </div>
       </div>
 

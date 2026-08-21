@@ -30,10 +30,20 @@ export function LoadingSkeleton({
         <div className="space-y-2">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
+          <Skeleton className="h-4 w-96 max-w-full" />
         </div>
-        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-10 w-28" />
       </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Skeleton className="h-14 w-[320px] max-w-full" />
+        <Skeleton className="h-14 w-36" />
+        <Skeleton className="h-14 w-32" />
+        <Skeleton className="h-14 w-40" />
+        <Skeleton className="ml-auto h-9 w-72 max-w-full" />
+      </div>
+
+      <Skeleton className="h-11 w-full" />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -41,8 +51,6 @@ export function LoadingSkeleton({
         ))}
       </div>
 
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-16 w-full rounded-xl" />
       <Skeleton className="h-96 w-full rounded-xl" />
     </div>
   );

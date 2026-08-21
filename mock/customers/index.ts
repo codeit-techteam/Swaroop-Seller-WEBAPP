@@ -1,4 +1,90 @@
-import type { CustomerProfile, CustomerSegment } from "@/types/customers";
+import type {
+  CustomerDocument,
+  CustomerDocumentType,
+  CustomerKycStatus,
+  CustomerProfile,
+  CustomerSegment,
+} from "@/types/customers";
+import {
+  CUSTOMER_DOCUMENT_TYPE_LABELS,
+  ONBOARDING_DOCUMENT_TYPES,
+} from "@/types/customers";
+
+const DOC_PREVIEWS = [
+  "https://images.unsplash.com/photo-1554224315-beee415c201f?w=800&q=80",
+  "https://images.unsplash.com/photo-1586281380347-41845e1e3a70?w=800&q=80",
+  "https://images.unsplash.com/photo-1568667256549-094345857637?w=800&q=80",
+];
+
+function docStatusesForKyc(
+  kyc: CustomerKycStatus,
+): CustomerKycStatus[] {
+  switch (kyc) {
+    case "VERIFIED":
+      return ["VERIFIED", "VERIFIED", "VERIFIED", "VERIFIED", "VERIFIED"];
+    case "UNDER_REVIEW":
+      return ["UNDER_REVIEW", "PENDING", "UNDER_REVIEW", "PENDING", "PENDING"];
+    case "REJECTED":
+      return ["REJECTED", "VERIFIED", "PENDING", "REJECTED", "PENDING"];
+    case "SUSPENDED":
+      return ["VERIFIED", "VERIFIED", "PENDING", "VERIFIED", "PENDING"];
+    default:
+      return ["PENDING", "PENDING", "PENDING", "PENDING", "PENDING"];
+  }
+}
+
+function onboardingDocuments(
+  prefix: string,
+  kyc: CustomerKycStatus,
+  uploadedAt: string,
+  options?: { omitTypes?: CustomerDocumentType[]; boardResolution?: boolean },
+): CustomerDocument[] {
+  const omit = new Set(options?.omitTypes ?? []);
+  const statuses = docStatusesForKyc(kyc);
+  const docs = ONBOARDING_DOCUMENT_TYPES.filter((type) => !omit.has(type)).map(
+    (type, index) => {
+      const name = CUSTOMER_DOCUMENT_TYPE_LABELS[type];
+      const status = statuses[index] ?? "PENDING";
+      return {
+        id: `${prefix}-${type.toLowerCase()}`,
+        type,
+        name,
+        status,
+        uploadedAt,
+        sizeLabel: `${(0.4 + index * 0.25).toFixed(1)} MB`,
+        fileName: `${name.toLowerCase().replace(/\s+/g, "-")}.pdf`,
+        previewUrl: DOC_PREVIEWS[index % DOC_PREVIEWS.length]!,
+        previewMimeType: "application/pdf" as const,
+        verifiedBy: status === "VERIFIED" ? "Compliance Desk" : undefined,
+        rejectionReason:
+          status === "REJECTED"
+            ? "Document is unclear or does not match registered details."
+            : undefined,
+      };
+    },
+  );
+
+  if (options?.boardResolution) {
+    docs.push({
+      id: `${prefix}-kyc`,
+      type: "KYC",
+      name: "Board Resolution",
+      status: kyc === "REJECTED" ? "REJECTED" : "VERIFIED",
+      uploadedAt,
+      sizeLabel: "2.1 MB",
+      fileName: "board-resolution.pdf",
+      previewUrl: DOC_PREVIEWS[0]!,
+      previewMimeType: "application/pdf",
+      verifiedBy: kyc === "VERIFIED" ? "Compliance Desk" : undefined,
+      rejectionReason:
+        kyc === "REJECTED"
+          ? "Board resolution does not match authorised signatory on GST."
+          : undefined,
+    });
+  }
+
+  return docs;
+}
 
 const credit = (
   limit: number,
@@ -67,24 +153,7 @@ export const customersMock: CustomerProfile[] = [
         pincode: "370421",
       },
     ],
-    documents: [
-      {
-        id: "doc-001-gst",
-        type: "GST",
-        name: "GST Certificate",
-        status: "VERIFIED",
-        uploadedAt: "2024-11-04",
-        sizeLabel: "1.2 MB",
-      },
-      {
-        id: "doc-001-pan",
-        type: "PAN",
-        name: "Company PAN",
-        status: "VERIFIED",
-        uploadedAt: "2024-11-04",
-        sizeLabel: "420 KB",
-      },
-    ],
+    documents: onboardingDocuments("doc-001", "VERIFIED", "2024-11-04"),
     credit: credit(2_50_00_000, 70_00_000, "APPROVED", "ACTIVE", "2027-03-31"),
     activity: [
       {
@@ -143,16 +212,9 @@ export const customersMock: CustomerProfile[] = [
         isDefault: true,
       },
     ],
-    documents: [
-      {
-        id: "doc-002-gst",
-        type: "GST",
-        name: "GST Certificate",
-        status: "VERIFIED",
-        uploadedAt: "2025-01-18",
-        sizeLabel: "980 KB",
-      },
-    ],
+    documents: onboardingDocuments("doc-002", "VERIFIED", "2025-01-18", {
+      omitTypes: ["ADDRESS_PROOF"],
+    }),
     credit: credit(1_80_00_000, 85_00_000, "APPROVED", "ACTIVE", "2026-12-31"),
     activity: [
       {
@@ -204,24 +266,7 @@ export const customersMock: CustomerProfile[] = [
         isDefault: true,
       },
     ],
-    documents: [
-      {
-        id: "doc-003-gst",
-        type: "GST",
-        name: "GST Certificate",
-        status: "UNDER_REVIEW",
-        uploadedAt: "2026-08-17",
-        sizeLabel: "1.1 MB",
-      },
-      {
-        id: "doc-003-pan",
-        type: "PAN",
-        name: "PAN Card",
-        status: "PENDING",
-        uploadedAt: "2026-08-17",
-        sizeLabel: "310 KB",
-      },
-    ],
+    documents: onboardingDocuments("doc-003", "UNDER_REVIEW", "2026-08-17"),
     credit: credit(90_00_000, 0, "UNDER_REVIEW", "UNDER_REVIEW", "2026-11-30"),
     activity: [
       {
@@ -273,16 +318,7 @@ export const customersMock: CustomerProfile[] = [
         isDefault: true,
       },
     ],
-    documents: [
-      {
-        id: "doc-004-gst",
-        type: "GST",
-        name: "GST Certificate",
-        status: "VERIFIED",
-        uploadedAt: "2025-03-22",
-        sizeLabel: "1.0 MB",
-      },
-    ],
+    documents: onboardingDocuments("doc-004", "VERIFIED", "2025-03-22"),
     credit: credit(1_50_00_000, 40_00_000, "APPROVED", "ACTIVE", "2027-01-15"),
     activity: [
       {
@@ -336,16 +372,10 @@ export const customersMock: CustomerProfile[] = [
         isDefault: true,
       },
     ],
-    documents: [
-      {
-        id: "doc-005-gst",
-        type: "GST",
-        name: "GST Certificate",
-        status: "REJECTED",
-        uploadedAt: "2026-08-10",
-        sizeLabel: "890 KB",
-      },
-    ],
+    documents: onboardingDocuments("doc-005", "REJECTED", "2026-08-10", {
+      boardResolution: true,
+      omitTypes: ["CANCELLED_CHEQUE"],
+    }),
     credit: credit(60_00_000, 0, "REJECTED", "NONE", "2026-08-10"),
     activity: [
       {
@@ -397,16 +427,9 @@ export const customersMock: CustomerProfile[] = [
         isDefault: true,
       },
     ],
-    documents: [
-      {
-        id: "doc-006-gst",
-        type: "GST",
-        name: "GST Certificate",
-        status: "PENDING",
-        uploadedAt: "2026-08-16",
-        sizeLabel: "760 KB",
-      },
-    ],
+    documents: onboardingDocuments("doc-006", "PENDING", "2026-08-16", {
+      omitTypes: ["AADHAAR", "ADDRESS_PROOF"],
+    }),
     credit: credit(40_00_000, 0, "PENDING", "NONE", ""),
     activity: [
       {
@@ -458,16 +481,9 @@ export const customersMock: CustomerProfile[] = [
         isDefault: true,
       },
     ],
-    documents: [
-      {
-        id: "doc-007-gst",
-        type: "GST",
-        name: "GST Certificate",
-        status: "VERIFIED",
-        uploadedAt: "2025-09-11",
-        sizeLabel: "640 KB",
-      },
-    ],
+    documents: onboardingDocuments("doc-007", "VERIFIED", "2025-09-11", {
+      omitTypes: ["CANCELLED_CHEQUE"],
+    }),
     credit: credit(25_00_000, 24_50_000, "SUSPENDED", "EXPIRED", "2026-07-31"),
     activity: [
       {
@@ -528,24 +544,9 @@ export const customersMock: CustomerProfile[] = [
         pincode: "422007",
       },
     ],
-    documents: [
-      {
-        id: "doc-008-gst",
-        type: "GST",
-        name: "GST Certificate",
-        status: "VERIFIED",
-        uploadedAt: "2024-08-20",
-        sizeLabel: "1.4 MB",
-      },
-      {
-        id: "doc-008-kyc",
-        type: "KYC",
-        name: "Board Resolution",
-        status: "VERIFIED",
-        uploadedAt: "2024-08-20",
-        sizeLabel: "2.1 MB",
-      },
-    ],
+    documents: onboardingDocuments("doc-008", "VERIFIED", "2024-08-20", {
+      boardResolution: true,
+    }),
     credit: credit(3_00_00_000, 90_00_000, "APPROVED", "ACTIVE", "2027-08-19"),
     activity: [
       {

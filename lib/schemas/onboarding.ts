@@ -23,8 +23,26 @@ export const otpSchema = z.object({
 
 export const companySchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
-  gstNumber: gstSchema,
-  panNumber: panSchema,
+  gstNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .refine(
+      (value) =>
+        value === "" ||
+        /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
+          value,
+        ),
+      "Enter a valid GST number",
+    ),
+  panNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .refine(
+      (value) => value === "" || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value),
+      "Enter a valid PAN number",
+    ),
   businessType: z.string().min(1, "Business type is required"),
   contactName: z.string().min(1, "Full name is required"),
   designation: z.string().min(1, "Designation is required"),

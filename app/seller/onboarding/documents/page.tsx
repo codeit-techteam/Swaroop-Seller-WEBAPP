@@ -16,9 +16,22 @@ import { useMockUpload } from "@/hooks/useMockUpload";
 import { ROUTES } from "@/lib/constants";
 import { useOnboardingStore } from "@/store/onboardingStore";
 
+const OPTIONAL_DOCUMENT_IDS = new Set([
+  "pan_card",
+  "aadhaar_card",
+  "address_proof",
+]);
+
 export default function DocumentsPage() {
   const router = useRouter();
-  const documents = useOnboardingStore((s) => s.documents);
+  const storedDocuments = useOnboardingStore((s) => s.documents);
+  const documents = useMemo(
+    () =>
+      storedDocuments.map((doc) =>
+        OPTIONAL_DOCUMENT_IDS.has(doc.id) ? { ...doc, required: false } : doc,
+      ),
+    [storedDocuments],
+  );
   const markStepComplete = useOnboardingStore((s) => s.markStepComplete);
   const setCurrentStep = useOnboardingStore((s) => s.setCurrentStep);
   const { simulateUpload, simulateDelete, simulateCancel } = useMockUpload();
@@ -31,9 +44,10 @@ export default function DocumentsPage() {
     () =>
       documents.filter(
         (d) =>
-          d.status === "uploaded" ||
-          d.status === "verified" ||
-          d.status === "pending_review",
+          d.required &&
+          (d.status === "uploaded" ||
+            d.status === "verified" ||
+            d.status === "pending_review"),
       ).length,
     [documents],
   );
@@ -56,8 +70,8 @@ export default function DocumentsPage() {
     }
 
     markStepComplete("documents");
-    setCurrentStep("gst-pan");
-    router.push(ROUTES.ONBOARDING_GST_PAN);
+    setCurrentStep("bank");
+    router.push(ROUTES.ONBOARDING_BANK);
   };
 
   return (
@@ -97,38 +111,6 @@ export default function DocumentsPage() {
             onCancel={() => simulateCancel(doc.id)}
           />
         ))}
-      </div>
-
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <section className="rounded-xl border bg-card p-5 shadow-card">
-          <h4 className="font-semibold">Upload Guidelines</h4>
-          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <li>• Accepted formats: PDF, PNG, JPG only</li>
-            <li>• Maximum file size: 10MB per document</li>
-            <li>• Ensure documents are clear and not photocopies</li>
-            <li>• All text must be legible and unobstructed</li>
-          </ul>
-        </section>
-        <section className="rounded-xl border bg-card p-5 shadow-card">
-          <h4 className="font-semibold">Need Assistance?</h4>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Our support team is available to help with document uploads.
-          </p>
-          <div className="mt-4 flex gap-3">
-            <button
-              type="button"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Live Chat
-            </button>
-            <button
-              type="button"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Email Support
-            </button>
-          </div>
-        </section>
       </div>
 
       <FooterNavigation

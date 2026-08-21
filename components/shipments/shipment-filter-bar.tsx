@@ -1,15 +1,7 @@
 "use client";
 
-import { format } from "date-fns";
-import { CalendarDays } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -24,8 +16,6 @@ import {
   SHIPMENT_STATUSES,
   SHIPMENT_TRANSPORTERS,
 } from "@/types/shipments";
-
-import { SearchBar } from "./search-bar";
 
 interface ShipmentFilterBarProps {
   filters: ShipmentFilters;
@@ -51,35 +41,47 @@ export function ShipmentFilterBar({
   onClear,
   className,
 }: ShipmentFilterBarProps) {
-  const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : undefined;
-  const dateTo = filters.dateTo ? new Date(filters.dateTo) : undefined;
-
-  const dateLabel =
-    dateFrom && dateTo
-      ? `${format(dateFrom, "MMM dd")} - ${format(dateTo, "MMM dd")}`
-      : dateFrom
-        ? format(dateFrom, "MMM dd, yyyy")
-        : "Date Range";
+  const hasActiveFilters =
+    filters.status !== "All Statuses" ||
+    filters.location !== "All Locations" ||
+    filters.transporter !== "All Transporters" ||
+    Boolean(filters.dateFrom) ||
+    Boolean(filters.dateTo);
 
   return (
-    <div
-      className={cn(
-        "flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3",
-        className,
-      )}
-    >
-      <div className="min-w-[200px] flex-[2] space-y-1">
+    <div className={cn("flex flex-wrap items-end gap-3", className)}>
+      <div className="space-y-1">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          Search
+          Date Range
         </p>
-        <SearchBar
-          value={filters.search}
-          onChange={(v) => onFilterChange("search", v)}
-          placeholder="Shipment ID or Order ID..."
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            value={filters.dateFrom ? filters.dateFrom.slice(0, 10) : ""}
+            onChange={(e) =>
+              onFilterChange(
+                "dateFrom",
+                e.target.value ? new Date(e.target.value).toISOString() : null,
+              )
+            }
+            className="h-9 w-[150px] border-slate-200 bg-white"
+          />
+          <span className="text-xs text-slate-400">–</span>
+          <Input
+            type="date"
+            value={filters.dateTo ? filters.dateTo.slice(0, 10) : ""}
+            onChange={(e) =>
+              onFilterChange(
+                "dateTo",
+                e.target.value ? new Date(e.target.value).toISOString() : null,
+              )
+            }
+            className="h-9 w-[150px] border-slate-200 bg-white"
+          />
+        </div>
       </div>
 
-      <div className="min-w-[130px] flex-1 space-y-1">
+      <div className="min-w-[140px] space-y-1">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
           Status
         </p>
@@ -87,7 +89,7 @@ export function ShipmentFilterBar({
           value={filters.status}
           onValueChange={(v) => onFilterChange("status", v)}
         >
-          <SelectTrigger className="h-9 bg-white">
+          <SelectTrigger className="h-9 border-slate-200 bg-white">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -100,7 +102,7 @@ export function ShipmentFilterBar({
         </Select>
       </div>
 
-      <div className="min-w-[130px] flex-1 space-y-1">
+      <div className="min-w-[130px] space-y-1">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
           Location
         </p>
@@ -108,7 +110,7 @@ export function ShipmentFilterBar({
           value={filters.location}
           onValueChange={(v) => onFilterChange("location", v)}
         >
-          <SelectTrigger className="h-9 bg-white">
+          <SelectTrigger className="h-9 border-slate-200 bg-white">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -121,7 +123,7 @@ export function ShipmentFilterBar({
         </Select>
       </div>
 
-      <div className="min-w-[150px] flex-1 space-y-1">
+      <div className="min-w-[150px] space-y-1">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
           Transporter
         </p>
@@ -129,7 +131,7 @@ export function ShipmentFilterBar({
           value={filters.transporter}
           onValueChange={(v) => onFilterChange("transporter", v)}
         >
-          <SelectTrigger className="h-9 bg-white">
+          <SelectTrigger className="h-9 border-slate-200 bg-white">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -142,47 +144,15 @@ export function ShipmentFilterBar({
         </Select>
       </div>
 
-      <div className="min-w-[160px] flex-1 space-y-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          Date
-        </p>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="h-9 w-full justify-start gap-2 bg-white font-normal text-slate-600"
-            >
-              <CalendarDays className="h-4 w-4 shrink-0" />
-              <span className="truncate text-sm">{dateLabel}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="range"
-              selected={{ from: dateFrom, to: dateTo }}
-              onSelect={(range) => {
-                onFilterChange(
-                  "dateFrom",
-                  range?.from ? range.from.toISOString() : null,
-                );
-                onFilterChange(
-                  "dateTo",
-                  range?.to ? range.to.toISOString() : null,
-                );
-              }}
-              numberOfMonths={2}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <Button
-        variant="link"
-        className="h-9 px-2 text-[#1B6EF3]"
-        onClick={onClear}
-      >
-        Clear Filters
-      </Button>
+      {hasActiveFilters ? (
+        <Button
+          variant="link"
+          className="h-9 px-2 text-[#1B6EF3]"
+          onClick={onClear}
+        >
+          Clear Filters
+        </Button>
+      ) : null}
     </div>
   );
 }

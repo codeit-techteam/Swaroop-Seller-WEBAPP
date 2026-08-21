@@ -11,6 +11,7 @@ import {
   GenerateInvoiceModal,
   LoadingSkeleton,
   MarkDeliveredModal,
+  SearchBar,
   ShipmentDrawer,
   ShipmentFilterBar,
   ShipmentSummaryCards,
@@ -72,7 +73,6 @@ export function ShipmentTrackingView({
   const generateEway = useShipmentStore((s) => s.generateEway);
   const uploadPod = useShipmentStore((s) => s.uploadPod);
   const markDelivered = useShipmentStore((s) => s.markDelivered);
-  const refreshData = useShipmentStore((s) => s.refreshData);
   const exportCsv = useShipmentStore((s) => s.exportCsv);
   const downloadDocument = useShipmentStore((s) => s.downloadDocument);
   const previewDocument = useShipmentStore((s) => s.previewDocument);
@@ -104,11 +104,6 @@ export function ShipmentTrackingView({
   const handleExport = () => {
     exportCsv();
     toast.success("Shipment data exported");
-  };
-
-  const _handleRefresh = async () => {
-    await refreshData();
-    toast.success("Shipments refreshed");
   };
 
   const openFor =
@@ -202,49 +197,23 @@ export function ShipmentTrackingView({
             Operations
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            Shipment Management
+            Shipment Tracking
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
             Track dispatches and delivery progress across all customer orders.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            className="h-10 gap-2 bg-[#0B1F3A] hover:bg-[#16345A]"
-            onClick={handleExport}
-          >
-            <Download className="h-4 w-4" />
-            Export Data
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          className="h-10 gap-2 border-slate-200"
+          onClick={handleExport}
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
       </div>
 
-      <ShipmentSummaryCards summary={summary} />
-
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <ShipmentTabs
-            activeTab={activeTab}
-            counts={tabCounts}
-            onChange={setActiveTab}
-            className="flex-1 border-b-0"
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden h-9 gap-1.5 sm:flex"
-            onClick={handleExport}
-          >
-            <Download className="h-3.5 w-3.5" />
-            Export Data
-          </Button>
-        </div>
-
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <ShipmentFilterBar
           filters={filters}
           onFilterChange={setFilter}
@@ -253,7 +222,27 @@ export function ShipmentTrackingView({
             toast.success("Filters cleared");
           }}
         />
+        <SearchBar
+          value={filters.search}
+          onChange={(v) => setFilter("search", v)}
+          className="w-full lg:max-w-sm"
+          placeholder="Search shipments, orders, buyers..."
+        />
+      </div>
 
+      <ShipmentTabs
+        activeTab={activeTab}
+        counts={tabCounts}
+        onChange={setActiveTab}
+      />
+
+      <ShipmentSummaryCards summary={summary} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <ShipmentTable
           shipments={paginated}
           selectedId={selectedShipment?.id}
@@ -269,7 +258,6 @@ export function ShipmentTrackingView({
           onGenerateEway={openFor("generate_eway")}
           onUploadPod={openFor("upload_pod")}
           onMarkDelivered={openFor("mark_delivered")}
-          onExport={handleExport}
         />
       </motion.div>
 

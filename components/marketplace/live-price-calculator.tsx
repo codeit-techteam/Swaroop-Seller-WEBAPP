@@ -20,21 +20,21 @@ export function LivePriceCalculator({
   return (
     <motion.div
       layout
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
+      className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6"
     >
-      <h3 className="mb-6 border-b border-slate-100 pb-5 text-base font-semibold text-slate-900">
+      <h3 className="mb-4 border-b border-slate-100 pb-4 text-sm font-semibold text-slate-900">
         Live Price Calculator
       </h3>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3.5">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
             Unit Price
           </p>
           <p className="mt-1 text-lg font-bold text-slate-900">
-            {formatCurrency(basePrice)}
+            {basePrice > 0 ? formatCurrency(basePrice) : "—"}
           </p>
         </div>
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3.5">
           <div className="flex items-center gap-1">
             <TrendingDown className="h-3 w-3 text-emerald-600" />
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
@@ -48,7 +48,7 @@ export function LivePriceCalculator({
             %
           </p>
         </div>
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3.5">
           <div className="flex items-center gap-1">
             <BadgeIndianRupee className="h-3 w-3 text-[#1B6EF3]" />
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
@@ -56,10 +56,12 @@ export function LivePriceCalculator({
             </p>
           </div>
           <p className="mt-1 text-lg font-bold text-[#1B6EF3]">
-            {formatCurrency(stats.buyerVisiblePrice)}
+            {stats.buyerVisiblePrice > 0
+              ? formatCurrency(stats.buyerVisiblePrice)
+              : "—"}
           </p>
         </div>
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3.5">
           <div className="flex items-center gap-1">
             <Wallet className="h-3 w-3 text-slate-500" />
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
@@ -67,7 +69,9 @@ export function LivePriceCalculator({
             </p>
           </div>
           <p className="mt-1 text-lg font-bold text-slate-900">
-            {formatCurrency(stats.estimatedRevenue)}
+            {stats.estimatedRevenue > 0
+              ? formatCurrency(stats.estimatedRevenue)
+              : "—"}
           </p>
         </div>
       </div>

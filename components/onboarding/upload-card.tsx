@@ -117,7 +117,11 @@ export function UploadCard({
             <h3 className="font-semibold">{document.name}</h3>
             {document.required ? (
               <span className="text-xs text-destructive">*</span>
-            ) : null}
+            ) : (
+              <span className="text-xs font-normal text-muted-foreground">
+                (Optional)
+              </span>
+            )}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {document.description}

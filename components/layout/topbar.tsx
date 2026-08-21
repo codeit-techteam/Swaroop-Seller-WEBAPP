@@ -21,8 +21,6 @@ import { cn } from "@/lib/utils";
 import { useDashboardStore } from "@/store/dashboardStore";
 import { useInventoryStore } from "@/store/inventoryStore";
 import { usePerformanceStore } from "@/store/performanceStore";
-import { useProfileStore } from "@/store/profileStore";
-
 import { ProfileMenu } from "../navigation/profile-menu";
 
 interface TopbarProps {
@@ -42,8 +40,6 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
   const setInventorySearch = useInventoryStore((s) => s.setSearch);
   const performanceSearch = usePerformanceStore((s) => s.globalSearch);
   const setPerformanceSearch = usePerformanceStore((s) => s.setGlobalSearch);
-  const profileSearch = useProfileStore((s) => s.searchQuery);
-  const setProfileSearch = useProfileStore((s) => s.setSearchQuery);
   const performanceNotifications = usePerformanceStore((s) => s.notifications);
   const notificationOpen = usePerformanceStore((s) => s.notificationOpen);
   const setNotificationOpen = usePerformanceStore((s) => s.setNotificationOpen);
@@ -61,17 +57,14 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
   const placeholder = useMemo(() => {
     if (isInventory) return "Quick search inventory...";
     if (isPerformance) return "Global Trade Search...";
-    if (isProfile) return "Search orders, docs...";
     return "Search customers, orders, PRs, products, offers…";
-  }, [isInventory, isPerformance, isProfile]);
+  }, [isInventory, isPerformance]);
 
   const searchValue = isInventory
     ? inventorySearch
     : isPerformance
       ? performanceSearch
-      : isProfile
-        ? profileSearch
-        : dashboardSearch;
+      : dashboardSearch;
 
   const handleSearchChange = (value: string) => {
     if (isInventory) {
@@ -80,10 +73,6 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
     }
     if (isPerformance) {
       setPerformanceSearch(value);
-      return;
-    }
-    if (isProfile) {
-      setProfileSearch(value);
       return;
     }
     setDashboardSearch(value);
@@ -117,7 +106,7 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
 
       {isProfile ? (
         <p className="hidden shrink-0 text-base font-bold text-[#0B1F3A] lg:block">
-          Profile & Verification
+          Admin Profile
         </p>
       ) : null}
 

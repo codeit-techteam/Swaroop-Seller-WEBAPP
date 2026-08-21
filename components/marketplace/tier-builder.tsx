@@ -219,18 +219,23 @@ export function TierBuilder({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0B1F3A]/5">
             <Gem className="h-4 w-4 text-[#0B1F3A]" />
           </div>
-          <h2 className="text-base font-semibold text-slate-900">
-            3. Bulk Pricing Builder
-          </h2>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">
+              3. Bulk Pricing Builder
+            </h2>
+            <p className="text-xs text-slate-400">
+              Volume discounts auto-calculate unit price
+            </p>
+          </div>
         </div>
-        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
-          Dynamic Savings Enabled
+        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">
+          Dynamic Savings
         </span>
       </div>
 

@@ -208,7 +208,12 @@ export function CatalogView() {
                 <p className="font-medium text-slate-800">
                   {formatCompactInr(row.sellingPrice)}
                 </p>
-                <p className="text-xs text-slate-400">per {row.unit}</p>
+                <p className="text-xs text-slate-400">
+                  per {row.unit}
+                  {row.bulkPrices?.length
+                    ? ` · ${row.bulkPrices.length} tiers`
+                    : ""}
+                </p>
               </TableCell>
               <TableCell>
                 <p
@@ -227,11 +232,11 @@ export function CatalogView() {
                 <OpsStatusBadge status={row.publishStatus} />
               </TableCell>
               <TableCell>
-                <div className="flex justify-end gap-1.5">
+                <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs"
+                    className="h-8 shrink-0 px-3 text-xs"
                     onClick={() => setOpen(row)}
                   >
                     Edit
@@ -240,7 +245,7 @@ export function CatalogView() {
                     size="sm"
                     variant={isLive ? "outline" : "default"}
                     className={cn(
-                      "h-8 text-xs",
+                      "h-8 shrink-0 px-3 text-xs",
                       isLive
                         ? "text-slate-600"
                         : "bg-[#0B1F3A] text-white hover:bg-[#122846]",

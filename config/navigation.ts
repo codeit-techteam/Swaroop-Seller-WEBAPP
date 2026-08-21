@@ -71,15 +71,15 @@ export const NAV_SECTIONS: NavSection[] = [
         hideForSeller: true,
         children: [
           {
-            label: "Products",
-            href: ROUTES.MARKETPLACE_CATALOG,
+            label: "Categories",
+            href: ROUTES.MARKETPLACE_CATEGORIES,
             icon: Package,
             permission: "catalog.manage",
             hideForSeller: true,
           },
           {
-            label: "Categories",
-            href: ROUTES.MARKETPLACE_CATEGORIES,
+            label: "Products",
+            href: ROUTES.MARKETPLACE_CATALOG,
             icon: Package,
             permission: "catalog.manage",
             hideForSeller: true,
@@ -88,13 +88,6 @@ export const NAV_SECTIONS: NavSection[] = [
             label: "Pricing",
             href: ROUTES.MARKETPLACE_PRICING,
             icon: Percent,
-            permission: "catalog.manage",
-            hideForSeller: true,
-          },
-          {
-            label: "Promotions",
-            href: ROUTES.MARKETPLACE_OFFERS,
-            icon: Tag,
             permission: "catalog.manage",
             hideForSeller: true,
           },
@@ -132,12 +125,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: ROUTES.CUSTOMER_ORDERS,
         icon: ShoppingCart,
         permission: "customers.view",
-      },
-      {
-        label: "Offer Review",
-        href: ROUTES.OFFER_REVIEW_STATUS,
-        icon: ClipboardList,
-        permission: "offers.review",
       },
     ],
   },
@@ -276,4 +263,34 @@ export function getVisibleNavSections(role: UserRole): NavSection[] {
         children: item.children?.filter((child) => visibleItem(child, role)),
       })),
   })).filter((section) => section.items.length > 0);
+}
+
+export function collectNavHrefs(sections: NavSection[]): string[] {
+  return Array.from(
+    new Set(
+      sections.flatMap((section) =>
+        section.items.flatMap((item) => [
+          item.href,
+          ...(item.children?.map((child) => child.href) ?? []),
+        ]),
+      ),
+    ),
+  );
+}
+
+function pathMatchesHref(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** True only for the most specific nav href that matches the current path. */
+export function isNavHrefActive(
+  pathname: string,
+  href: string,
+  allHrefs: string[],
+): boolean {
+  if (!pathMatchesHref(pathname, href)) return false;
+  return !allHrefs.some(
+    (candidate) =>
+      candidate.length > href.length && pathMatchesHref(pathname, candidate),
+  );
 }

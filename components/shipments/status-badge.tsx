@@ -7,7 +7,7 @@ import type { ShipmentStatus } from "@/types/shipments";
 import { SHIPMENT_STATUS_LABELS } from "@/types/shipments";
 
 const variants = cva(
-  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+  "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold tracking-wide",
   {
     variants: {
       status: {

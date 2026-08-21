@@ -22,6 +22,8 @@ export function PurchasePagination({
 }: PurchasePaginationProps) {
   const start = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalItems);
+  const canGoPrev = page > 1;
+  const canGoNext = page < totalPages && totalItems > 0;
 
   const pages = Array.from(
     { length: totalPages },
@@ -38,20 +40,23 @@ export function PurchasePagination({
       <p className="text-xs text-slate-500">
         Showing {start}-{end} of {totalItems} requests
       </p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <Button
+          type="button"
           variant="outline"
           size="sm"
-          disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
-          className="h-8 border-slate-200 px-2"
-          aria-label="Previous page"
+          disabled={!canGoPrev}
+          onClick={() => {
+            if (canGoPrev) onPageChange(page - 1);
+          }}
+          className="h-8 border-slate-200"
         >
-          ‹
+          Previous
         </Button>
         {pages.map((pageNumber) => (
           <Button
             key={pageNumber}
+            type="button"
             size="sm"
             variant={pageNumber === page ? "default" : "outline"}
             onClick={() => onPageChange(pageNumber)}
@@ -65,14 +70,21 @@ export function PurchasePagination({
           </Button>
         ))}
         <Button
-          variant="outline"
+          type="button"
+          variant={canGoNext ? "default" : "outline"}
           size="sm"
-          disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}
-          className="h-8 border-slate-200 px-2"
-          aria-label="Next page"
+          disabled={!canGoNext}
+          onClick={() => {
+            if (canGoNext) onPageChange(page + 1);
+          }}
+          className={cn(
+            "h-8",
+            canGoNext
+              ? "bg-[#1B6EF3] text-white hover:bg-[#1558C8]"
+              : "border-slate-200",
+          )}
         >
-          ›
+          Next
         </Button>
       </div>
     </div>

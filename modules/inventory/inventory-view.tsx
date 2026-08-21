@@ -45,11 +45,57 @@ import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import {
   inventoryCategories,
   inventoryGrades,
+  inventoryOrigins,
   inventoryStatuses,
-  inventoryWarehouses,
 } from "@/mock/inventory";
 import { useInventoryStore } from "@/store/inventoryStore";
 import type { InventoryItem } from "@/types/inventory";
+
+function InventoryPricingSummary({ item }: { item: InventoryItem }) {
+  const margin = item.offerPrice * 0.07;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            Customer selling price
+          </p>
+          <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">
+            {formatCurrency(item.offerPrice)}
+            <span className="ml-1 text-xs font-medium text-slate-400">
+              / MT
+            </span>
+          </p>
+        </div>
+        <Link
+          href={ROUTES.MARKETPLACE_PRICING}
+          className="text-xs font-semibold text-[#1B6EF3] hover:underline"
+          onClick={(event) => event.stopPropagation()}
+        >
+          Manage pricing
+        </Link>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-lg bg-white px-2.5 py-2 ring-1 ring-slate-100">
+          <p className="text-slate-400">MOQ</p>
+          <p className="font-semibold text-slate-800">
+            {item.moq} {item.unit}
+          </p>
+        </div>
+        <div className="rounded-lg bg-white px-2.5 py-2 ring-1 ring-slate-100">
+          <p className="text-slate-400">Est. margin</p>
+          <p className="font-semibold text-emerald-700">
+            ~{formatCurrency(margin)}
+          </p>
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+        Spot price, bulk tiers and payment terms are managed in Catalog →
+        Products / Pricing and published to the customer marketplace.
+      </p>
+    </div>
+  );
+}
 
 function InventoryRow({
   item,
@@ -82,7 +128,7 @@ function InventoryRow({
         </div>
       </TableCell>
       <TableCell className="text-slate-600">{item.category}</TableCell>
-      <TableCell className="text-slate-600">{item.warehouseName}</TableCell>
+      <TableCell className="text-slate-600">{item.origin}</TableCell>
       <TableCell
         className={cn(
           "tabular-nums font-medium",
@@ -90,7 +136,6 @@ function InventoryRow({
         )}
       >
         {formatNumber(item.availableMt, {
-          minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })}
       </TableCell>
@@ -152,15 +197,19 @@ export function InventoryView() {
   void sort;
 
   const filtered = getFilteredProducts();
-  const products = getPaginatedProducts();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const products =
+    safePage === page
+      ? getPaginatedProducts()
+      : filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
   const hasActiveFilters =
     Boolean(filters.search.trim()) ||
     filters.grade !== "All Grades" ||
     filters.category !== "All Categories" ||
-    filters.warehouse !== "All Warehouses" ||
+    filters.origin !== "All Origins" ||
     filters.status !== "Status: Any";
   const summary = hasActiveFilters ? getComputedSummary() : summaryBase;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pageIds = products.map((item) => item.id);
   const allSelected =
     pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
@@ -206,7 +255,7 @@ export function InventoryView() {
           value={summary.lowStock}
           valueClassName="text-red-600"
         />
-        <SummaryCard title="Warehouses" value={summary.warehouses} />
+        <SummaryCard title="Origins" value={summary.origins} />
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -244,16 +293,16 @@ export function InventoryView() {
           </Select>
 
           <Select
-            value={filters.warehouse}
-            onValueChange={(value) => setFilter("warehouse", value)}
+            value={filters.origin}
+            onValueChange={(value) => setFilter("origin", value)}
           >
             <SelectTrigger className="h-9 w-[190px] border-slate-200 bg-white text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {inventoryWarehouses.map((warehouse) => (
-                <SelectItem key={warehouse} value={warehouse}>
-                  {warehouse}
+              {inventoryOrigins.map((origin) => (
+                <SelectItem key={origin} value={origin}>
+                  {origin}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -320,9 +369,9 @@ export function InventoryView() {
                 </TableHead>
                 <TableHead
                   className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-                  onClick={() => setSort("warehouseName")}
+                  onClick={() => setSort("origin")}
                 >
-                  Warehouse
+                  Origin
                 </TableHead>
                 <TableHead
                   className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500"
@@ -372,11 +421,13 @@ export function InventoryView() {
           </Table>
         </div>
         <ErpPagination
-          page={page}
+          page={safePage}
           totalPages={totalPages}
           totalItems={filtered.length}
           pageSize={pageSize}
-          onPageChange={setPage}
+          onPageChange={(nextPage) => {
+            setPage(nextPage);
+          }}
         />
       </div>
 
@@ -409,15 +460,20 @@ export function InventoryView() {
                 label="MOQ"
                 value={`${selectedProduct.moq.toFixed(2)} MT`}
               />
-              <MetricCard label="Origin" value={selectedProduct.origin} />
+              <MetricCard label="SKU" value={selectedProduct.sku} />
             </div>
 
+            <InventoryPricingSummary item={selectedProduct} />
+
             <div className="rounded-xl bg-[#0B1F3A] p-4 text-white">
-              <p className="text-sm font-semibold">
-                {selectedProduct.warehouseName}
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Origin / Supplier
+              </p>
+              <p className="mt-1 text-sm font-semibold">
+                {selectedProduct.origin}
               </p>
               <p className="mt-1 text-xs text-slate-300">
-                {selectedProduct.warehouseAddress}
+                Marketplace catalog source for ADMIN listing review
               </p>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center justify-between text-xs">

@@ -58,14 +58,14 @@ export const defaultDocuments: DocumentItem[] = [
     id: "pan_card",
     name: "PAN Card",
     description: "Permanent Account Number card of the business entity.",
-    required: true,
+    required: false,
     status: "empty",
   },
   {
     id: "aadhaar_card",
     name: "Aadhaar Card",
     description: "Aadhaar card of the authorized signatory.",
-    required: true,
+    required: false,
     status: "empty",
   },
   {
@@ -86,7 +86,7 @@ export const defaultDocuments: DocumentItem[] = [
     id: "address_proof",
     name: "Address Proof",
     description: "Utility bill or rental agreement as address proof.",
-    required: true,
+    required: false,
     status: "empty",
   },
 ];
@@ -161,11 +161,9 @@ export const verificationStatusCards = [
 ];
 
 export const reviewChecklist = [
-  "GST Verification",
-  "PAN Verification",
-  "Document Upload",
-  "Bank Account Verification",
-  "Location Verification",
+  "Company Details",
+  "Document Uploads",
+  "Bank Information",
 ];
 
 export const submissionSummary = {

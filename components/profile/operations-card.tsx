@@ -29,11 +29,16 @@ export function OperationsCard({ seller, className }: OperationsCardProps) {
         className,
       )}
     >
-      <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
-        <LayoutGrid className="h-4 w-4 text-[#1B6EF3]" />
-        <h3 className="text-sm font-semibold text-slate-900">
-          Operations Profile
-        </h3>
+      <div className="flex items-start gap-2 border-b border-slate-100 px-5 py-4">
+        <LayoutGrid className="mt-0.5 h-4 w-4 shrink-0 text-[#1B6EF3]" />
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">
+            Operations Profile
+          </h3>
+          <p className="mt-0.5 text-[11px] text-slate-400">
+            Categories, warehouses &amp; logistics
+          </p>
+        </div>
       </div>
 
       <div className="space-y-5 p-5">

@@ -45,6 +45,35 @@ export interface CatalogCategory {
 export interface ProductSpecRow {
   label: string;
   value: string;
+  standard?: string;
+}
+
+export interface CatalogBulkPrice {
+  minQty: number;
+  maxQty: number | null;
+  price: number;
+}
+
+export type CatalogPaymentTermId =
+  | "advance"
+  | "on_loading"
+  | "on_delivery"
+  | "credit_15"
+  | "credit_30";
+
+export interface CatalogPaymentTerm {
+  id: CatalogPaymentTermId;
+  title: string;
+  description: string;
+  enabled: boolean;
+  surchargePct?: number;
+  discountPct?: number;
+}
+
+export interface CatalogDocument {
+  name: string;
+  type: string;
+  fileName: string;
 }
 
 export interface CatalogProduct {
@@ -63,14 +92,27 @@ export interface CatalogProduct {
   moq: number;
   availableQty: number;
   location: string;
+  origin: string;
+  casNumber: string;
+  hsnCode: string;
+  application: string;
+  applications: string[];
+  industry: string;
+  etaLabel: string;
+  creditEligible: boolean;
+  highlights: string[];
+  qualityBadges: string[];
   deliveryAvailable: boolean;
   specifications: ProductSpecRow[];
   sellingPrice: number;
   marketPrice: number;
   internalCost: number;
   deliveryCharge: number;
+  transportMode: string;
   locationPrices: Array<{ location: string; price: number }>;
-  bulkPrices: Array<{ minQty: number; price: number }>;
+  bulkPrices: CatalogBulkPrice[];
+  paymentTerms: CatalogPaymentTerm[];
+  documents: CatalogDocument[];
   segmentPrices: Array<{ segmentId: string; price: number }>;
   effectiveDate: string;
   publishStatus: PublishStatus;
@@ -159,11 +201,24 @@ export interface PublishedProduct {
   availableQty: number;
   stockIndicator: "in_stock" | "limited" | "out_of_stock";
   location: string;
+  origin: string;
+  casNumber: string;
+  hsnCode: string;
+  application: string;
+  applications: string[];
+  industry: string;
+  creditEligible: boolean;
+  highlights: string[];
+  qualityBadges: string[];
   deliveryAvailable: boolean;
   specifications: ProductSpecRow[];
   sellingPrice: number;
   marketPrice: number;
   deliveryCharge: number;
+  transportMode: string;
+  bulkPrices: CatalogBulkPrice[];
+  paymentTerms: CatalogPaymentTerm[];
+  documents: CatalogDocument[];
   etaLabel: string;
 }
 

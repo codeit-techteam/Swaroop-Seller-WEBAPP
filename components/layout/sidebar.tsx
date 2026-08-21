@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   AlertDialog,
@@ -22,9 +22,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CURRENT_USER, getVisibleNavSections, ROLE_LABELS } from "@/config";
+import {
+  collectNavHrefs,
+  CURRENT_USER,
+  getVisibleNavSections,
+  isNavHrefActive,
+  ROLE_LABELS,
+} from "@/config";
 import { ROUTES } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
 interface SidebarProps {
@@ -36,13 +42,37 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
   const router = useRouter();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const role = user?.role ?? CURRENT_USER.role;
   const navSections = useMemo(() => getVisibleNavSections(role), [role]);
+  const allHrefs = useMemo(() => collectNavHrefs(navSections), [navSections]);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setOpenGroups((current) => {
+      const next = { ...current };
+      let changed = false;
+      for (const section of navSections) {
+        for (const item of section.items) {
+          if (!item.children?.length) continue;
+          const groupActive = item.children.some((child) =>
+            isNavHrefActive(pathname, child.href, allHrefs),
+          );
+          if (groupActive && next[item.href] !== true) {
+            next[item.href] = true;
+            changed = true;
+          }
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [allHrefs, navSections, pathname]);
 
   const handleLogoutConfirm = () => {
     setLogoutOpen(false);
+    logout();
     router.push(ROUTES.SELLER_LOGIN);
+    router.refresh();
   };
 
   return (
@@ -63,7 +93,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                 PetroTrade
               </p>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Enterprise Operations
+                ADMIN PANEL
               </p>
             </div>
           ) : null}
@@ -82,60 +112,104 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
               </p>
             ) : null}
             {section.items.map((item) => {
-              const isActive =
-                pathname === item.href || pathname.startsWith(`${item.href}/`);
-              const Icon = item.icon;
               const children = item.children ?? [];
-              const expanded = openGroups[item.href] ?? isActive;
+              const groupActive = children.some((child) =>
+                isNavHrefActive(pathname, child.href, allHrefs),
+              );
+              const isActive =
+                children.length > 0
+                  ? false
+                  : isNavHrefActive(pathname, item.href, allHrefs);
+              const Icon = item.icon;
+              const expanded = openGroups[item.href] ?? groupActive;
 
               return (
                 <div key={`${item.href}-${item.label}`}>
                   {children.length ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOpenGroups((current) => ({
-                          ...current,
-                          [item.href]: !expanded,
-                        }))
-                      }
+                    <div
                       className={cn(
-                        "group relative flex w-full items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
-                        isActive
-                          ? "bg-[#E8F1FF] text-[#1B6EF3]"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                        "rounded-lg transition-colors",
+                        expanded && !collapsed && "bg-slate-50",
                       )}
                     >
-                      {isActive ? (
-                        <span className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-[#1B6EF3]" />
-                      ) : null}
-                      <Icon
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          isActive ? "text-[#1B6EF3]" : "text-slate-400",
-                        )}
-                      />
-                      {!collapsed ? (
-                        <>
-                          <Link
-                            href={item.href}
-                            className="flex-1 truncate text-left"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            {item.label}
-                          </Link>
-                          <ChevronDown
+                      <div className="flex items-center">
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "group relative flex min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
+                            groupActive
+                              ? "text-slate-900"
+                              : "text-slate-600 hover:bg-white/80 hover:text-slate-900",
+                          )}
+                        >
+                          <Icon
                             className={cn(
-                              "h-3.5 w-3.5 text-slate-400 transition-transform",
-                              expanded ? "rotate-0" : "-rotate-90",
+                              "h-4 w-4 shrink-0",
+                              groupActive ? "text-[#1B6EF3]" : "text-slate-400",
                             )}
                           />
-                        </>
+                          {!collapsed ? (
+                            <span className="truncate">{item.label}</span>
+                          ) : null}
+                        </Link>
+                        {!collapsed ? (
+                          <button
+                            type="button"
+                            aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
+                            aria-expanded={expanded}
+                            onClick={() =>
+                              setOpenGroups((current) => ({
+                                ...current,
+                                [item.href]: !expanded,
+                              }))
+                            }
+                            className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
+                          >
+                            <ChevronDown
+                              className={cn(
+                                "h-3.5 w-3.5 transition-transform",
+                                expanded ? "rotate-0" : "-rotate-90",
+                              )}
+                            />
+                          </button>
+                        ) : null}
+                      </div>
+                      {expanded && !collapsed ? (
+                        <div className="ml-[22px] space-y-0.5 border-l border-slate-200 pb-1.5 pl-2 pr-1.5">
+                          {children.map((child) => {
+                            const childActive = isNavHrefActive(
+                              pathname,
+                              child.href,
+                              allHrefs,
+                            );
+                            const ChildIcon = child.icon;
+                            return (
+                              <Link
+                                key={`${child.href}-${child.label}`}
+                                href={child.href}
+                                aria-current={childActive ? "page" : undefined}
+                                className={cn(
+                                  "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] font-medium transition-colors",
+                                  childActive
+                                    ? "bg-[#E8F1FF] text-[#1B6EF3]"
+                                    : "text-slate-500 hover:bg-white hover:text-slate-800",
+                                )}
+                              >
+                                {childActive ? (
+                                  <span className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-[#1B6EF3]" />
+                                ) : null}
+                                <ChildIcon className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{child.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
                       ) : null}
-                    </button>
+                    </div>
                   ) : (
                     <Link
                       href={item.href}
+                      aria-current={isActive ? "page" : undefined}
                       className={cn(
                         "group relative flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
                         isActive
@@ -169,31 +243,6 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                       ) : null}
                     </Link>
                   )}
-                  {children.length && expanded && !collapsed ? (
-                    <div className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-200 pl-2">
-                      {children.map((child) => {
-                        const childActive =
-                          pathname === child.href ||
-                          pathname.startsWith(`${child.href}/`);
-                        const ChildIcon = child.icon;
-                        return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            className={cn(
-                              "flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] font-medium",
-                              childActive
-                                ? "bg-[#E8F1FF] text-[#1B6EF3]"
-                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
-                            )}
-                          >
-                            <ChildIcon className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">{child.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
@@ -217,8 +266,8 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
           <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
             <Avatar className="h-9 w-9">
               <AvatarImage src="" alt={user?.name ?? CURRENT_USER.name} />
-              <AvatarFallback className="bg-[#0B1F3A] text-xs text-white">
-                {(user?.name ?? "OL").slice(0, 2).toUpperCase()}
+              <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
+                {getInitials(user?.name ?? CURRENT_USER.name)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
@@ -244,7 +293,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
               Confirm Logout
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center">
-              Are you sure you want to log out of PetroTrade Operations? Any
+              Are you sure you want to log out of PetroTrade ADMIN PANEL? Any
               unsaved changes will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>

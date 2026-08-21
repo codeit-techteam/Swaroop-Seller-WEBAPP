@@ -7,6 +7,7 @@ export {
   formatNumber,
   formatPercentage,
 } from "./formatNumber";
+export { getInitials } from "./getInitials";
 export { getStatusColor, getStatusDotColor } from "./statusColor";
 export { storage, STORAGE_KEYS } from "./storage";
 export {

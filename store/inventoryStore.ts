@@ -45,7 +45,7 @@ const defaultFilters: InventoryFilters = {
   search: "",
   grade: "All Grades",
   category: "All Categories",
-  warehouse: "All Warehouses",
+  origin: "All Origins",
   status: "Status: Any",
 };
 
@@ -80,7 +80,14 @@ export const useInventoryStore = create<InventoryState>()(
         })),
       resetFilters: () =>
         set({ filters: defaultFilters, page: 1, selectedIds: [] }),
-      setPage: (page) => set({ page }),
+      setPage: (page) => {
+        const { pageSize } = get();
+        const totalPages = Math.max(
+          1,
+          Math.ceil(get().getFilteredProducts().length / pageSize),
+        );
+        set({ page: Math.min(Math.max(1, page), totalPages) });
+      },
       setSort: (key) => {
         const current = get().sort;
         set({
@@ -121,7 +128,7 @@ export const useInventoryStore = create<InventoryState>()(
             item.productName.toLowerCase().includes(query) ||
             item.grade.toLowerCase().includes(query) ||
             item.sku.toLowerCase().includes(query) ||
-            item.warehouseName.toLowerCase().includes(query);
+            item.origin.toLowerCase().includes(query);
 
           const matchesGrade =
             filters.grade === "All Grades" || item.grade === filters.grade;
@@ -130,9 +137,8 @@ export const useInventoryStore = create<InventoryState>()(
             filters.category === "All Categories" ||
             item.category === filters.category;
 
-          const matchesWarehouse =
-            filters.warehouse === "All Warehouses" ||
-            item.warehouseName === filters.warehouse;
+          const matchesOrigin =
+            filters.origin === "All Origins" || item.origin === filters.origin;
 
           const matchesStatus =
             filters.status === "Status: Any" || item.status === filters.status;
@@ -141,7 +147,7 @@ export const useInventoryStore = create<InventoryState>()(
             matchesSearch &&
             matchesGrade &&
             matchesCategory &&
-            matchesWarehouse &&
+            matchesOrigin &&
             matchesStatus
           );
         });
@@ -179,14 +185,13 @@ export const useInventoryStore = create<InventoryState>()(
         ).length;
 
         const reserved = Math.round(totalInventory * 0.14);
-        const warehouses = new Set(filtered.map((item) => item.warehouseName))
-          .size;
+        const origins = new Set(filtered.map((item) => item.origin)).size;
 
         return {
           totalInventory: Math.round(totalInventory),
           available: Math.round(available),
           reserved,
-          warehouses,
+          origins,
           lowStock,
           outOfStock,
           unit: "MT",

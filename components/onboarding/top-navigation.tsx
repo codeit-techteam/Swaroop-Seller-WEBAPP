@@ -10,12 +10,14 @@ import { useOnboardingStore } from "@/store/onboardingStore";
 interface TopNavigationProps {
   title?: string;
   subtitle?: string;
+  showBrand?: boolean;
   className?: string;
 }
 
 export function TopNavigation({
   title,
   subtitle,
+  showBrand = false,
   className,
 }: TopNavigationProps) {
   const companyName = useOnboardingStore((s) => s.company.companyName);
@@ -36,9 +38,14 @@ export function TopNavigation({
             ) : null}
           </>
         ) : (
-          <div className="flex items-center gap-2 lg:hidden">
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              !showBrand && "lg:hidden",
+            )}
+          >
             <Fuel className="h-5 w-5 text-primary" />
-            <span className="font-semibold">PetroTrade Portal</span>
+            <span className="font-semibold">ADMIN PANEL</span>
           </div>
         )}
       </div>

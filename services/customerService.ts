@@ -2,12 +2,17 @@ import { nextId, nowIso } from "@/lib/cx";
 import { customerSegmentsMock, customersMock } from "@/mock/customers";
 import type {
   CustomerAccountStatus,
+  CustomerDocument,
+  CustomerDocumentType,
   CustomerDraft,
   CustomerKycStatus,
   CustomerProfile,
   CustomerSegment,
 } from "@/types/customers";
-import { defaultCustomerDraft } from "@/types/customers";
+import {
+  CUSTOMER_DOCUMENT_TYPE_LABELS,
+  defaultCustomerDraft,
+} from "@/types/customers";
 
 let customers = [...customersMock];
 const segments = [...customerSegmentsMock];
@@ -21,6 +26,10 @@ function syncDerived(customer: CustomerProfile): CustomerProfile {
     outstanding: customer.credit.outstanding,
     creditStatus: customer.credit.status,
   };
+}
+
+function todayLabel() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export const customerService = {
@@ -78,7 +87,7 @@ export const customerService = {
           id: nextId("act"),
           at: nowIso(),
           title: "Customer created",
-          description: "Added from Seller + ADMIN panel",
+          description: "Added from ADMIN PANEL",
           kind: "KYC",
         },
       ],
@@ -113,6 +122,65 @@ export const customerService = {
             ? "SUSPENDED"
             : undefined,
     });
+  },
+  async setDocumentStatus(
+    customerId: string,
+    documentId: string,
+    status: CustomerKycStatus,
+    rejectionReason?: string,
+  ) {
+    const customer = customers.find(
+      (row) => row.id === customerId || row.customerId === customerId,
+    );
+    if (!customer) return undefined;
+
+    const documents = customer.documents.map((doc) =>
+      doc.id === documentId
+        ? {
+            ...doc,
+            status,
+            verifiedBy: status === "VERIFIED" ? "Compliance Desk" : undefined,
+            rejectionReason:
+              status === "REJECTED" ? rejectionReason || undefined : undefined,
+          }
+        : doc,
+    );
+
+    return this.update(customer.id, { documents });
+  },
+  async uploadDocument(
+    customerId: string,
+    type: CustomerDocumentType,
+    fileName: string,
+    sizeLabel = "1.0 MB",
+  ) {
+    const customer = customers.find(
+      (row) => row.id === customerId || row.customerId === customerId,
+    );
+    if (!customer) return undefined;
+
+    const name = CUSTOMER_DOCUMENT_TYPE_LABELS[type];
+    const existing = customer.documents.find((doc) => doc.type === type);
+    const nextDoc: CustomerDocument = {
+      id: existing?.id ?? nextId("doc"),
+      type,
+      name,
+      status: "UNDER_REVIEW",
+      uploadedAt: todayLabel(),
+      sizeLabel,
+      fileName,
+      previewUrl:
+        "https://images.unsplash.com/photo-1554224315-beee415c201f?w=800&q=80",
+      previewMimeType: "application/pdf",
+      verifiedBy: undefined,
+      rejectionReason: undefined,
+    };
+
+    const documents = existing
+      ? customer.documents.map((doc) => (doc.type === type ? nextDoc : doc))
+      : [...customer.documents, nextDoc];
+
+    return this.update(customer.id, { documents });
   },
   async listSegments(): Promise<CustomerSegment[]> {
     return segments.map((segment) => ({

@@ -12,7 +12,7 @@ export function SettingsView() {
   return (
     <OperationsShell
       title="System settings"
-      subtitle="Role-based access for the Seller + ADMIN control center. Customer APP/WEB only receive published data."
+      subtitle="Role-based access for the ADMIN PANEL control center. Customer APP/WEB only receive published data."
     >
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-5">

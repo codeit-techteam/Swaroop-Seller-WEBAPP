@@ -38,11 +38,16 @@ export function useClientTable<T>({
   }, [getStatus, rows, search, searchFields, status]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice(
-    (safePage - 1) * pageSize,
-    safePage * pageSize,
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const paginated = useMemo(
+    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filtered, pageSize, safePage],
   );
+
+  const goToPage = (nextPage: number) => {
+    const clamped = Math.min(Math.max(1, nextPage), totalPages);
+    setPage(clamped);
+  };
 
   return {
     search,
@@ -56,7 +61,7 @@ export function useClientTable<T>({
       setPage(1);
     },
     page: safePage,
-    setPage,
+    setPage: goToPage,
     sortDir,
     toggleSort: () => setSortDir((dir) => (dir === "asc" ? "desc" : "asc")),
     filtered,

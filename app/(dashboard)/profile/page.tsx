@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { ProfileView } from "@/modules/profile";
 
 export const metadata: Metadata = {
-  title: "Profile & Verification | PetroTrade Seller",
+  title: "Admin Profile | PetroTrade ADMIN PANEL",
   description:
-    "Manage seller profile, business identity, bank details, and verification documents",
+    "Manage your ADMIN PANEL profile, contact details, and role access",
 };
 
 export default function ProfilePage() {

@@ -29,9 +29,6 @@ export function formatCompactInr(value: number): string {
     return `${sign}₹${(abs / 1_00_00_000).toFixed(1)} Cr`;
   }
 
-  if (abs >= 1_00_000) {
-    return `${sign}₹${(abs / 1_00_000).toFixed(abs >= 10_00_000 ? 0 : 1)} L`;
-  }
-
+  // Keep marketplace unit prices as full INR so catalog/pricing desks stay precise.
   return `${sign}${formatCurrency(abs)}`;
 }
