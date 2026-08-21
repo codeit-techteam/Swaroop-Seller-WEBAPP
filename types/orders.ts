@@ -24,8 +24,15 @@ export type WarehouseCode = "Hazira" | "Mundra" | "JNPT" | "Dahej" | "Kandla";
 export type SettlementStatus =
   "funds_secured" | "settlement_pending" | "settlement_completed";
 
+export type PaymentStatus =
+  | "awaiting_payment"
+  | "proof_submitted"
+  | "verified"
+  | "collect_on_delivery"
+  | "collected";
+
 export type OrderDocumentType =
-  "invoice" | "loading_slip" | "eway_bill" | "coa";
+  "invoice" | "loading_slip" | "eway_bill" | "coa" | "pod";
 
 export type TimelineStepStatus = "completed" | "current" | "pending";
 
@@ -47,6 +54,16 @@ export type StatusUpdateValue =
   | "dispatched"
   | "in_transit"
   | "delivered";
+
+export type OrderFlowAction =
+  | "accept"
+  | "verify_payment"
+  | "start_processing"
+  | "mark_dispatch_ready"
+  | "assign_transport"
+  | "mark_in_transit"
+  | "mark_delivered"
+  | "none";
 
 export type OrderValueRange =
   "All Values" | "Under 5L" | "5L - 25L" | "25L - 1Cr" | "Above 1Cr";
@@ -72,7 +89,38 @@ export interface TransportDetails {
   carrier: string;
   vehicleNumber: string;
   driver: string;
+  driverPhone?: string;
   eta: string;
+  currentLocation?: string;
+}
+
+export interface PaymentDetails {
+  status: PaymentStatus;
+  amountDue: number;
+  amountPaid: number;
+  utr?: string;
+  paidAt?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  proofFileName?: string;
+  notes?: string;
+}
+
+export interface TrackingEvent {
+  id: string;
+  label: string;
+  location: string;
+  timestamp: string;
+  status: TimelineStepStatus;
+  note?: string;
+}
+
+export interface ProofOfDelivery {
+  receiverName: string;
+  receivedAt: string;
+  otpVerified: boolean;
+  notes?: string;
+  fileName?: string;
 }
 
 export interface TimelineStep {
@@ -120,6 +168,8 @@ export interface Order {
   orderNumber: string;
   /** Blind marketplace — company name only, never phone/email/contact */
   buyerCompany: string;
+  /** Customer purchase request / source reference shown to admin */
+  customerRequestId?: string;
   productName: string;
   productGrade: string;
   materialCategory: string;
@@ -132,12 +182,15 @@ export interface Order {
   eta: string;
   paymentTerm: PaymentTerm;
   paymentLabel: string;
+  payment: PaymentDetails;
   status: OrderStatus;
   settlementStatus: SettlementStatus;
   gradeSpecs: GradeSpecs;
   dispatchInstructions: string;
   documents: OrderDocument[];
   transport: TransportDetails | null;
+  trackingEvents: TrackingEvent[];
+  proofOfDelivery: ProofOfDelivery | null;
   timeline: TimelineStep[];
   detailTimeline: TimelineStep[];
   financials: FinancialBreakdown;
@@ -175,6 +228,35 @@ export interface OrderSummary {
 export interface StatusUpdateForm {
   status: StatusUpdateValue | "";
   remarks: string;
+  carrier?: string;
+  vehicleNumber?: string;
+  driver?: string;
+  driverPhone?: string;
+  eta?: string;
+  currentLocation?: string;
+}
+
+export interface VerifyPaymentForm {
+  utr: string;
+  amountPaid: string;
+  proofFileName: string;
+  notes: string;
+}
+
+export interface AssignTransportForm {
+  carrier: string;
+  vehicleNumber: string;
+  driver: string;
+  driverPhone: string;
+  eta: string;
+  currentLocation: string;
+}
+
+export interface MarkDeliveredForm {
+  receiverName: string;
+  otpVerified: boolean;
+  notes: string;
+  fileName: string;
 }
 
 export interface SupportTicketForm {
@@ -264,6 +346,14 @@ export const SETTLEMENT_LABELS: Record<SettlementStatus, string> = {
   settlement_completed: "Settlement Completed",
 };
 
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  awaiting_payment: "Awaiting Payment",
+  proof_submitted: "Proof Submitted",
+  verified: "Payment Verified",
+  collect_on_delivery: "Collect on Delivery",
+  collected: "Payment Collected",
+};
+
 export const STATUS_UPDATE_OPTIONS: {
   value: StatusUpdateValue;
   label: string;
@@ -277,6 +367,119 @@ export const STATUS_UPDATE_OPTIONS: {
   { value: "in_transit", label: "In Transit", mapsTo: "in_transit" },
   { value: "delivered", label: "Delivered", mapsTo: "delivered" },
 ];
+
+/** Sequential lifecycle used by the admin/seller manage flow */
+export const ORDER_LIFECYCLE: OrderStatus[] = [
+  "new",
+  "accepted",
+  "processing",
+  "dispatch_ready",
+  "in_transit",
+  "delivered",
+];
+
+export function isPaymentClearedForDispatch(order: Order): boolean {
+  if (order.paymentTerm === "on_delivery") return true;
+  if (order.paymentTerm === "credit_15" || order.paymentTerm === "credit_30") {
+    return (
+      order.payment.status === "verified" ||
+      order.payment.status === "collect_on_delivery" ||
+      order.status !== "new"
+    );
+  }
+  return (
+    order.payment.status === "verified" || order.payment.status === "collected"
+  );
+}
+
+export function getNextFlowAction(order: Order): {
+  action: OrderFlowAction;
+  label: string;
+  description: string;
+  blockedReason?: string;
+} {
+  if (order.status === "cancelled") {
+    return {
+      action: "none",
+      label: "Order Cancelled",
+      description: "No further actions available.",
+    };
+  }
+  if (order.status === "delivered") {
+    return {
+      action: "none",
+      label: "Delivery Complete",
+      description: "Order successfully delivered and settled.",
+    };
+  }
+  if (order.status === "new") {
+    return {
+      action: "accept",
+      label: "Accept Order",
+      description: "Review customer order and generate Proforma Invoice.",
+    };
+  }
+  if (order.status === "accepted") {
+    const needsVerify =
+      order.paymentTerm === "advance" &&
+      order.payment.status !== "verified" &&
+      order.payment.status !== "collected";
+    if (needsVerify) {
+      return {
+        action: "verify_payment",
+        label: "Verify Payment",
+        description:
+          "Confirm UTR / payment proof before starting warehouse processing.",
+      };
+    }
+    return {
+      action: "start_processing",
+      label: "Start Processing",
+      description: "Move order into warehouse QC and packing.",
+    };
+  }
+  if (order.status === "processing" || order.status === "delayed") {
+    if (!isPaymentClearedForDispatch(order) && order.paymentTerm === "advance") {
+      return {
+        action: "verify_payment",
+        label: "Verify Payment",
+        description: "Advance payment must be verified before dispatch ready.",
+        blockedReason: "Payment not verified",
+      };
+    }
+    return {
+      action: "mark_dispatch_ready",
+      label: "Mark Dispatch Ready",
+      description: "QC complete — ready for vehicle assignment.",
+    };
+  }
+  if (order.status === "dispatch_ready") {
+    if (!order.transport || order.transport.vehicleNumber === "Waiting...") {
+      return {
+        action: "assign_transport",
+        label: "Assign Transport",
+        description: "Assign carrier, vehicle and driver for dispatch.",
+      };
+    }
+    return {
+      action: "mark_in_transit",
+      label: "Mark In Transit",
+      description: "Confirm gate-out and start live tracking.",
+    };
+  }
+  if (order.status === "in_transit") {
+    return {
+      action: "mark_delivered",
+      label: "Confirm Delivery",
+      description: "Capture POD and close the order lifecycle.",
+    };
+  }
+  return {
+    action: "none",
+    label: "No Action",
+    description: "Order is in a terminal state.",
+  };
+}
 
 export const SUPPORT_ISSUE_TYPES: SupportIssueType[] = [
   "Delivery",
@@ -298,6 +501,12 @@ export const REJECT_REASONS: RejectReason[] = [
 export const defaultStatusUpdateForm: StatusUpdateForm = {
   status: "",
   remarks: "",
+  carrier: "",
+  vehicleNumber: "",
+  driver: "",
+  driverPhone: "",
+  eta: "",
+  currentLocation: "",
 };
 
 export const defaultSupportTicketForm: SupportTicketForm = {
@@ -314,4 +523,27 @@ export const defaultAcceptOrderForm: AcceptOrderForm = {
 export const defaultRejectOrderForm: RejectOrderForm = {
   reason: "",
   remarks: "",
+};
+
+export const defaultVerifyPaymentForm: VerifyPaymentForm = {
+  utr: "",
+  amountPaid: "",
+  proofFileName: "",
+  notes: "",
+};
+
+export const defaultAssignTransportForm: AssignTransportForm = {
+  carrier: "",
+  vehicleNumber: "",
+  driver: "",
+  driverPhone: "",
+  eta: "",
+  currentLocation: "",
+};
+
+export const defaultMarkDeliveredForm: MarkDeliveredForm = {
+  receiverName: "",
+  otpVerified: true,
+  notes: "",
+  fileName: "",
 };

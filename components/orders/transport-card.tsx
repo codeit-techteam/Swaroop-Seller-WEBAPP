@@ -1,6 +1,6 @@
 "use client";
 
-import { Truck } from "lucide-react";
+import { Phone, Truck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { TransportDetails } from "@/types/orders";
@@ -50,6 +50,20 @@ export function TransportCard({ transport, className }: TransportCardProps) {
               {transport.eta}
             </p>
           </div>
+          {transport.driverPhone ? (
+            <div className="col-span-2 flex items-center gap-1.5 text-xs text-slate-600">
+              <Phone className="h-3.5 w-3.5" />
+              {transport.driverPhone}
+            </div>
+          ) : null}
+          {transport.currentLocation ? (
+            <div className="col-span-2 text-xs text-slate-600">
+              Location:{" "}
+              <span className="font-semibold text-slate-800">
+                {transport.currentLocation}
+              </span>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="flex items-center gap-2 rounded-lg border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-500">

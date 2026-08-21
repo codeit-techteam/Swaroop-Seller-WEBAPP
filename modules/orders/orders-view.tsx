@@ -1,25 +1,35 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 
 import { LoadingOverlay } from "@/components/marketplace/loading-overlay";
 import {
+  AcceptOrderModal,
+  AssignTransportModal,
+  MarkDeliveredModal,
   OrderDrawer,
   OrdersSummaryCards,
   OrdersTable,
   OrdersTabs,
+  RejectOrderModal,
   SearchBar,
   SupportTicketModal,
   TopFilters,
   UpdateStatusModal,
+  VerifyPaymentModal,
 } from "@/components/orders";
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/lib/constants";
 import { useOrdersStore } from "@/store/ordersStore";
 import type { Order } from "@/types/orders";
+import { getNextFlowAction } from "@/types/orders";
 
 export function OrdersView() {
+  const router = useRouter();
+
   useEffect(() => {
     useOrdersStore.setState({ isLoading: true, hasError: false });
     const timer = window.setTimeout(() => {
@@ -41,6 +51,11 @@ export function OrdersView() {
   const dialogOrderId = useOrdersStore((s) => s.dialogOrderId);
   const statusForm = useOrdersStore((s) => s.statusForm);
   const supportForm = useOrdersStore((s) => s.supportForm);
+  const acceptForm = useOrdersStore((s) => s.acceptForm);
+  const rejectForm = useOrdersStore((s) => s.rejectForm);
+  const verifyPaymentForm = useOrdersStore((s) => s.verifyPaymentForm);
+  const assignTransportForm = useOrdersStore((s) => s.assignTransportForm);
+  const markDeliveredForm = useOrdersStore((s) => s.markDeliveredForm);
 
   const setSearch = useOrdersStore((s) => s.setSearch);
   const setFilter = useOrdersStore((s) => s.setFilter);
@@ -54,8 +69,23 @@ export function OrdersView() {
   const closeDialog = useOrdersStore((s) => s.closeDialog);
   const setStatusForm = useOrdersStore((s) => s.setStatusForm);
   const setSupportForm = useOrdersStore((s) => s.setSupportForm);
+  const setAcceptForm = useOrdersStore((s) => s.setAcceptForm);
+  const setRejectForm = useOrdersStore((s) => s.setRejectForm);
+  const setVerifyPaymentForm = useOrdersStore((s) => s.setVerifyPaymentForm);
+  const setAssignTransportForm = useOrdersStore(
+    (s) => s.setAssignTransportForm,
+  );
+  const setMarkDeliveredForm = useOrdersStore((s) => s.setMarkDeliveredForm);
   const updateOrderStatus = useOrdersStore((s) => s.updateOrderStatus);
   const submitSupportTicket = useOrdersStore((s) => s.submitSupportTicket);
+  const acceptOrder = useOrdersStore((s) => s.acceptOrder);
+  const rejectOrder = useOrdersStore((s) => s.rejectOrder);
+  const verifyPayment = useOrdersStore((s) => s.verifyPayment);
+  const startProcessing = useOrdersStore((s) => s.startProcessing);
+  const markDispatchReady = useOrdersStore((s) => s.markDispatchReady);
+  const assignTransport = useOrdersStore((s) => s.assignTransport);
+  const markInTransit = useOrdersStore((s) => s.markInTransit);
+  const markDelivered = useOrdersStore((s) => s.markDelivered);
   const refreshData = useOrdersStore((s) => s.refreshData);
   const retryLoad = useOrdersStore((s) => s.retryLoad);
   const downloadInvoice = useOrdersStore((s) => s.downloadInvoice);
@@ -108,8 +138,9 @@ export function OrdersView() {
 
   const handleStatusUpdate = () => {
     if (!dialogOrder) return;
-    updateOrderStatus(dialogOrder.id);
-    toast.success("Status Updated");
+    const result = updateOrderStatus(dialogOrder.id);
+    if (result.ok) toast.success("Status Updated");
+    else toast.error(result.error ?? "Unable to update status");
   };
 
   const handleSupportSubmit = () => {
@@ -117,6 +148,45 @@ export function OrdersView() {
     const ticket = submitSupportTicket(dialogOrder.id);
     if (ticket) {
       toast.success("Support ticket submitted");
+    }
+  };
+
+  const runFlowAction = (order: Order) => {
+    const next = getNextFlowAction(order);
+    switch (next.action) {
+      case "accept":
+        openDialog("accept", order.id);
+        break;
+      case "verify_payment":
+        openDialog("verify_payment", order.id);
+        break;
+      case "start_processing": {
+        const result = startProcessing(order.id);
+        if (result.ok) toast.success("Order moved to Processing");
+        else toast.error(result.error ?? "Unable to start processing");
+        break;
+      }
+      case "mark_dispatch_ready": {
+        const result = markDispatchReady(order.id);
+        if (result.ok) toast.success("Marked Dispatch Ready");
+        else toast.error(result.error ?? "Unable to update");
+        break;
+      }
+      case "assign_transport":
+        openDialog("assign_transport", order.id);
+        break;
+      case "mark_in_transit": {
+        const result = markInTransit(order.id);
+        if (result.ok) toast.success("Order is In Transit");
+        else toast.error(result.error ?? "Assign transport first");
+        break;
+      }
+      case "mark_delivered":
+        openDialog("mark_delivered", order.id);
+        break;
+      default:
+        router.push(`${ROUTES.ORDERS}/${order.id}`);
+        break;
     }
   };
 
@@ -140,7 +210,6 @@ export function OrdersView() {
     toast.success("Orders reloaded");
   };
 
-  // Allow QA to demo error state: Alt+click "Refresh data"
   const handleRefreshClick = async (
     event: React.MouseEvent<HTMLButtonElement>,
   ) => {
@@ -165,8 +234,8 @@ export function OrdersView() {
             Orders Management
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            View allocated orders, update dispatch status, and manage
-            documentation.
+            Manage customer orders from acceptance through payment verification,
+            dispatch, tracking, and successful delivery.
           </p>
         </div>
       </div>
@@ -219,7 +288,9 @@ export function OrdersView() {
             printOrder(order.id);
             toast.success("Print dialog opened");
           }}
-          onViewDetails={selectOrder}
+          onViewDetails={(order) => {
+            router.push(`${ROUTES.ORDERS}/${order.id}`);
+          }}
           onRetry={handleRetry}
         />
       </motion.div>
@@ -247,6 +318,14 @@ export function OrdersView() {
           if (!selectedOrder) return;
           openDialog("support_ticket", selectedOrder.id);
         }}
+        onManageFlow={() => {
+          if (!selectedOrder) return;
+          runFlowAction(selectedOrder);
+        }}
+        onVerifyPayment={() => {
+          if (!selectedOrder) return;
+          openDialog("verify_payment", selectedOrder.id);
+        }}
         onDownloadDocument={handleDocumentDownload}
         onViewCoa={() => toast.success("Opening COA preview...")}
       />
@@ -271,6 +350,84 @@ export function OrdersView() {
         }}
         onChange={setSupportForm}
         onSubmit={handleSupportSubmit}
+      />
+
+      <AcceptOrderModal
+        open={dialogType === "accept"}
+        order={dialogOrder}
+        form={acceptForm}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onChange={setAcceptForm}
+        onConfirm={() => {
+          if (!dialogOrder) return;
+          acceptOrder(dialogOrder.id);
+          toast.success("Proforma Invoice Generated");
+        }}
+      />
+
+      <RejectOrderModal
+        open={dialogType === "reject"}
+        order={dialogOrder}
+        form={rejectForm}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onChange={setRejectForm}
+        onConfirm={() => {
+          if (!dialogOrder) return;
+          rejectOrder(dialogOrder.id);
+          toast.success("Order Rejected");
+        }}
+      />
+
+      <VerifyPaymentModal
+        open={dialogType === "verify_payment"}
+        order={dialogOrder}
+        form={verifyPaymentForm}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onChange={setVerifyPaymentForm}
+        onSubmit={() => {
+          if (!dialogOrder) return;
+          const result = verifyPayment(dialogOrder.id);
+          if (result.ok) toast.success("Payment verified");
+          else toast.error(result.error ?? "Verification failed");
+        }}
+      />
+
+      <AssignTransportModal
+        open={dialogType === "assign_transport"}
+        order={dialogOrder}
+        form={assignTransportForm}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onChange={setAssignTransportForm}
+        onSubmit={() => {
+          if (!dialogOrder) return;
+          const result = assignTransport(dialogOrder.id);
+          if (result.ok) toast.success("Transport assigned");
+          else toast.error(result.error ?? "Assignment failed");
+        }}
+      />
+
+      <MarkDeliveredModal
+        open={dialogType === "mark_delivered"}
+        order={dialogOrder}
+        form={markDeliveredForm}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onChange={setMarkDeliveredForm}
+        onSubmit={() => {
+          if (!dialogOrder) return;
+          const result = markDelivered(dialogOrder.id);
+          if (result.ok) toast.success("Order delivered successfully");
+          else toast.error(result.error ?? "Delivery confirmation failed");
+        }}
       />
     </div>
   );

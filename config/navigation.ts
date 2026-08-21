@@ -118,7 +118,6 @@ export const NAV_SECTIONS: NavSection[] = [
         href: ROUTES.ORDERS,
         icon: ShoppingCart,
         permission: "orders.view",
-        hideForSeller: true,
       },
       {
         label: "Customer Orders",

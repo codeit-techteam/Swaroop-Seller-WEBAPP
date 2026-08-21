@@ -4,7 +4,8 @@ import { OrderDetailView } from "@/modules/orders";
 
 export const metadata: Metadata = {
   title: "Order Details | PetroTrade ADMIN PANEL",
-  description: "Review order details, accept or reject allocated orders",
+  description:
+    "Manage customer order from acceptance through payment, dispatch, tracking and delivery",
 };
 
 export default function OrderDetailPage() {

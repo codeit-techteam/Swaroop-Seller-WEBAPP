@@ -2,8 +2,14 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
 import { computeOrderSummary, ordersMock } from "@/mock/orders";
+import {
+  allowedStatusUpdates,
+  buildTrackingOnDispatch,
+} from "@/lib/orders/lifecycle";
 import type {
   AcceptOrderForm,
+  AssignTransportForm,
+  MarkDeliveredForm,
   Order,
   OrderFilters,
   OrderSummary,
@@ -14,17 +20,29 @@ import type {
   SupportTicket,
   SupportTicketForm,
   TimelineStep,
+  VerifyPaymentForm,
 } from "@/types/orders";
 import {
   defaultAcceptOrderForm,
+  defaultAssignTransportForm,
+  defaultMarkDeliveredForm,
   defaultRejectOrderForm,
   defaultStatusUpdateForm,
   defaultSupportTicketForm,
+  defaultVerifyPaymentForm,
+  isPaymentClearedForDispatch,
   STATUS_UPDATE_OPTIONS,
 } from "@/types/orders";
 
 type DialogType =
-  "update_status" | "support_ticket" | "accept" | "reject" | null;
+  | "update_status"
+  | "support_ticket"
+  | "accept"
+  | "reject"
+  | "verify_payment"
+  | "assign_transport"
+  | "mark_delivered"
+  | null;
 
 interface OrdersState {
   orders: Order[];
@@ -44,6 +62,9 @@ interface OrdersState {
   supportForm: SupportTicketForm;
   acceptForm: AcceptOrderForm;
   rejectForm: RejectOrderForm;
+  verifyPaymentForm: VerifyPaymentForm;
+  assignTransportForm: AssignTransportForm;
+  markDeliveredForm: MarkDeliveredForm;
   supportTickets: SupportTicket[];
 
   setSearch: (search: string) => void;
@@ -64,7 +85,16 @@ interface OrdersState {
   setSupportForm: (data: Partial<SupportTicketForm>) => void;
   setAcceptForm: (data: Partial<AcceptOrderForm>) => void;
   setRejectForm: (data: Partial<RejectOrderForm>) => void;
-  updateOrderStatus: (orderId: string) => void;
+  setVerifyPaymentForm: (data: Partial<VerifyPaymentForm>) => void;
+  setAssignTransportForm: (data: Partial<AssignTransportForm>) => void;
+  setMarkDeliveredForm: (data: Partial<MarkDeliveredForm>) => void;
+  updateOrderStatus: (orderId: string) => { ok: boolean; error?: string };
+  verifyPayment: (orderId: string) => { ok: boolean; error?: string };
+  startProcessing: (orderId: string) => { ok: boolean; error?: string };
+  markDispatchReady: (orderId: string) => { ok: boolean; error?: string };
+  assignTransport: (orderId: string) => { ok: boolean; error?: string };
+  markInTransit: (orderId: string) => { ok: boolean; error?: string };
+  markDelivered: (orderId: string) => { ok: boolean; error?: string };
   submitSupportTicket: (orderId: string) => SupportTicket | null;
   acceptOrder: (orderId: string) => void;
   rejectOrder: (orderId: string) => void;
@@ -242,6 +272,96 @@ function mapStatusUpdate(value: StatusUpdateValue): Order["status"] {
   );
 }
 
+function applyStatusTransition(
+  order: Order,
+  nextStatus: Order["status"],
+  now: string,
+): Order {
+  const transport =
+    nextStatus === "in_transit" || nextStatus === "delivered"
+      ? order.transport
+      : order.transport;
+
+  let trackingEvents = order.trackingEvents;
+  if (nextStatus === "in_transit" && order.status !== "in_transit") {
+    trackingEvents = buildTrackingOnDispatch(
+      { ...order, transport },
+      now,
+    );
+  }
+  if (nextStatus === "delivered") {
+    trackingEvents = [
+      ...trackingEvents.map((e) =>
+        e.status === "current" ? { ...e, status: "completed" as const } : e,
+      ),
+      {
+        id: `trk-${order.id}-delivered`,
+        label: "Delivered — POD captured",
+        location: "Buyer Warehouse",
+        timestamp: now,
+        status: "completed" as const,
+        note: "Confirmed by admin/seller",
+      },
+    ];
+  }
+
+  let payment = order.payment;
+  if (
+    nextStatus === "delivered" &&
+    order.paymentTerm === "on_delivery" &&
+    payment.status !== "collected"
+  ) {
+    payment = {
+      ...payment,
+      status: "collected",
+      amountPaid: payment.amountDue,
+      paidAt: now,
+      verifiedAt: now,
+      verifiedBy: "Delivery Desk",
+      notes: "Collected on delivery",
+    };
+  }
+
+  return {
+    ...order,
+    status: nextStatus,
+    updatedAt: now,
+    pendingInvoice: nextStatus === "accepted" || nextStatus === "processing",
+    settlementStatus:
+      nextStatus === "delivered"
+        ? "settlement_completed"
+        : nextStatus === "in_transit"
+          ? "settlement_pending"
+          : order.settlementStatus,
+    payment,
+    transport,
+    trackingEvents,
+    timeline: rebuildListTimeline(nextStatus, order.createdAt),
+    detailTimeline: rebuildDetailTimeline(nextStatus, order.createdAt),
+    documents: order.documents.map((doc) => {
+      if (doc.type === "invoice" && nextStatus !== "new") {
+        return { ...doc, available: true };
+      }
+      if (
+        doc.type === "loading_slip" &&
+        ["dispatch_ready", "in_transit", "delivered"].includes(nextStatus)
+      ) {
+        return { ...doc, available: true };
+      }
+      if (
+        doc.type === "eway_bill" &&
+        ["in_transit", "delivered", "delayed"].includes(nextStatus)
+      ) {
+        return { ...doc, available: true };
+      }
+      if (doc.type === "pod" && nextStatus === "delivered") {
+        return { ...doc, available: true };
+      }
+      return doc;
+    }),
+  };
+}
+
 export const useOrdersStore = create<OrdersState>()(
   devtools(
     (set, get) => ({
@@ -262,6 +382,9 @@ export const useOrdersStore = create<OrdersState>()(
       supportForm: defaultSupportTicketForm,
       acceptForm: defaultAcceptOrderForm,
       rejectForm: defaultRejectOrderForm,
+      verifyPaymentForm: defaultVerifyPaymentForm,
+      assignTransportForm: defaultAssignTransportForm,
+      markDeliveredForm: defaultMarkDeliveredForm,
       supportTickets: [],
 
       setSearch: (search) =>
@@ -317,6 +440,30 @@ export const useOrdersStore = create<OrdersState>()(
             estimatedDispatch: order ? order.dispatchDate.slice(0, 10) : "",
           },
           rejectForm: defaultRejectOrderForm,
+          verifyPaymentForm: {
+            ...defaultVerifyPaymentForm,
+            amountPaid: order
+              ? String(order.payment.amountDue)
+              : "",
+            utr: order?.payment.utr ?? "",
+            proofFileName: order?.payment.proofFileName ?? "",
+          },
+          assignTransportForm: {
+            carrier: order?.transport?.carrier ?? "",
+            vehicleNumber:
+              order?.transport?.vehicleNumber === "Waiting..."
+                ? ""
+                : (order?.transport?.vehicleNumber ?? ""),
+            driver:
+              order?.transport?.driver === "Pending assignment"
+                ? ""
+                : (order?.transport?.driver ?? ""),
+            driverPhone: order?.transport?.driverPhone ?? "",
+            eta: order?.transport?.eta ?? order?.eta.slice(0, 10) ?? "",
+            currentLocation:
+              order?.transport?.currentLocation ?? order?.warehouseLabel ?? "",
+          },
+          markDeliveredForm: defaultMarkDeliveredForm,
         });
       },
 
@@ -328,6 +475,9 @@ export const useOrdersStore = create<OrdersState>()(
           supportForm: defaultSupportTicketForm,
           acceptForm: defaultAcceptOrderForm,
           rejectForm: defaultRejectOrderForm,
+          verifyPaymentForm: defaultVerifyPaymentForm,
+          assignTransportForm: defaultAssignTransportForm,
+          markDeliveredForm: defaultMarkDeliveredForm,
         }),
 
       setStatusForm: (data) =>
@@ -350,47 +500,103 @@ export const useOrdersStore = create<OrdersState>()(
           rejectForm: { ...state.rejectForm, ...data },
         })),
 
+      setVerifyPaymentForm: (data) =>
+        set((state) => ({
+          verifyPaymentForm: { ...state.verifyPaymentForm, ...data },
+        })),
+
+      setAssignTransportForm: (data) =>
+        set((state) => ({
+          assignTransportForm: { ...state.assignTransportForm, ...data },
+        })),
+
+      setMarkDeliveredForm: (data) =>
+        set((state) => ({
+          markDeliveredForm: { ...state.markDeliveredForm, ...data },
+        })),
+
       updateOrderStatus: (orderId) => {
         const { statusForm } = get();
-        if (!statusForm.status) return;
+        if (!statusForm.status) return { ok: false, error: "Select a status" };
+        const order = get().orders.find((o) => o.id === orderId);
+        if (!order) return { ok: false, error: "Order not found" };
+
+        const allowed = allowedStatusUpdates(order);
+        if (!allowed.includes(statusForm.status)) {
+          return {
+            ok: false,
+            error: "Invalid status transition for this order stage",
+          };
+        }
+
         const nextStatus = mapStatusUpdate(statusForm.status);
+        if (
+          (nextStatus === "dispatch_ready" || nextStatus === "in_transit") &&
+          order.paymentTerm === "advance" &&
+          !isPaymentClearedForDispatch(order)
+        ) {
+          return {
+            ok: false,
+            error: "Verify advance payment before dispatch",
+          };
+        }
+
+        if (
+          nextStatus === "in_transit" &&
+          (!order.transport ||
+            order.transport.vehicleNumber === "Waiting..." ||
+            !statusForm.vehicleNumber)
+        ) {
+          if (!statusForm.carrier || !statusForm.vehicleNumber) {
+            return {
+              ok: false,
+              error: "Assign carrier and vehicle before marking in transit",
+            };
+          }
+        }
+
         const now = new Date().toISOString();
 
         set((state) => {
-          const orders = state.orders.map((order) => {
-            if (order.id !== orderId) return order;
-            const updated: Order = {
-              ...order,
-              status: nextStatus,
-              updatedAt: now,
-              pendingInvoice:
-                nextStatus === "accepted" || nextStatus === "processing",
-              timeline: rebuildListTimeline(nextStatus, order.createdAt),
-              detailTimeline: rebuildDetailTimeline(
-                nextStatus,
-                order.createdAt,
-              ),
-              documents: order.documents.map((doc) => {
-                if (doc.type === "invoice" && nextStatus !== "new") {
-                  return { ...doc, available: true };
-                }
-                if (
-                  doc.type === "loading_slip" &&
-                  ["dispatch_ready", "in_transit", "delivered"].includes(
-                    nextStatus,
-                  )
-                ) {
-                  return { ...doc, available: true };
-                }
-                if (
-                  doc.type === "eway_bill" &&
-                  ["in_transit", "delivered", "delayed"].includes(nextStatus)
-                ) {
-                  return { ...doc, available: true };
-                }
-                return doc;
-              }),
-            };
+          const orders = state.orders.map((item) => {
+            if (item.id !== orderId) return item;
+            let updated = applyStatusTransition(item, nextStatus, now);
+            if (
+              nextStatus === "in_transit" &&
+              (statusForm.carrier || statusForm.vehicleNumber)
+            ) {
+              updated = {
+                ...updated,
+                transport: {
+                  carrier: statusForm.carrier || item.transport?.carrier || "",
+                  vehicleNumber:
+                    statusForm.vehicleNumber ||
+                    item.transport?.vehicleNumber ||
+                    "",
+                  driver: statusForm.driver || item.transport?.driver || "",
+                  driverPhone:
+                    statusForm.driverPhone || item.transport?.driverPhone,
+                  eta: statusForm.eta || item.transport?.eta || item.eta.slice(0, 10),
+                  currentLocation:
+                    statusForm.currentLocation ||
+                    item.transport?.currentLocation ||
+                    item.warehouseLabel,
+                },
+                trackingEvents: buildTrackingOnDispatch(
+                  {
+                    ...updated,
+                    transport: {
+                      carrier: statusForm.carrier || "",
+                      vehicleNumber: statusForm.vehicleNumber || "",
+                      driver: statusForm.driver || "",
+                      eta: statusForm.eta || "",
+                      currentLocation: statusForm.currentLocation,
+                    },
+                  },
+                  now,
+                ),
+              };
+            }
             return updated;
           });
           return {
@@ -401,6 +607,243 @@ export const useOrdersStore = create<OrdersState>()(
             statusForm: defaultStatusUpdateForm,
           };
         });
+        return { ok: true };
+      },
+
+      verifyPayment: (orderId) => {
+        const { verifyPaymentForm } = get();
+        if (!verifyPaymentForm.utr.trim()) {
+          return { ok: false, error: "UTR / reference is required" };
+        }
+        const amount = Number(verifyPaymentForm.amountPaid);
+        if (!amount || amount <= 0) {
+          return { ok: false, error: "Enter a valid paid amount" };
+        }
+        const now = new Date().toISOString();
+        set((state) => {
+          const orders = state.orders.map((order) => {
+            if (order.id !== orderId) return order;
+            return {
+              ...order,
+              updatedAt: now,
+              settlementStatus: "funds_secured" as const,
+              payment: {
+                ...order.payment,
+                status: "verified" as const,
+                amountPaid: amount,
+                utr: verifyPaymentForm.utr.trim(),
+                paidAt: order.payment.paidAt ?? now,
+                verifiedAt: now,
+                verifiedBy: "Admin / Seller",
+                proofFileName:
+                  verifyPaymentForm.proofFileName ||
+                  order.payment.proofFileName,
+                notes:
+                  verifyPaymentForm.notes ||
+                  "Payment verified against bank statement",
+              },
+              detailTimeline: rebuildDetailTimeline(
+                order.status === "accepted" ? "accepted" : order.status,
+                order.createdAt,
+              ).map((step) =>
+                step.key === "payment"
+                  ? {
+                      ...step,
+                      status: "completed" as const,
+                      description: `Verified · ${verifyPaymentForm.utr.trim()}`,
+                      timestamp: now,
+                    }
+                  : step,
+              ),
+            };
+          });
+          return {
+            orders,
+            selectedOrder: syncSelected(orders, state.selectedOrder),
+            dialogType: null,
+            dialogOrderId: null,
+            verifyPaymentForm: defaultVerifyPaymentForm,
+          };
+        });
+        return { ok: true };
+      },
+
+      startProcessing: (orderId) => {
+        const order = get().orders.find((o) => o.id === orderId);
+        if (!order) return { ok: false, error: "Order not found" };
+        if (order.status !== "accepted") {
+          return { ok: false, error: "Order must be accepted first" };
+        }
+        if (
+          order.paymentTerm === "advance" &&
+          !isPaymentClearedForDispatch(order)
+        ) {
+          return {
+            ok: false,
+            error: "Verify advance payment before processing",
+          };
+        }
+        const now = new Date().toISOString();
+        set((state) => {
+          const orders = state.orders.map((item) =>
+            item.id === orderId
+              ? applyStatusTransition(item, "processing", now)
+              : item,
+          );
+          return {
+            orders,
+            selectedOrder: syncSelected(orders, state.selectedOrder),
+          };
+        });
+        return { ok: true };
+      },
+
+      markDispatchReady: (orderId) => {
+        const order = get().orders.find((o) => o.id === orderId);
+        if (!order) return { ok: false, error: "Order not found" };
+        if (
+          order.paymentTerm === "advance" &&
+          !isPaymentClearedForDispatch(order)
+        ) {
+          return {
+            ok: false,
+            error: "Verify advance payment before dispatch ready",
+          };
+        }
+        const now = new Date().toISOString();
+        set((state) => {
+          const orders = state.orders.map((item) =>
+            item.id === orderId
+              ? applyStatusTransition(item, "dispatch_ready", now)
+              : item,
+          );
+          return {
+            orders,
+            selectedOrder: syncSelected(orders, state.selectedOrder),
+          };
+        });
+        return { ok: true };
+      },
+
+      assignTransport: (orderId) => {
+        const { assignTransportForm } = get();
+        if (
+          !assignTransportForm.carrier.trim() ||
+          !assignTransportForm.vehicleNumber.trim() ||
+          !assignTransportForm.driver.trim()
+        ) {
+          return {
+            ok: false,
+            error: "Carrier, vehicle and driver are required",
+          };
+        }
+        const now = new Date().toISOString();
+        set((state) => {
+          const orders = state.orders.map((order) => {
+            if (order.id !== orderId) return order;
+            return {
+              ...order,
+              updatedAt: now,
+              transport: {
+                carrier: assignTransportForm.carrier.trim(),
+                vehicleNumber: assignTransportForm.vehicleNumber.trim(),
+                driver: assignTransportForm.driver.trim(),
+                driverPhone: assignTransportForm.driverPhone.trim() || undefined,
+                eta: assignTransportForm.eta || order.eta.slice(0, 10),
+                currentLocation:
+                  assignTransportForm.currentLocation || order.warehouseLabel,
+              },
+              trackingEvents: [
+                {
+                  id: `trk-${order.id}-assigned`,
+                  label: "Transport assigned — awaiting gate-out",
+                  location: order.warehouseLabel,
+                  timestamp: now,
+                  status: "current" as const,
+                  note: `${assignTransportForm.carrier} · ${assignTransportForm.vehicleNumber}`,
+                },
+              ],
+            };
+          });
+          return {
+            orders,
+            selectedOrder: syncSelected(orders, state.selectedOrder),
+            dialogType: null,
+            dialogOrderId: null,
+            assignTransportForm: defaultAssignTransportForm,
+          };
+        });
+        return { ok: true };
+      },
+
+      markInTransit: (orderId) => {
+        const order = get().orders.find((o) => o.id === orderId);
+        if (!order) return { ok: false, error: "Order not found" };
+        if (
+          !order.transport ||
+          order.transport.vehicleNumber === "Waiting..."
+        ) {
+          return { ok: false, error: "Assign transport first" };
+        }
+        const now = new Date().toISOString();
+        set((state) => {
+          const orders = state.orders.map((item) =>
+            item.id === orderId
+              ? applyStatusTransition(item, "in_transit", now)
+              : item,
+          );
+          return {
+            orders,
+            selectedOrder: syncSelected(orders, state.selectedOrder),
+          };
+        });
+        return { ok: true };
+      },
+
+      markDelivered: (orderId) => {
+        const { markDeliveredForm } = get();
+        if (!markDeliveredForm.receiverName.trim()) {
+          return { ok: false, error: "Receiver name is required" };
+        }
+        const now = new Date().toISOString();
+        set((state) => {
+          const orders = state.orders.map((order) => {
+            if (order.id !== orderId) return order;
+            const updated = applyStatusTransition(order, "delivered", now);
+            const podDoc = {
+              id: `doc-pod-${order.id}`,
+              type: "pod" as const,
+              name: markDeliveredForm.fileName || "Proof of Delivery",
+              available: true,
+              sizeLabel: "180 KB",
+              mimeType: "application/pdf",
+            };
+            const hasPod = updated.documents.some((d) => d.type === "pod");
+            return {
+              ...updated,
+              proofOfDelivery: {
+                receiverName: markDeliveredForm.receiverName.trim(),
+                receivedAt: now,
+                otpVerified: markDeliveredForm.otpVerified,
+                notes: markDeliveredForm.notes || undefined,
+                fileName: markDeliveredForm.fileName || undefined,
+              },
+              documents: hasPod
+                ? updated.documents.map((d) =>
+                    d.type === "pod" ? { ...d, available: true } : d,
+                  )
+                : [...updated.documents, podDoc],
+            };
+          });
+          return {
+            orders,
+            selectedOrder: syncSelected(orders, state.selectedOrder),
+            dialogType: null,
+            dialogOrderId: null,
+            markDeliveredForm: defaultMarkDeliveredForm,
+          };
+        });
+        return { ok: true };
       },
 
       submitSupportTicket: (orderId) => {
@@ -436,6 +879,26 @@ export const useOrdersStore = create<OrdersState>()(
             const invoiceNumber =
               order.invoiceNumber ??
               `INV-${900 + Number(order.id.replace(/\D/g, "") || "1")}`;
+            const payment =
+              order.paymentTerm === "on_delivery"
+                ? {
+                    ...order.payment,
+                    status: "collect_on_delivery" as const,
+                    notes: "Payment due at delivery",
+                  }
+                : order.paymentTerm === "advance"
+                  ? {
+                      ...order.payment,
+                      status: "awaiting_payment" as const,
+                      notes: "PI generated — awaiting buyer advance",
+                    }
+                  : {
+                      ...order.payment,
+                      status: "verified" as const,
+                      verifiedAt: now,
+                      verifiedBy: "Credit Desk",
+                      notes: "Credit terms approved on acceptance",
+                    };
             return {
               ...order,
               status: nextStatus,
@@ -445,6 +908,11 @@ export const useOrdersStore = create<OrdersState>()(
                 acceptForm.estimatedDispatch || order.dispatchDate,
               pendingInvoice: false,
               invoiceNumber,
+              payment,
+              settlementStatus:
+                order.paymentTerm === "advance"
+                  ? ("settlement_pending" as const)
+                  : ("funds_secured" as const),
               documents: order.documents.map((doc) =>
                 doc.type === "invoice"
                   ? {
@@ -460,7 +928,6 @@ export const useOrdersStore = create<OrdersState>()(
                 nextStatus,
                 order.createdAt,
               ),
-              settlementStatus: "funds_secured" as const,
             };
           });
           return {

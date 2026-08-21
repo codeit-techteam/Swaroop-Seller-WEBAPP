@@ -2,9 +2,11 @@ import type {
   Order,
   OrderDocument,
   OrderStatus,
+  PaymentDetails,
   PaymentTerm,
   SettlementStatus,
   TimelineStep,
+  TrackingEvent,
   WarehouseCode,
 } from "@/types/orders";
 import { PAYMENT_TERM_LABELS } from "@/types/orders";
@@ -330,6 +332,155 @@ function settlementFor(status: OrderStatus): SettlementStatus {
   return "funds_secured";
 }
 
+function paymentFor(
+  status: OrderStatus,
+  term: PaymentTerm,
+  amountDue: number,
+  index: number,
+): PaymentDetails {
+  if (term === "on_delivery") {
+    if (status === "delivered") {
+      return {
+        status: "collected",
+        amountDue,
+        amountPaid: amountDue,
+        paidAt: isoDaysAgo(Math.max(0, (index % 28) - 7)),
+        verifiedAt: isoDaysAgo(Math.max(0, (index % 28) - 7)),
+        verifiedBy: "Ops Desk",
+        notes: "Collected from consignee on delivery",
+      };
+    }
+    return {
+      status: "collect_on_delivery",
+      amountDue,
+      amountPaid: 0,
+      notes: "Payment due at delivery",
+    };
+  }
+
+  if (status === "new") {
+    return {
+      status: "awaiting_payment",
+      amountDue,
+      amountPaid: 0,
+      notes:
+        term === "advance"
+          ? "Awaiting 100% advance after PI acceptance"
+          : "Credit terms — PI pending acceptance",
+    };
+  }
+
+  if (status === "accepted" && term === "advance" && index % 3 === 0) {
+    return {
+      status: "proof_submitted",
+      amountDue,
+      amountPaid: amountDue,
+      utr: `UTR${240000000 + index}`,
+      paidAt: isoDaysAgo(Math.max(0, (index % 28) - 1)),
+      proofFileName: `payment-proof-${index}.pdf`,
+      notes: "Buyer submitted NEFT proof — pending verification",
+    };
+  }
+
+  if (status === "accepted" && term === "advance") {
+    return {
+      status: "awaiting_payment",
+      amountDue,
+      amountPaid: 0,
+      notes: "PI generated — awaiting buyer payment",
+    };
+  }
+
+  if (status === "cancelled") {
+    return {
+      status: "awaiting_payment",
+      amountDue,
+      amountPaid: 0,
+    };
+  }
+
+  return {
+    status: "verified",
+    amountDue,
+    amountPaid: term === "advance" ? amountDue : Math.round(amountDue * 0.3),
+    utr: `UTR${250000000 + index}`,
+    paidAt: isoDaysAgo(Math.max(0, (index % 28) - 2)),
+    verifiedAt: isoDaysAgo(Math.max(0, (index % 28) - 2)),
+    verifiedBy: "Finance Desk",
+    proofFileName: `neft-receipt-${index}.pdf`,
+    notes:
+      term === "advance"
+        ? "100% advance verified in escrow"
+        : "Credit approved — partial advance received",
+  };
+}
+
+function trackingFor(
+  status: OrderStatus,
+  warehouseLabel: string,
+  createdAt: string,
+  index: number,
+): TrackingEvent[] {
+  if (!["in_transit", "delivered", "delayed"].includes(status)) {
+    if (status === "dispatch_ready") {
+      return [
+        {
+          id: `trk-${index}-gate`,
+          label: "Vehicle assigned — awaiting gate-out",
+          location: warehouseLabel,
+          timestamp: createdAt,
+          status: "current",
+        },
+      ];
+    }
+    return [];
+  }
+
+  const events: TrackingEvent[] = [
+    {
+      id: `trk-${index}-1`,
+      label: "Dispatched from warehouse",
+      location: warehouseLabel,
+      timestamp: isoDaysAgo(Math.max(0, (index % 28) - 4), 9, 30),
+      status: "completed",
+    },
+    {
+      id: `trk-${index}-2`,
+      label: "In transit — highway checkpoint",
+      location: index % 2 === 0 ? "Vadodara Bypass" : "Ahmedabad Ring Road",
+      timestamp: isoDaysAgo(Math.max(0, (index % 28) - 5), 14, 10),
+      status: status === "delayed" ? "current" : "completed",
+      note: status === "delayed" ? "Delay due to weather hold" : undefined,
+    },
+    {
+      id: `trk-${index}-3`,
+      label:
+        status === "delivered"
+          ? "Arrived at buyer premises"
+          : "En route to destination",
+      location:
+        status === "delivered"
+          ? "Buyer Gate — Navi Mumbai"
+          : "Approaching destination city",
+      timestamp: isoDaysAgo(Math.max(0, (index % 28) - 6), 11, 0),
+      status: status === "delivered" ? "completed" : "current",
+    },
+  ];
+
+  if (status === "delivered") {
+    events.push({
+      id: `trk-${index}-4`,
+      label: "Delivered — POD captured",
+      location: "Buyer Warehouse",
+      timestamp: isoDaysAgo(Math.max(0, (index % 28) - 7), 16, 20),
+      status: "completed",
+      note: "OTP verified with consignee",
+    });
+  }
+
+  return events;
+}
+
 function createOrder(index: number): Order {
   const product = PRODUCTS[index % PRODUCTS.length]!;
   const warehouse = WAREHOUSES[index % WAREHOUSES.length]!;
@@ -355,11 +506,15 @@ function createOrder(index: number): Order {
     "delivered",
     "delayed",
   ].includes(status);
+  const totalLanded = subtotal + gstAmount + freight + insurance;
+  const transportAssigned =
+    hasTransport && (status !== "dispatch_ready" || index % 2 === 1);
 
   return {
     id: `ord-${pad(index + 1, 3)}`,
     orderNumber,
     buyerCompany: buyer,
+    customerRequestId: `PR-2023-${pad(200 + index, 3)}`,
     productName: product.name,
     productGrade: product.grade,
     materialCategory: product.category,
@@ -372,6 +527,7 @@ function createOrder(index: number): Order {
     eta: etaAt,
     paymentTerm,
     paymentLabel: PAYMENT_TERM_LABELS[paymentTerm],
+    payment: paymentFor(status, paymentTerm, totalLanded, index),
     status,
     settlementStatus: settlementFor(status),
     gradeSpecs: {
@@ -385,17 +541,38 @@ function createOrder(index: number): Order {
     transport: hasTransport
       ? {
           carrier: CARRIERS[index % CARRIERS.length]!,
-          vehicleNumber:
-            status === "dispatch_ready"
-              ? "Waiting..."
-              : `GJ-${pad(1 + (index % 30))}-AB-${1000 + index}`,
-          driver:
-            status === "dispatch_ready"
-              ? "Pending assignment"
-              : `Driver ${String.fromCharCode(65 + (index % 26))}`,
+          vehicleNumber: transportAssigned
+            ? `GJ-${pad(1 + (index % 30))}-AB-${1000 + index}`
+            : "Waiting...",
+          driver: transportAssigned
+            ? `Driver ${String.fromCharCode(65 + (index % 26))}`
+            : "Pending assignment",
+          driverPhone: transportAssigned
+            ? `98${String(10000000 + index).slice(0, 8)}`
+            : undefined,
           eta: formatDateLabel(etaAt),
+          currentLocation: transportAssigned
+            ? status === "delivered"
+              ? "Buyer Warehouse"
+              : status === "in_transit" || status === "delayed"
+                ? index % 2 === 0
+                  ? "Vadodara Bypass"
+                  : "Ahmedabad Ring Road"
+                : warehouse.label
+            : undefined,
         }
       : null,
+    trackingEvents: trackingFor(status, warehouse.label, createdAt, index),
+    proofOfDelivery:
+      status === "delivered"
+        ? {
+            receiverName: `Store Incharge ${String.fromCharCode(65 + (index % 26))}`,
+            receivedAt: isoDaysAgo(Math.max(0, (index % 28) - 7), 16, 20),
+            otpVerified: true,
+            notes: "Material received in good condition",
+            fileName: `pod-${orderNumber}.pdf`,
+          }
+        : null,
     timeline: listTimeline(status, createdAt),
     detailTimeline: detailTimeline(status, createdAt),
     financials: {
@@ -404,7 +581,7 @@ function createOrder(index: number): Order {
       gstAmount,
       freight,
       insurance,
-      totalLandedCost: subtotal + gstAmount + freight + insurance,
+      totalLandedCost: totalLanded,
     },
     paymentRisk: {
       creditStatus: "KYC Verified & Pre-Approved",

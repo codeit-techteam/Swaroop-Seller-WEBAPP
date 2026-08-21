@@ -8,9 +8,15 @@ import toast from "react-hot-toast";
 
 import {
   AcceptOrderModal,
+  AssignTransportModal,
+  MarkDeliveredModal,
+  OrderFlowPanel,
   OrderStatusBadge,
+  PaymentDetailsCard,
   RejectOrderModal,
   Timeline,
+  TrackingTimelineCard,
+  VerifyPaymentModal,
 } from "@/components/orders";
 import {
   FinancialOverviewCard,
@@ -18,9 +24,12 @@ import {
   ProductSpecCard,
   RegistrationBillingCard,
 } from "@/components/orders/order-detail-cards";
+import { SettlementCard } from "@/components/orders/settlement-card";
+import { TransportCard } from "@/components/orders/transport-card";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
 import { useOrdersStore } from "@/store/ordersStore";
+import { getNextFlowAction } from "@/types/orders";
 
 export function OrderDetailView() {
   const params = useParams<{ id: string }>();
@@ -30,12 +39,26 @@ export function OrderDetailView() {
   const dialogOrderId = useOrdersStore((s) => s.dialogOrderId);
   const acceptForm = useOrdersStore((s) => s.acceptForm);
   const rejectForm = useOrdersStore((s) => s.rejectForm);
+  const verifyPaymentForm = useOrdersStore((s) => s.verifyPaymentForm);
+  const assignTransportForm = useOrdersStore((s) => s.assignTransportForm);
+  const markDeliveredForm = useOrdersStore((s) => s.markDeliveredForm);
   const openDialog = useOrdersStore((s) => s.openDialog);
   const closeDialog = useOrdersStore((s) => s.closeDialog);
   const setAcceptForm = useOrdersStore((s) => s.setAcceptForm);
   const setRejectForm = useOrdersStore((s) => s.setRejectForm);
+  const setVerifyPaymentForm = useOrdersStore((s) => s.setVerifyPaymentForm);
+  const setAssignTransportForm = useOrdersStore(
+    (s) => s.setAssignTransportForm,
+  );
+  const setMarkDeliveredForm = useOrdersStore((s) => s.setMarkDeliveredForm);
   const acceptOrder = useOrdersStore((s) => s.acceptOrder);
   const rejectOrder = useOrdersStore((s) => s.rejectOrder);
+  const verifyPayment = useOrdersStore((s) => s.verifyPayment);
+  const startProcessing = useOrdersStore((s) => s.startProcessing);
+  const markDispatchReady = useOrdersStore((s) => s.markDispatchReady);
+  const assignTransport = useOrdersStore((s) => s.assignTransport);
+  const markInTransit = useOrdersStore((s) => s.markInTransit);
+  const markDelivered = useOrdersStore((s) => s.markDelivered);
   const getOrderById = useOrdersStore((s) => s.getOrderById);
 
   const order = getOrderById(orderId);
@@ -76,6 +99,44 @@ export function OrderDetailView() {
   });
 
   const canAcceptReject = order.status === "new";
+  const next = getNextFlowAction(order);
+
+  const handleFlowAction = () => {
+    switch (next.action) {
+      case "accept":
+        openDialog("accept", order.id);
+        break;
+      case "verify_payment":
+        openDialog("verify_payment", order.id);
+        break;
+      case "start_processing": {
+        const result = startProcessing(order.id);
+        if (result.ok) toast.success("Order moved to Processing");
+        else toast.error(result.error ?? "Unable to start processing");
+        break;
+      }
+      case "mark_dispatch_ready": {
+        const result = markDispatchReady(order.id);
+        if (result.ok) toast.success("Marked Dispatch Ready");
+        else toast.error(result.error ?? "Unable to update");
+        break;
+      }
+      case "assign_transport":
+        openDialog("assign_transport", order.id);
+        break;
+      case "mark_in_transit": {
+        const result = markInTransit(order.id);
+        if (result.ok) toast.success("Order is In Transit");
+        else toast.error(result.error ?? "Assign transport first");
+        break;
+      }
+      case "mark_delivered":
+        openDialog("mark_delivered", order.id);
+        break;
+      default:
+        break;
+    }
+  };
 
   const handleAccept = () => {
     acceptOrder(order.id);
@@ -85,6 +146,24 @@ export function OrderDetailView() {
   const handleReject = () => {
     rejectOrder(order.id);
     toast.success("Order Rejected");
+  };
+
+  const handleVerifyPayment = () => {
+    const result = verifyPayment(order.id);
+    if (result.ok) toast.success("Payment verified");
+    else toast.error(result.error ?? "Verification failed");
+  };
+
+  const handleAssignTransport = () => {
+    const result = assignTransport(order.id);
+    if (result.ok) toast.success("Transport assigned");
+    else toast.error(result.error ?? "Assignment failed");
+  };
+
+  const handleMarkDelivered = () => {
+    const result = markDelivered(order.id);
+    if (result.ok) toast.success("Order delivered successfully");
+    else toast.error(result.error ?? "Delivery confirmation failed");
   };
 
   return (
@@ -103,6 +182,9 @@ export function OrderDetailView() {
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Submitted on {submittedLabel}
+            {order.customerRequestId
+              ? ` · Customer request ${order.customerRequestId}`
+              : ""}
           </p>
         </div>
         <OrderStatusBadge
@@ -116,6 +198,12 @@ export function OrderDetailView() {
         />
       </div>
 
+      <OrderFlowPanel
+        order={order}
+        onPrimaryAction={handleFlowAction}
+        onReject={() => openDialog("reject", order.id)}
+      />
+
       <div className="grid gap-5 lg:grid-cols-3">
         <motion.div
           className="space-y-5"
@@ -125,6 +213,10 @@ export function OrderDetailView() {
         >
           <RegistrationBillingCard order={order} />
           <ProductSpecCard order={order} />
+          <PaymentDetailsCard
+            order={order}
+            onVerify={() => openDialog("verify_payment", order.id)}
+          />
         </motion.div>
 
         <motion.div
@@ -135,15 +227,20 @@ export function OrderDetailView() {
         >
           <FinancialOverviewCard order={order} />
           <PaymentRiskCard order={order} />
+          <TransportCard transport={order.transport} />
+          <SettlementCard status={order.settlementStatus} />
         </motion.div>
 
         <motion.div
+          className="space-y-5"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
         >
-          <Timeline steps={order.detailTimeline} title="Order Timeline" />
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <Timeline steps={order.detailTimeline} title="Order Timeline" />
+          </div>
+          <TrackingTimelineCard order={order} />
         </motion.div>
       </div>
 
@@ -153,8 +250,8 @@ export function OrderDetailView() {
             <div className="flex items-start gap-2 text-sm text-amber-700">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
-                Reviewing this order will trigger a Proforma Invoice generation
-                upon acceptance.
+                Reviewing this customer order will trigger a Proforma Invoice on
+                acceptance. Payment terms: {order.paymentLabel}.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -197,6 +294,39 @@ export function OrderDetailView() {
         }}
         onChange={setRejectForm}
         onConfirm={handleReject}
+      />
+
+      <VerifyPaymentModal
+        open={dialogType === "verify_payment"}
+        order={dialogOrder}
+        form={verifyPaymentForm}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onChange={setVerifyPaymentForm}
+        onSubmit={handleVerifyPayment}
+      />
+
+      <AssignTransportModal
+        open={dialogType === "assign_transport"}
+        order={dialogOrder}
+        form={assignTransportForm}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onChange={setAssignTransportForm}
+        onSubmit={handleAssignTransport}
+      />
+
+      <MarkDeliveredModal
+        open={dialogType === "mark_delivered"}
+        order={dialogOrder}
+        form={markDeliveredForm}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+        onChange={setMarkDeliveredForm}
+        onSubmit={handleMarkDelivered}
       />
     </div>
   );
