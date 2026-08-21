@@ -1,8 +1,8 @@
 "use client";
 
+import { Route } from "lucide-react";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Route } from "lucide-react";
 
 import {
   PaymentDrawer,
@@ -185,10 +185,7 @@ export function PaymentsView() {
                 {formatCompactInr(row.amount)}
               </TableCell>
               <TableCell>
-                <PaymentModeBadge
-                  mode={row.mode}
-                  creditDays={row.creditDays}
-                />
+                <PaymentModeBadge mode={row.mode} creditDays={row.creditDays} />
               </TableCell>
               <TableCell>
                 <PaymentTrackInline track={row.track} />

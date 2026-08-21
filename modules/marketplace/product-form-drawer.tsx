@@ -116,7 +116,9 @@ const schema = z.object({
   bulkPrices: z.array(
     z.object({
       minQty: z.coerce.number().positive(),
-      maxQty: z.union([z.coerce.number().positive(), z.literal(""), z.nan()]).optional(),
+      maxQty: z
+        .union([z.coerce.number().positive(), z.literal(""), z.nan()])
+        .optional(),
       price: z.coerce.number().positive(),
     }),
   ),
@@ -274,7 +276,11 @@ function StepNav({
                         : "bg-slate-200/80 text-slate-500",
                   )}
                 >
-                  {isDone ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : index + 1}
+                  {isDone ? (
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  ) : (
+                    index + 1
+                  )}
                 </span>
                 <span className="min-w-0">
                   <span
@@ -356,7 +362,13 @@ function emptyForm(categories: CatalogCategory[]): FormValues {
     imageUrl3: "",
     publishStatus: "DRAFT",
     specifications: [{ label: "", value: "", standard: "" }],
-    bulkPrices: [{ minQty: 25, maxQty: "" as unknown as number, price: undefined as unknown as number }],
+    bulkPrices: [
+      {
+        minQty: 25,
+        maxQty: "" as unknown as number,
+        price: undefined as unknown as number,
+      },
+    ],
     paymentTerms: DEFAULT_PAYMENT_TERMS.map((term) => ({ ...term })),
     documents: [
       { name: "Certificate of Analysis", type: "COA", fileName: "COA.pdf" },
@@ -493,12 +505,14 @@ export function ProductFormDrawer({
 
   const goPrev = () => {
     if (isFirstTab) return;
-    setTab(FORM_TABS[tabIndex - 1].id);
+    const prev = FORM_TABS[tabIndex - 1];
+    if (prev) setTab(prev.id);
   };
 
   const goNext = () => {
     if (isLastTab) return;
-    setTab(FORM_TABS[tabIndex + 1].id);
+    const next = FORM_TABS[tabIndex + 1];
+    if (next) setTab(next.id);
   };
 
   return (

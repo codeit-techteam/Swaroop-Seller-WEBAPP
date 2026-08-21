@@ -42,10 +42,7 @@ import { cn, formatCompactInr } from "@/lib/utils";
 import { CustomerFormDrawer } from "@/modules/customers/customer-form-drawer";
 import { useCustomerStore } from "@/store/customerStore";
 import { useCxOpsStore } from "@/store/cxOpsStore";
-import {
-  type CustomerDraft,
-  type CustomerProfile,
-} from "@/types/customers";
+import { type CustomerDraft, type CustomerProfile } from "@/types/customers";
 
 export function CustomersView() {
   const params = useSearchParams();
@@ -101,7 +98,7 @@ export function CustomersView() {
   });
 
   const save = async (draft: CustomerDraft) => {
-    if (drawer && drawer !== "new") {
+    if (drawer) {
       await updateCustomer(drawer.id, draft);
       toast.success("Customer updated");
       return;
@@ -158,9 +155,7 @@ export function CustomersView() {
                 "EXPIRED",
               ].map((value) => (
                 <SelectItem key={value} value={value}>
-                  {value === "ALL"
-                    ? "All credit"
-                    : value.replaceAll("_", " ")}
+                  {value === "ALL" ? "All credit" : value.replaceAll("_", " ")}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -209,7 +204,9 @@ export function CustomersView() {
             </TableCell>
 
             <TableCell className="align-top">
-              <p className="text-sm tabular-nums text-slate-800">{row.mobile}</p>
+              <p className="text-sm tabular-nums text-slate-800">
+                {row.mobile}
+              </p>
               <p
                 className="mt-0.5 max-w-[180px] truncate text-xs text-slate-500"
                 title={row.email}

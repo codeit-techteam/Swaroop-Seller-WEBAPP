@@ -1,11 +1,10 @@
+import { computeProcurementSummary } from "@/modules/procurement/selectors";
 import type {
   ProcurementActivity,
   ProcurementItem,
   ProcurementOffer,
   ProcurementTimelineEvent,
 } from "@/types/procurement";
-
-import { computeProcurementSummary } from "@/modules/procurement/selectors";
 
 const ACTOR = "Operations Admin";
 
@@ -30,9 +29,7 @@ function timeline(
   }));
 }
 
-function offer(
-  partial: ProcurementOffer,
-): ProcurementOffer {
+function offer(partial: ProcurementOffer): ProcurementOffer {
   return partial;
 }
 
@@ -93,7 +90,12 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t11", "Completed", "", false],
     ]),
     activity: [
-      activity("a1", "2026-08-19T04:20:00.000Z", "PR created by Customer", "Customer App"),
+      activity(
+        "a1",
+        "2026-08-19T04:20:00.000Z",
+        "PR created by Customer",
+        "Customer App",
+      ),
     ],
   },
   {
@@ -210,9 +212,21 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t6", "PO Created", "", false],
     ]),
     activity: [
-      activity("a1", "2026-08-18T08:20:00.000Z", "PR created by Operations Admin"),
-      activity("a2", "2026-08-18T09:05:00.000Z", "Supplier assigned: Reliance Poly Industries"),
-      activity("a3", "2026-08-18T12:10:00.000Z", "Offer received at ₹18,333 / MT"),
+      activity(
+        "a1",
+        "2026-08-18T08:20:00.000Z",
+        "PR created by Operations Admin",
+      ),
+      activity(
+        "a2",
+        "2026-08-18T09:05:00.000Z",
+        "Supplier assigned: Reliance Poly Industries",
+      ),
+      activity(
+        "a3",
+        "2026-08-18T12:10:00.000Z",
+        "Offer received at ₹18,333 / MT",
+      ),
       activity("a4", "2026-08-18T15:40:00.000Z", "Price revision requested"),
       activity("a5", "2026-08-19T07:15:00.000Z", "Approval pending"),
     ],
@@ -306,9 +320,17 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t6", "PO Created", "2026-08-18T06:40:00.000Z", true],
     ]),
     activity: [
-      activity("a1", "2026-08-18T06:40:00.000Z", "PO created, commercial still open"),
+      activity(
+        "a1",
+        "2026-08-18T06:40:00.000Z",
+        "PO created, commercial still open",
+      ),
       activity("a2", "2026-08-18T11:20:00.000Z", "Counter offer submitted"),
-      activity("a3", "2026-08-19T08:00:00.000Z", "Supplier revised to ₹698 / MT"),
+      activity(
+        "a3",
+        "2026-08-19T08:00:00.000Z",
+        "Supplier revised to ₹698 / MT",
+      ),
     ],
   },
   {
@@ -372,8 +394,16 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t6", "PO Created", "", false],
     ]),
     activity: [
-      activity("a1", "2026-08-15T17:10:00.000Z", "PR created by Operations Admin"),
-      activity("a2", "2026-08-16T14:20:00.000Z", "Offer received from RIL Jamnagar"),
+      activity(
+        "a1",
+        "2026-08-15T17:10:00.000Z",
+        "PR created by Operations Admin",
+      ),
+      activity(
+        "a2",
+        "2026-08-16T14:20:00.000Z",
+        "Offer received from RIL Jamnagar",
+      ),
     ],
   },
   {
@@ -438,7 +468,11 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t6", "PO Created", "2026-08-14T10:30:00.000Z", true],
     ]),
     activity: [
-      activity("a1", "2026-08-12T12:05:00.000Z", "PR created by Operations Admin"),
+      activity(
+        "a1",
+        "2026-08-12T12:05:00.000Z",
+        "PR created by Operations Admin",
+      ),
       activity("a2", "2026-08-14T10:00:00.000Z", "Request approved"),
     ],
   },
@@ -492,8 +526,16 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t6", "PO Created", "", false],
     ]),
     activity: [
-      activity("a1", "2026-08-05T19:30:00.000Z", "PR created by Operations Admin"),
-      activity("a2", "2026-08-07T12:00:00.000Z", "Purchase Request rejected — Compliance issue"),
+      activity(
+        "a1",
+        "2026-08-05T19:30:00.000Z",
+        "PR created by Operations Admin",
+      ),
+      activity(
+        "a2",
+        "2026-08-07T12:00:00.000Z",
+        "Purchase Request rejected — Compliance issue",
+      ),
     ],
   },
   {
@@ -545,8 +587,16 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t6", "PO Created", "2026-07-30T16:00:00.000Z", true],
     ]),
     activity: [
-      activity("a1", "2026-07-28T09:00:00.000Z", "PR created by Operations Admin"),
-      activity("a2", "2026-07-30T16:00:00.000Z", "PO created and released to dispatch"),
+      activity(
+        "a1",
+        "2026-07-28T09:00:00.000Z",
+        "PR created by Operations Admin",
+      ),
+      activity(
+        "a2",
+        "2026-07-30T16:00:00.000Z",
+        "PO created and released to dispatch",
+      ),
     ],
   },
   {
@@ -620,7 +670,11 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t6", "PO Created", "", false],
     ]),
     activity: [
-      activity("a1", "2026-08-18T11:45:00.000Z", "PR created by Operations Admin"),
+      activity(
+        "a1",
+        "2026-08-18T11:45:00.000Z",
+        "PR created by Operations Admin",
+      ),
       activity("a2", "2026-08-18T13:00:00.000Z", "Offer received"),
     ],
   },
@@ -722,12 +776,9 @@ export const procurementQueueMock: ProcurementItem[] = [
       ["t5", "Approval", "", false],
       ["t6", "PO Created", "", false],
     ]),
-    activity: [
-      activity("a1", "2026-08-19T07:00:00.000Z", "Draft PR saved"),
-    ],
+    activity: [activity("a1", "2026-08-19T07:00:00.000Z", "Draft PR saved")],
   },
 ];
 
-export const procurementSummaryMock = computeProcurementSummary(
-  procurementQueueMock,
-);
+export const procurementSummaryMock =
+  computeProcurementSummary(procurementQueueMock);

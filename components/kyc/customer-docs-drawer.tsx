@@ -11,7 +11,6 @@ import {
 import {
   type ChangeEvent,
   type ReactNode,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -22,6 +21,7 @@ import { ConfirmActionDialog } from "@/components/cx";
 import { ActionDrawer } from "@/components/erp/action-drawer";
 import { OpsStatusBadge } from "@/components/operations";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useCustomerStore } from "@/store/customerStore";
 import type {
   CustomerDocument,
@@ -33,7 +33,6 @@ import {
   CUSTOMER_DOCUMENT_TYPE_LABELS,
   ONBOARDING_DOCUMENT_TYPES,
 } from "@/types/customers";
-import { cn } from "@/lib/utils";
 
 interface CustomerDocsDrawerProps {
   open: boolean;
@@ -69,28 +68,27 @@ export function CustomerDocsDrawer({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, setPending] = useState<DocAction | null>(null);
   const [reason, setReason] = useState("");
-  const [uploadingType, setUploadingType] = useState<CustomerDocumentType | null>(
-    null,
-  );
+  const [uploadingType, setUploadingType] =
+    useState<CustomerDocumentType | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!open || !profile) return;
-    setSelectedId((current) => {
-      if (current && profile.documents.some((doc) => doc.id === current)) {
-        return current;
-      }
-      const needsReview = profile.documents.find(
-        (doc) =>
-          doc.status === "PENDING" || doc.status === "UNDER_REVIEW",
-      );
-      return needsReview?.id ?? profile.documents[0]?.id ?? null;
-    });
+  const defaultSelectedId = useMemo(() => {
+    if (!open || !profile) return null;
+    const needsReview = profile.documents.find(
+      (doc) => doc.status === "PENDING" || doc.status === "UNDER_REVIEW",
+    );
+    return needsReview?.id ?? profile.documents[0]?.id ?? null;
   }, [open, profile]);
 
+  const resolvedSelectedId =
+    selectedId && profile?.documents.some((doc) => doc.id === selectedId)
+      ? selectedId
+      : defaultSelectedId;
+
   const selected = useMemo(
-    () => profile?.documents.find((doc) => doc.id === selectedId) ?? null,
-    [profile, selectedId],
+    () =>
+      profile?.documents.find((doc) => doc.id === resolvedSelectedId) ?? null,
+    [profile, resolvedSelectedId],
   );
 
   const missingTypes = useMemo(() => {
@@ -102,10 +100,12 @@ export function CustomerDocsDrawer({
   const progress = useMemo(() => {
     if (!profile) return { verified: 0, total: 0, pending: 0, rejected: 0 };
     const total = profile.documents.length;
-    const verified = profile.documents.filter((d) => d.status === "VERIFIED")
-      .length;
-    const rejected = profile.documents.filter((d) => d.status === "REJECTED")
-      .length;
+    const verified = profile.documents.filter(
+      (d) => d.status === "VERIFIED",
+    ).length;
+    const rejected = profile.documents.filter(
+      (d) => d.status === "REJECTED",
+    ).length;
     const pendingCount = profile.documents.filter(
       (d) => d.status === "PENDING" || d.status === "UNDER_REVIEW",
     ).length;
@@ -219,9 +219,13 @@ export function CustomerDocsDrawer({
                 No documents uploaded yet.
               </p>
             ) : (
-              <div className="space-y-1.5" role="listbox" aria-label="Documents">
+              <div
+                className="space-y-1.5"
+                role="listbox"
+                aria-label="Documents"
+              >
                 {profile.documents.map((doc) => {
-                  const active = selectedId === doc.id;
+                  const active = resolvedSelectedId === doc.id;
                   return (
                     <button
                       key={doc.id}
@@ -365,11 +369,7 @@ function DocumentPreview({ document }: { document: CustomerDocument }) {
               className="mt-1 border-slate-200 bg-white"
               asChild
             >
-              <a
-                href={document.previewUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={document.previewUrl} target="_blank" rel="noreferrer">
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 Open file
               </a>
@@ -387,10 +387,7 @@ function DocumentPreview({ document }: { document: CustomerDocument }) {
         <Meta label="File" value={document.fileName} />
         <Meta label="Size" value={document.sizeLabel} />
         <Meta label="Uploaded" value={document.uploadedAt} />
-        <Meta
-          label="Verified by"
-          value={document.verifiedBy || "—"}
-        />
+        <Meta label="Verified by" value={document.verifiedBy || "—"} />
       </div>
 
       {document.rejectionReason ? (
@@ -480,13 +477,7 @@ function DocumentActions({
   );
 }
 
-function Meta({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}) {
+function Meta({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="min-w-0">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">

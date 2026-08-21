@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
+import { getInitials } from "@/lib/utils";
 import { adminProfileMock } from "@/mock/profile";
 import type {
   AdminProfile,
@@ -8,7 +9,6 @@ import type {
   ProfileModalType,
 } from "@/types/profile";
 import { defaultEditProfileForm } from "@/types/profile";
-import { getInitials } from "@/lib/utils";
 
 interface ProfileState {
   profile: AdminProfile | null;

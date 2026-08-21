@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import { TrendingUp } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 import { CxFormDrawer } from "@/components/cx";
+import { OpsStatusBadge } from "@/components/operations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { OpsStatusBadge } from "@/components/operations";
-import { cn, formatCurrency, formatPercentage } from "@/lib/utils";
 import { marginOf } from "@/lib/cx";
+import { cn, formatCurrency, formatPercentage } from "@/lib/utils";
 import type { CatalogProduct } from "@/types/marketplace-cms";
 
 function marginTone(pct: number) {
@@ -48,13 +48,18 @@ export function PricingEditDrawer({
   const [cost, setCost] = useState("");
   const [freight, setFreight] = useState("");
   const [saving, setSaving] = useState(false);
+  const [syncedProductId, setSyncedProductId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open || !product) return;
+  // Adjust local draft when the edited product changes (render-time sync).
+  if (open && product && product.id !== syncedProductId) {
+    setSyncedProductId(product.id);
     setSelling(String(product.sellingPrice));
     setCost(String(product.internalCost));
     setFreight(String(product.deliveryCharge));
-  }, [open, product]);
+  }
+  if (!open && syncedProductId !== null) {
+    setSyncedProductId(null);
+  }
 
   if (!product) return null;
 
@@ -209,7 +214,12 @@ export function PricingEditDrawer({
             >
               {formatCurrency(draftMargin)}
             </p>
-            <p className={cn("mt-0.5 text-sm font-semibold", marginTone(draftPct))}>
+            <p
+              className={cn(
+                "mt-0.5 text-sm font-semibold",
+                marginTone(draftPct),
+              )}
+            >
               {formatPercentage(draftPct)} margin
             </p>
           </div>

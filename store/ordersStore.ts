@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { computeOrderSummary, ordersMock } from "@/mock/orders";
 import {
   allowedStatusUpdates,
   buildTrackingOnDispatch,
 } from "@/lib/orders/lifecycle";
+import { computeOrderSummary, ordersMock } from "@/mock/orders";
 import type {
   AcceptOrderForm,
   AssignTransportForm,
@@ -284,10 +284,7 @@ function applyStatusTransition(
 
   let trackingEvents = order.trackingEvents;
   if (nextStatus === "in_transit" && order.status !== "in_transit") {
-    trackingEvents = buildTrackingOnDispatch(
-      { ...order, transport },
-      now,
-    );
+    trackingEvents = buildTrackingOnDispatch({ ...order, transport }, now);
   }
   if (nextStatus === "delivered") {
     trackingEvents = [
@@ -442,9 +439,7 @@ export const useOrdersStore = create<OrdersState>()(
           rejectForm: defaultRejectOrderForm,
           verifyPaymentForm: {
             ...defaultVerifyPaymentForm,
-            amountPaid: order
-              ? String(order.payment.amountDue)
-              : "",
+            amountPaid: order ? String(order.payment.amountDue) : "",
             utr: order?.payment.utr ?? "",
             proofFileName: order?.payment.proofFileName ?? "",
           },
@@ -576,7 +571,10 @@ export const useOrdersStore = create<OrdersState>()(
                   driver: statusForm.driver || item.transport?.driver || "",
                   driverPhone:
                     statusForm.driverPhone || item.transport?.driverPhone,
-                  eta: statusForm.eta || item.transport?.eta || item.eta.slice(0, 10),
+                  eta:
+                    statusForm.eta ||
+                    item.transport?.eta ||
+                    item.eta.slice(0, 10),
                   currentLocation:
                     statusForm.currentLocation ||
                     item.transport?.currentLocation ||
@@ -748,7 +746,8 @@ export const useOrdersStore = create<OrdersState>()(
                 carrier: assignTransportForm.carrier.trim(),
                 vehicleNumber: assignTransportForm.vehicleNumber.trim(),
                 driver: assignTransportForm.driver.trim(),
-                driverPhone: assignTransportForm.driverPhone.trim() || undefined,
+                driverPhone:
+                  assignTransportForm.driverPhone.trim() || undefined,
                 eta: assignTransportForm.eta || order.eta.slice(0, 10),
                 currentLocation:
                   assignTransportForm.currentLocation || order.warehouseLabel,

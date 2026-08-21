@@ -1,13 +1,13 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
+import { buildPaymentTrack } from "@/lib/utils/payment-track";
 import {
   creditPoliciesMock,
   financeSummaryMock,
   paymentsMock,
   receivablesMock,
 } from "@/mock/finance";
-import { buildPaymentTrack } from "@/lib/utils/payment-track";
 import type {
   CreditInsurancePolicy,
   PaymentRecord,

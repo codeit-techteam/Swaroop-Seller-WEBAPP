@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { ConfirmActionDialog } from "@/components/cx";
@@ -93,12 +93,17 @@ export function KycView() {
   } | null>(null);
   const [reason, setReason] = useState("");
   const [viewCustomerId, setViewCustomerId] = useState<string | null>(null);
+  const [syncedCustomerParam, setSyncedCustomerParam] = useState<string | null>(
+    null,
+  );
 
-  useEffect(() => {
-    if (!customerParam) return;
-    const match = getCustomer(customerParam);
-    if (match) setViewCustomerId(match.id);
-  }, [customerParam, getCustomer]);
+  if (customerParam !== syncedCustomerParam) {
+    setSyncedCustomerParam(customerParam);
+    if (customerParam) {
+      const match = getCustomer(customerParam);
+      if (match) setViewCustomerId(match.id);
+    }
+  }
 
   const searchFields = useMemo(
     () => (row: CustomerProfile) => [
@@ -131,8 +136,7 @@ export function KycView() {
     : null;
 
   const pendingCount = customers.filter(
-    (row) =>
-      row.kycStatus === "PENDING" || row.kycStatus === "UNDER_REVIEW",
+    (row) => row.kycStatus === "PENDING" || row.kycStatus === "UNDER_REVIEW",
   ).length;
   const verifiedCount = customers.filter(
     (row) => row.kycStatus === "VERIFIED",

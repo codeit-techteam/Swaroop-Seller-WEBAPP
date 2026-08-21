@@ -1,8 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import Link from "next/link";
 import { X } from "lucide-react";
+import Link from "next/link";
 import { useEffect } from "react";
 
 import { DispatchInstructionCard } from "@/components/orders/dispatch-instruction-card";

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
 import { CURRENT_USER, ROLE_LABELS } from "@/config";
-import { STORAGE_KEYS, storage } from "@/lib/utils";
+import { storage, STORAGE_KEYS } from "@/lib/utils";
 import type { AuthState, AuthTokens, User } from "@/types/auth";
 
 const sessionUser: User = {

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   AlertDialog,
@@ -48,24 +48,19 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
   const allHrefs = useMemo(() => collectNavHrefs(navSections), [navSections]);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    setOpenGroups((current) => {
-      const next = { ...current };
-      let changed = false;
-      for (const section of navSections) {
-        for (const item of section.items) {
-          if (!item.children?.length) continue;
-          const groupActive = item.children.some((child) =>
-            isNavHrefActive(pathname, child.href, allHrefs),
-          );
-          if (groupActive && next[item.href] !== true) {
-            next[item.href] = true;
-            changed = true;
-          }
-        }
+  // Auto-expand active nav groups during render (no effect sync).
+  const autoOpenGroups = useMemo(() => {
+    const next: Record<string, boolean> = {};
+    for (const section of navSections) {
+      for (const item of section.items) {
+        if (!item.children?.length) continue;
+        const groupActive = item.children.some((child) =>
+          isNavHrefActive(pathname, child.href, allHrefs),
+        );
+        if (groupActive) next[item.href] = true;
       }
-      return changed ? next : current;
-    });
+    }
+    return next;
   }, [allHrefs, navSections, pathname]);
 
   const handleLogoutConfirm = () => {
@@ -121,7 +116,8 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                   ? false
                   : isNavHrefActive(pathname, item.href, allHrefs);
               const Icon = item.icon;
-              const expanded = openGroups[item.href] ?? groupActive;
+              const expanded =
+                openGroups[item.href] ?? autoOpenGroups[item.href] ?? false;
 
               return (
                 <div key={`${item.href}-${item.label}`}>
