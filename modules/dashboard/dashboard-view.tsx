@@ -242,7 +242,7 @@ export function DashboardView() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <SummaryCard
-          title="Total Inventory"
+          title="My Inventory"
           value={metrics.availableInventory}
           suffix={metrics.availableInventoryUnit}
           href={ROUTES.INVENTORY}
