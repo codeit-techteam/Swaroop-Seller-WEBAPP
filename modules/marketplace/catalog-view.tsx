@@ -1,6 +1,6 @@
 "use client";
 
-import { FileEdit, Globe, Package, Plus } from "lucide-react";
+import { Eye, FileEdit, Globe, Package, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -78,6 +78,9 @@ export function CatalogView() {
   const draftCount = products.filter(
     (row) => row.publishStatus === "DRAFT",
   ).length;
+  const previewCount = products.filter(
+    (row) => row.publishStatus === "PREVIEW",
+  ).length;
 
   return (
     <OperationsShell
@@ -103,6 +106,13 @@ export function CatalogView() {
           icon: FileEdit,
           accent: "amber",
           hint: "Not yet published",
+        },
+        {
+          title: "Preview",
+          value: previewCount,
+          icon: Eye,
+          accent: "blue",
+          hint: "Internal preview only",
         },
       ]}
       actions={
@@ -270,7 +280,9 @@ export function CatalogView() {
           toast.success(
             input.publishStatus === "LIVE"
               ? "Product saved and visible to customers"
-              : "Product saved as internal draft",
+              : input.publishStatus === "PREVIEW"
+                ? "Product saved as internal preview"
+                : "Product saved as draft",
           );
         }}
       />

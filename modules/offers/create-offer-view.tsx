@@ -18,7 +18,6 @@ import toast from "react-hot-toast";
 import {
   BuyerPreviewCard,
   ConfirmationDialog,
-  LivePriceCalculator,
   LoadingOverlay,
   OfferPreviewModal,
   StickyFooter,
@@ -50,7 +49,7 @@ import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { productCatalog, warehouses } from "@/mock/products";
 import { useOfferStore } from "@/store/offerStore";
 import type { Offer, PaymentTerm } from "@/types/offers";
-import { computeLivePricing, tiersOverlap } from "@/types/offers";
+import { tiersOverlap } from "@/types/offers";
 
 const paymentOptions: { value: PaymentTerm; label: string }[] = [
   { value: "advance", label: "Advance" },
@@ -95,8 +94,6 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [previewOffer, setPreviewOffer] = useState<Offer | null>(null);
 
-  const liveStats = useMemo(() => computeLivePricing(formData), [formData]);
-
   const overlapError = useMemo(
     () =>
       tiersOverlap(formData.tiers)
@@ -112,9 +109,9 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
     const productDone = Boolean(formData.productId && formData.warehouseId);
     const pricingDone = Boolean(
       formData.basePrice > 0 &&
-        formData.moq > 0 &&
-        formData.validUntil &&
-        formData.paymentTerms.length > 0,
+      formData.moq > 0 &&
+      formData.validUntil &&
+      formData.paymentTerms.length > 0,
     );
     const tiersDone =
       formData.tiers.length > 0 &&
@@ -291,9 +288,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                 <div
                   className={cn(
                     "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-                    done
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "text-slate-500",
+                    done ? "bg-emerald-50 text-emerald-700" : "text-slate-500",
                   )}
                 >
                   <span
@@ -304,11 +299,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                         : "bg-slate-100 text-slate-500",
                     )}
                   >
-                    {done ? (
-                      <CheckCircle2 className="h-3 w-3" />
-                    ) : (
-                      step.id
-                    )}
+                    {done ? <CheckCircle2 className="h-3 w-3" /> : step.id}
                   </span>
                   <span className="hidden sm:inline">{step.label}</span>
                 </div>
@@ -651,12 +642,6 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
             />
           </motion.section>
 
-          <LivePriceCalculator
-            stats={liveStats}
-            allocationMt={formData.allocationMt}
-            basePrice={formData.basePrice}
-          />
-
           <StickyFooter
             contained
             left={
@@ -740,10 +725,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               How buyers will see this offer on the marketplace
             </DialogDescription>
           </DialogHeader>
-          <BuyerPreviewCard
-            formData={formData}
-            className="space-y-0"
-          />
+          <BuyerPreviewCard formData={formData} className="space-y-0" />
           <div className="border-t border-slate-100 p-4">
             <Button
               className="w-full bg-[#0B1F3A] hover:bg-[#0B1F3A]/90"

@@ -45,7 +45,6 @@ import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import {
   inventoryCategories,
   inventoryGrades,
-  inventoryOrigins,
   inventoryStatuses,
 } from "@/mock/inventory";
 import { useInventoryStore } from "@/store/inventoryStore";
@@ -128,7 +127,6 @@ function InventoryRow({
         </div>
       </TableCell>
       <TableCell className="text-slate-600">{item.category}</TableCell>
-      <TableCell className="text-slate-600">{item.origin}</TableCell>
       <TableCell
         className={cn(
           "tabular-nums font-medium",
@@ -207,7 +205,6 @@ export function InventoryView() {
     Boolean(filters.search.trim()) ||
     filters.grade !== "All Grades" ||
     filters.category !== "All Categories" ||
-    filters.origin !== "All Origins" ||
     filters.status !== "Status: Any";
   const summary = hasActiveFilters ? getComputedSummary() : summaryBase;
   const pageIds = products.map((item) => item.id);
@@ -233,9 +230,9 @@ export function InventoryView() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <SummaryCard
-          title="Total Inventory"
+          title="My Inventory"
           value={summary.totalInventory}
           suffix={summary.unit}
         />
@@ -246,16 +243,10 @@ export function InventoryView() {
           valueClassName="text-[#1B6EF3]"
         />
         <SummaryCard
-          title="Reserved"
-          value={summary.reserved}
-          suffix={summary.unit}
-        />
-        <SummaryCard
           title="Low Stock"
           value={summary.lowStock}
           valueClassName="text-red-600"
         />
-        <SummaryCard title="Origins" value={summary.origins} />
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -287,22 +278,6 @@ export function InventoryView() {
               {inventoryCategories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.origin}
-            onValueChange={(value) => setFilter("origin", value)}
-          >
-            <SelectTrigger className="h-9 w-[190px] border-slate-200 bg-white text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {inventoryOrigins.map((origin) => (
-                <SelectItem key={origin} value={origin}>
-                  {origin}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -369,12 +344,6 @@ export function InventoryView() {
                 </TableHead>
                 <TableHead
                   className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-                  onClick={() => setSort("origin")}
-                >
-                  Origin
-                </TableHead>
-                <TableHead
-                  className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                   onClick={() => setSort("availableMt")}
                 >
                   Available (MT)
@@ -410,7 +379,7 @@ export function InventoryView() {
               {products.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={7}
                     className="py-10 text-center text-sm text-slate-500"
                   >
                     No inventory items match your filters.
@@ -467,13 +436,13 @@ export function InventoryView() {
 
             <div className="rounded-xl bg-[#0B1F3A] p-4 text-white">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Origin / Supplier
+                Warehouse
               </p>
               <p className="mt-1 text-sm font-semibold">
-                {selectedProduct.origin}
+                {selectedProduct.warehouseName}
               </p>
               <p className="mt-1 text-xs text-slate-300">
-                Marketplace catalog source for ADMIN listing review
+                {selectedProduct.warehouseAddress}
               </p>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center justify-between text-xs">

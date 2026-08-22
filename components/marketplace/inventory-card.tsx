@@ -81,22 +81,6 @@ export function InventoryCard({
           </div>
           <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Reserved (MT)
-            </Label>
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={inventory.reservedMt || ""}
-              disabled
-              className="bg-slate-50"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               MOQ (MT)
             </Label>
             <Input
@@ -111,6 +95,9 @@ export function InventoryCard({
               <p className="text-xs text-red-500">{errors.moq}</p>
             ) : null}
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Stock Unit

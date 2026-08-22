@@ -58,13 +58,7 @@ export function AcceptDialog({
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Warehouse</dt>
-                    <dd className="font-medium text-slate-800">
-                      {request.warehouseLabel}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Dispatch Date</dt>
+                    <dt className="text-slate-500">Dispatch Deadline</dt>
                     <dd className="font-medium text-slate-800">
                       {format(new Date(request.deadline), "MMM dd, yyyy")}
                     </dd>

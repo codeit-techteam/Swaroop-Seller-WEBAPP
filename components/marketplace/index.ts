@@ -3,7 +3,6 @@ export { ConfirmationDialog } from "./confirmation-dialog";
 export { DraftIndicator } from "./draft-indicator";
 export { ImagePreview } from "./image-preview";
 export { InventoryCard } from "./inventory-card";
-export { LivePriceCalculator } from "./live-price-calculator";
 export { LoadingOverlay } from "./loading-overlay";
 export { OfferFilterDrawer } from "./offer-filter-drawer";
 export { OfferPreviewModal } from "./offer-preview-modal";

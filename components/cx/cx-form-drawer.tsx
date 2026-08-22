@@ -44,19 +44,19 @@ export function CxFormDrawer({
       description={description}
       widthClassName={widthClassName}
       footer={
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             {footerStart}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             {footerEnd}
             {hideSubmit ? null : (
               <Button
                 type="button"
-                className="min-w-[140px] bg-[#0B1F3A] hover:bg-[#122846]"
+                className="shrink-0 bg-[#0B1F3A] hover:bg-[#122846] sm:min-w-[132px]"
                 disabled={submitting}
                 onClick={onSubmit}
               >

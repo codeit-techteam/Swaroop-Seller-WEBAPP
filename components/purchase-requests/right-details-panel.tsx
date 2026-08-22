@@ -8,7 +8,6 @@ import { DeadlineCard } from "@/components/purchase-requests/deadline-card";
 import { DocumentDownloadCard } from "@/components/purchase-requests/document-download-card";
 import { MaterialCard } from "@/components/purchase-requests/material-card";
 import { NotesCard } from "@/components/purchase-requests/notes-card";
-import { WarehouseCard } from "@/components/purchase-requests/warehouse-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PurchaseRequest } from "@/types/purchase-requests";
@@ -115,10 +114,6 @@ export function RightDetailsPanel({
                 <h4 className="text-sm font-semibold text-slate-900">
                   Logistics & Handling
                 </h4>
-                <WarehouseCard
-                  label={request.warehouseLabel}
-                  address={request.warehouseAddress}
-                />
                 <DeadlineCard
                   deadline={request.deadline}
                   timeSlot={request.deadlineTimeSlot}

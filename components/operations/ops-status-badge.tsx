@@ -43,6 +43,7 @@ const MAP: Record<string, string> = {
   REJECTED: "border-red-200 bg-red-50 text-red-700",
   COMPLETED: "border-slate-200 bg-slate-100 text-slate-700",
   DRAFT: "border-slate-200 bg-slate-50 text-slate-600",
+  PREVIEW: "border-violet-200 bg-violet-50 text-violet-700",
   COUNTERED: "border-violet-200 bg-violet-50 text-violet-700",
   ACCEPTED: "border-emerald-200 bg-emerald-50 text-emerald-700",
   PO_CREATED: "border-blue-200 bg-blue-50 text-blue-700",

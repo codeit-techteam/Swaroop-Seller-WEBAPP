@@ -83,7 +83,6 @@ export function PurchaseRequestsView() {
     Boolean(filters.search.trim()) ||
     filters.status !== "All Statuses" ||
     filters.materialGrade !== "All Grades" ||
-    filters.warehouse !== "All Warehouses" ||
     Boolean(filters.dateFrom) ||
     Boolean(filters.dateTo);
 

@@ -76,7 +76,9 @@ export function RequestRow({
       <TableCell className="px-4 py-4">
         <div>
           <p className="font-medium text-slate-800">{request.productName}</p>
-          <p className="mt-0.5 text-xs text-slate-400">{request.productGrade}</p>
+          <p className="mt-0.5 text-xs text-slate-400">
+            {request.productGrade}
+          </p>
         </div>
       </TableCell>
       <TableCell className="px-4 py-4 tabular-nums font-medium text-slate-800">
@@ -87,15 +89,15 @@ export function RequestRow({
         MT
       </TableCell>
       <TableCell className="px-4 py-4 text-slate-600">
-        {request.warehouseLabel}
-      </TableCell>
-      <TableCell className="px-4 py-4 text-slate-600">
         {format(new Date(request.deadline), "dd MMM yyyy")}
       </TableCell>
       <TableCell className="px-4 py-4">
         <StatusBadge status={request.status} />
       </TableCell>
-      <TableCell className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
+      <TableCell
+        className="px-4 py-4"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex flex-wrap items-center justify-end gap-0.5">
           {request.status === "pending" ? (
             <>

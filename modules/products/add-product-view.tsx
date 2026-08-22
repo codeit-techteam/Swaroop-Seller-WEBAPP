@@ -37,7 +37,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { productFormSchema } from "@/lib/schemas/marketplace";
-import { originCountries, productCategories } from "@/mock/products";
+import { productCategories } from "@/mock/products";
 import { useProductStore } from "@/store/productStore";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -230,30 +230,6 @@ export function AddProductView() {
             ) : null}
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Origin Country
-            </Label>
-            <Select
-              value={draft.originCountry}
-              onValueChange={(value) => updateDraft({ originCountry: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent>
-                {originCountries.map((country) => (
-                  <SelectItem key={country} value={country}>
-                    {country}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.originCountry ? (
-              <p className="text-xs text-red-500">{errors.originCountry}</p>
-            ) : null}
-          </div>
-
           <div className="space-y-2 sm:col-span-2">
             <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Description
@@ -283,24 +259,24 @@ export function AddProductView() {
             </div>
           </div>
           <div className="grid gap-5 sm:grid-cols-3">
-          {draft.uploads.map((upload) => (
-            <FileUploader
-              key={upload.id}
-              upload={upload}
-              onUpload={(file) => simulateUpload(upload.id, file)}
-              onReplace={(file) => simulateUpload(upload.id, file)}
-              onRemove={() =>
-                updateUpload(upload.id, {
-                  status: "empty",
-                  fileName: undefined,
-                  fileSize: undefined,
-                  previewUrl: undefined,
-                  uploadProgress: undefined,
-                  errorMessage: undefined,
-                })
-              }
-            />
-          ))}
+            {draft.uploads.map((upload) => (
+              <FileUploader
+                key={upload.id}
+                upload={upload}
+                onUpload={(file) => simulateUpload(upload.id, file)}
+                onReplace={(file) => simulateUpload(upload.id, file)}
+                onRemove={() =>
+                  updateUpload(upload.id, {
+                    status: "empty",
+                    fileName: undefined,
+                    fileSize: undefined,
+                    previewUrl: undefined,
+                    uploadProgress: undefined,
+                    errorMessage: undefined,
+                  })
+                }
+              />
+            ))}
           </div>
         </div>
       </motion.div>

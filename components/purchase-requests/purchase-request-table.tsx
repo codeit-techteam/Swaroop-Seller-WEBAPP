@@ -80,9 +80,6 @@ export function PurchaseRequestTable({
                 Quantity
               </TableHead>
               <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Warehouse Pickup
-              </TableHead>
-              <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Dispatch Deadline
               </TableHead>
               <TableHead className="px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -97,7 +94,7 @@ export function PurchaseRequestTable({
             {isLoading
               ? Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={`skeleton-${index}`}>
-                    {Array.from({ length: 7 }).map((__, cell) => (
+                    {Array.from({ length: 6 }).map((__, cell) => (
                       <td key={cell} className="p-4">
                         <Skeleton className="h-4 w-full" />
                       </td>

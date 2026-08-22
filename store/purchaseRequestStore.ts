@@ -288,8 +288,7 @@ export const usePurchaseRequestStore = create<PurchaseRequestState>()(
           "Material",
           "Quantity (MT)",
           "Unit Price",
-          "Warehouse",
-          "Deadline",
+          "Dispatch Deadline",
           "Status",
           "Urgency",
         ];
@@ -301,7 +300,6 @@ export const usePurchaseRequestStore = create<PurchaseRequestState>()(
             r.materialCategory,
             r.quantityMt.toFixed(2),
             r.unitPrice.toFixed(2),
-            r.warehouse,
             r.deadline,
             r.status,
             r.urgency,
@@ -360,9 +358,7 @@ startxref
             !query ||
             item.requestNumber.toLowerCase().includes(query) ||
             item.productGrade.toLowerCase().includes(query) ||
-            item.productName.toLowerCase().includes(query) ||
-            item.warehouse.toLowerCase().includes(query) ||
-            item.warehouseLabel.toLowerCase().includes(query);
+            item.productName.toLowerCase().includes(query);
 
           const matchesStatus =
             filters.status === "All Statuses" || item.status === filters.status;
@@ -370,10 +366,6 @@ startxref
           const matchesMaterial =
             filters.materialGrade === "All Grades" ||
             item.materialCategory === filters.materialGrade;
-
-          const matchesWarehouse =
-            filters.warehouse === "All Warehouses" ||
-            item.warehouse === filters.warehouse;
 
           const deadline = new Date(item.deadline).getTime();
           const matchesFrom =
@@ -386,7 +378,6 @@ startxref
             matchesSearch &&
             matchesStatus &&
             matchesMaterial &&
-            matchesWarehouse &&
             matchesFrom &&
             matchesTo
           );

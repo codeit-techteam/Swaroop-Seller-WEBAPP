@@ -57,7 +57,7 @@ export function ActionDrawer({
           />
           <motion.aside
             className={cn(
-              "fixed inset-y-0 right-0 z-50 flex h-full flex-col border-l border-slate-200 bg-white shadow-2xl",
+              "fixed inset-y-0 right-0 z-50 flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl",
               widthClassName,
               className,
             )}
@@ -66,7 +66,7 @@ export function ActionDrawer({
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
           >
-            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-6 py-5">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6 sm:py-5">
               <div className="min-w-0 pr-2">
                 <h2 className="text-lg font-semibold tracking-tight text-slate-900">
                   {title}
@@ -87,9 +87,11 @@ export function ActionDrawer({
                 <span className="sr-only">Close</span>
               </Button>
             </div>
-            <div className="flex-1 overflow-y-auto bg-slate-50/40 px-6 py-5">{children}</div>
+            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-slate-50/40 px-5 py-5 sm:px-6">
+              {children}
+            </div>
             {footer ? (
-              <div className="shrink-0 border-t border-slate-100 bg-white px-6 py-4">
+              <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
                 {footer}
               </div>
             ) : null}

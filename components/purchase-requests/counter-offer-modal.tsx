@@ -277,8 +277,7 @@ export function CounterOfferModal({
                       {request.productGrade} · {request.quantityMt} MT
                     </p>
                     <p className="text-slate-500">
-                      Req. ${request.unitPrice.toFixed(2)} / MT ·{" "}
-                      {request.warehouseLabel}
+                      Req. ${request.unitPrice.toFixed(2)} / MT
                     </p>
                   </div>
                   <div className="rounded-lg border border-[#1B6EF3]/30 bg-white p-4">

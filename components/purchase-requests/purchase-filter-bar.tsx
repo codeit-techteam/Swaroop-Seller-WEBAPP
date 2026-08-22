@@ -13,11 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-  MATERIAL_GRADES,
-  PURCHASE_STATUSES,
-  PURCHASE_WAREHOUSES,
-} from "@/mock/purchase-requests";
+import { MATERIAL_GRADES, PURCHASE_STATUSES } from "@/mock/purchase-requests";
 import type { PurchaseRequestFilters } from "@/types/purchase-requests";
 
 interface PurchaseFilterBarProps {
@@ -50,7 +46,7 @@ export function PurchaseFilterBar({
         <Input
           value={filters.search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search request ID, grade, warehouse..."
+          placeholder="Search request ID, grade..."
           className="h-10 border-slate-200 bg-slate-50 pl-9 shadow-none focus-visible:ring-[#1B6EF3]"
         />
       </div>
@@ -83,22 +79,6 @@ export function PurchaseFilterBar({
             {MATERIAL_GRADES.map((grade) => (
               <SelectItem key={grade} value={grade}>
                 {grade === "All Grades" ? "All Grades" : grade}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.warehouse}
-          onValueChange={(value) => onFilterChange("warehouse", value)}
-        >
-          <SelectTrigger className="h-9 w-[170px] border-slate-200 bg-white text-sm">
-            <SelectValue placeholder="Warehouse" />
-          </SelectTrigger>
-          <SelectContent>
-            {PURCHASE_WAREHOUSES.map((warehouse) => (
-              <SelectItem key={warehouse} value={warehouse}>
-                {warehouse}
               </SelectItem>
             ))}
           </SelectContent>
