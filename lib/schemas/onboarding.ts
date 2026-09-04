@@ -88,14 +88,12 @@ export const locationSchema = z.object({
   state: z.string().min(1, "State is required"),
   pincode: pincodeSchema,
   registeredAddress: z.string().min(8, "Registered address is required"),
-  additionalAddresses: z
-    .array(
-      z.object({
-        label: z.string().optional().default(""),
-        address: z.string().min(8, "Enter the address or remove this row"),
-      }),
-    )
-    .default([]),
+  additionalAddresses: z.array(
+    z.object({
+      label: z.string(),
+      address: z.string().min(8, "Enter the address or remove this row"),
+    }),
+  ),
 });
 
 export const reviewSchema = z.object({
