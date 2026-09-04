@@ -17,9 +17,9 @@ export default function Error({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="text-2xl font-semibold">Something went wrong</h1>
+      <h1 className="text-2xl font-semibold">Unable to load this page.</h1>
       <p className="text-muted-foreground">
-        An unexpected error occurred. Please try again.
+        An unexpected error occurred in the Seller Portal. Please try again.
       </p>
       <Button onClick={reset}>Try again</Button>
     </div>

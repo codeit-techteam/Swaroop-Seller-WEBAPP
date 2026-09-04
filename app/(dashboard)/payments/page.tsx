@@ -1,11 +1,11 @@
 import { createRouteMetadata } from "@/components/common";
-import { PaymentsView } from "@/modules/finance";
+import { SellerPaymentsView } from "@/modules/seller-finance/finance-views";
 
 export const metadata = createRouteMetadata(
-  "Payments",
-  "Marketplace payment operations",
+  "Payment History",
+  "Received payments against your orders",
 );
 
 export default function PaymentsPage() {
-  return <PaymentsView />;
+  return <SellerPaymentsView />;
 }

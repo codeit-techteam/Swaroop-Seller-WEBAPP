@@ -1,0 +1,113 @@
+import { ROUTES } from "@/lib/constants";
+import type { SellerActivity, SellerNotification } from "@/types/seller";
+
+export const sellerNotificationsMock: SellerNotification[] = [
+  {
+    id: "nt-1",
+    title: "Purchase request received",
+    body: "PR-4418 · 120 MT PP H110MA from BUY-1028",
+    category: "requests",
+    read: false,
+    createdAt: "2026-09-02T06:20:00.000Z",
+    href: ROUTES.PURCHASE_REQUESTS,
+  },
+  {
+    id: "nt-2",
+    title: "Offer expiring soon",
+    body: "HDPE PE100 offer at Mundra expires in 12 hours",
+    category: "offers",
+    read: false,
+    createdAt: "2026-09-03T02:00:00.000Z",
+    href: ROUTES.OFFERS,
+  },
+  {
+    id: "nt-3",
+    title: "Order confirmed",
+    body: "SO-24081 confirmed · 60 MT SCG P400S",
+    category: "orders",
+    read: false,
+    createdAt: "2026-09-02T09:10:00.000Z",
+    href: `${ROUTES.ORDERS}/ord-1`,
+  },
+  {
+    id: "nt-4",
+    title: "Dispatch reminder",
+    body: "SO-24070 is scheduled for loading at Hazira tomorrow",
+    category: "orders",
+    read: true,
+    createdAt: "2026-09-03T01:00:00.000Z",
+    href: ROUTES.DISPATCH,
+  },
+  {
+    id: "nt-5",
+    title: "Payment received",
+    body: "₹10.0L received against SO-24070",
+    category: "payments",
+    read: true,
+    createdAt: "2026-09-02T15:00:00.000Z",
+    href: ROUTES.PAYMENTS,
+  },
+  {
+    id: "nt-6",
+    title: "Settlement processed",
+    body: "SET-1182 for SO-24040 has been settled",
+    category: "payments",
+    read: true,
+    createdAt: "2026-08-28T12:00:00.000Z",
+    href: ROUTES.SETTLEMENTS,
+  },
+  {
+    id: "nt-7",
+    title: "Document expiring",
+    body: "ISO 9001 certificate expires on 30 Sep 2026",
+    category: "documents",
+    read: false,
+    createdAt: "2026-09-01T08:00:00.000Z",
+    href: ROUTES.DOCUMENTS,
+  },
+];
+
+export const sellerActivityMock: SellerActivity[] = [
+  {
+    id: "act-1",
+    type: "request",
+    title: "Purchase request received",
+    description: "PR-4418 · 120 MT PP H110MA",
+    at: "2026-09-02T06:20:00.000Z",
+  },
+  {
+    id: "act-2",
+    type: "order",
+    title: "Order confirmed",
+    description: "SO-24081 confirmed for Chennai",
+    at: "2026-09-02T09:10:00.000Z",
+  },
+  {
+    id: "act-3",
+    type: "offer",
+    title: "Offer activated",
+    description: "PP RAFFIA · SCG P400S is now live",
+    at: "2026-08-24T03:34:00.000Z",
+  },
+  {
+    id: "act-4",
+    type: "dispatch",
+    title: "Dispatch scheduled",
+    description: "SO-24070 loading at Hazira on 04 Sep",
+    at: "2026-09-02T06:00:00.000Z",
+  },
+  {
+    id: "act-5",
+    type: "payment",
+    title: "Payment received",
+    description: "IMPS credit against SO-24070",
+    at: "2026-09-02T15:00:00.000Z",
+  },
+  {
+    id: "act-6",
+    type: "document",
+    title: "Document expiring",
+    description: "ISO 9001 expires in 27 days",
+    at: "2026-09-01T08:00:00.000Z",
+  },
+];

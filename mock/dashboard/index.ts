@@ -9,8 +9,8 @@ import type {
 } from "@/types/dashboard";
 
 export const dashboardSeller: DashboardSeller = {
-  name: "Operations Lead",
-  role: "Operations Lead",
+  name: "Seller Account",
+  role: "Seller",
   company: "Reliance Industries",
   warehouse: "Hazira Complex",
 };

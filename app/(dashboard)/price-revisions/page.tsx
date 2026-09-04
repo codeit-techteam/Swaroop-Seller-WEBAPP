@@ -1,8 +1,3 @@
-import { redirect } from "next/navigation";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-import { ROUTES } from "@/lib/constants";
-
-/** Price Revisions is temporarily hidden from the frontend. */
-export default function PriceRevisionsRedirectPage() {
-  redirect(ROUTES.DASHBOARD);
-}
+export default AdminRedirectPage;

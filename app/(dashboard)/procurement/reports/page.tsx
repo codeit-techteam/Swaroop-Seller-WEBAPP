@@ -1,11 +1,3 @@
-import { createRouteMetadata } from "@/components/common";
-import { ProcurementReportsView } from "@/modules/procurement";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-export const metadata = createRouteMetadata(
-  "Procurement Reports",
-  "Procurement performance, spend and processing reports",
-);
-
-export default function ProcurementReportsPage() {
-  return <ProcurementReportsView />;
-}
+export default AdminRedirectPage;

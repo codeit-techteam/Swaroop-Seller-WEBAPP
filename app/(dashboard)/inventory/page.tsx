@@ -1,11 +1,7 @@
-import { createRouteMetadata } from "@/components/common";
-import { InventoryView } from "@/modules/inventory";
+import { redirect } from "next/navigation";
 
-export const metadata = createRouteMetadata(
-  "Inventory",
-  "Manage warehouse inventory",
-);
+import { ROUTES } from "@/lib/constants";
 
-export default function InventoryPage() {
-  return <InventoryView />;
+export default function InventoryRedirect() {
+  redirect(ROUTES.PRODUCTS);
 }

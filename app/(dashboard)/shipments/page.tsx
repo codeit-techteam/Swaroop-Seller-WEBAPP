@@ -1,5 +1,11 @@
-import { redirect } from "next/navigation";
+import { createRouteMetadata } from "@/components/common";
+import { SellerShipmentsView } from "@/modules/seller-logistics/logistics-view";
 
-export default function ShipmentsRedirectPage() {
-  redirect("/shipment-tracking");
+export const metadata = createRouteMetadata(
+  "Shipment Tracking",
+  "Track dispatched loads",
+);
+
+export default function ShipmentsPage() {
+  return <SellerShipmentsView />;
 }

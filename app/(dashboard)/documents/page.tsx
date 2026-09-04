@@ -1,7 +1,11 @@
-import { redirect } from "next/navigation";
+import { createRouteMetadata } from "@/components/common";
+import { SellerDocumentsView } from "@/modules/seller-finance/finance-views";
 
-import { ROUTES } from "@/lib/constants";
+export const metadata = createRouteMetadata(
+  "Documents",
+  "Manage your seller compliance documents",
+);
 
-export default function DocumentsRedirectPage() {
-  redirect(ROUTES.DOCUMENT_CENTER);
+export default function DocumentsPage() {
+  return <SellerDocumentsView />;
 }

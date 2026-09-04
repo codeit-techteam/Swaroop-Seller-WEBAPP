@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { ShipmentTrackingView } from "@/modules/shipments";
+import { ROUTES } from "@/lib/constants";
 
-export const metadata: Metadata = {
-  title: "Shipment Tracking | PetroTrade ADMIN PANEL",
-  description:
-    "Track dispatches and delivery progress across all customer orders.",
-};
-
-export default function ShipmentTrackingPage() {
-  return <ShipmentTrackingView />;
+export default function ShipmentTrackingRedirect() {
+  redirect(ROUTES.SHIPMENTS);
 }

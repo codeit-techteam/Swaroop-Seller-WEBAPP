@@ -1,12 +1,7 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { CreateOfferView } from "@/modules/offers";
+import { ROUTES } from "@/lib/constants";
 
-export const metadata: Metadata = {
-  title: "Create Trading Offer | PetroTrade ADMIN PANEL",
-  description: "Create a new marketplace trading offer",
-};
-
-export default function CreateOfferPage() {
-  return <CreateOfferView />;
+export default function LegacyCreateOfferPage() {
+  redirect(ROUTES.OFFERS_NEW);
 }

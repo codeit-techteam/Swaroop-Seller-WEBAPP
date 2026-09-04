@@ -87,7 +87,7 @@ export const customerService = {
           id: nextId("act"),
           at: nowIso(),
           title: "Customer created",
-          description: "Added from ADMIN PANEL",
+          description: "Added from Seller Portal",
           kind: "KYC",
         },
       ],

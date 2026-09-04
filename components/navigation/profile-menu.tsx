@@ -40,7 +40,7 @@ export function ProfileMenu() {
   const handleLogoutConfirm = () => {
     setLogoutOpen(false);
     logout();
-    router.push(ROUTES.SELLER_LOGIN);
+    router.push(ROUTES.LOGIN);
     router.refresh();
   };
 
@@ -50,22 +50,28 @@ export function ProfileMenu() {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-2 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex items-center gap-2 rounded-full pr-1 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
+              <AvatarFallback className="bg-[#1B6EF3] text-xs font-semibold text-white">
                 {initials}
               </AvatarFallback>
             </Avatar>
+            <span className="hidden text-left leading-tight md:block">
+              <span className="block text-xs font-semibold text-slate-800">
+                {initials}
+              </span>
+              <span className="block text-[10px] uppercase tracking-wide text-slate-500">
+                SELLER
+              </span>
+            </span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium">{displayName}</p>
-              <p className="text-xs text-muted-foreground">
-                {user?.email ?? CURRENT_USER.email}
-              </p>
+              <p className="text-xs text-muted-foreground">Seller Account</p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -99,8 +105,8 @@ export function ProfileMenu() {
               Confirm Logout
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center">
-              Are you sure you want to log out of PetroTrade ADMIN PANEL? Any
-              unsaved changes will be lost.
+              Log out of PetroTrade Seller Portal? Any unsaved changes will be
+              lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">

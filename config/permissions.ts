@@ -67,15 +67,17 @@ const ALL_PERMISSIONS: Permission[] = [
   "audit.view",
 ];
 
-const VIEW_ONLY: Permission[] = ALL_PERMISSIONS.filter((permission) =>
-  permission.endsWith(".view"),
-);
+const VIEW_ONLY: Permission[] = [
+  "dashboard.view",
+  "inventory.view",
+  "offers.view",
+  "orders.view",
+  "profile.view",
+];
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ADMIN: ALL_PERMISSIONS,
-  OPERATIONS: ALL_PERMISSIONS.filter(
-    (permission) => !permission.startsWith("users."),
-  ),
+  OPERATIONS: ALL_PERMISSIONS,
   PROCUREMENT: [
     "dashboard.view",
     "inventory.view",
@@ -116,16 +118,23 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   SELLER: [
     "dashboard.view",
     "inventory.view",
+    "inventory.manage",
     "offers.view",
+    "offers.manage",
     "procurement.view",
     "procurement.manage",
     "orders.view",
+    "orders.manage",
     "logistics.view",
+    "logistics.manage",
+    "finance.view",
     "compliance.view",
     "profile.view",
-    "customers.view",
     "catalog.view",
+    "catalog.manage",
     "support.view",
+    "support.manage",
+    "notifications.manage",
   ],
 };
 

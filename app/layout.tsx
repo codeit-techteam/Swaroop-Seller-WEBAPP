@@ -13,10 +13,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "PetroTrade ADMIN PANEL",
-    template: "%s | PetroTrade ADMIN PANEL",
+    default: "PetroTrade Seller",
+    template: "%s | PetroTrade Seller",
   },
-  description: "PetroTrade ADMIN PANEL operations",
+  description:
+    "PetroTrade Seller Portal for grades, offers, orders and settlements",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   ),

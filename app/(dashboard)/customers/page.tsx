@@ -1,17 +1,3 @@
-import { Suspense } from "react";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-import { createRouteMetadata } from "@/components/common";
-import { CustomersView } from "@/modules/customers";
-
-export const metadata = createRouteMetadata(
-  "Customers",
-  "Customer lifecycle for Customer APP and Customer WEB",
-);
-
-export default function CustomersPage() {
-  return (
-    <Suspense>
-      <CustomersView />
-    </Suspense>
-  );
-}
+export default AdminRedirectPage;

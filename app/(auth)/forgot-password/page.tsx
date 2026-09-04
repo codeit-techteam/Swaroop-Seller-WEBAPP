@@ -1,20 +1,7 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import {
-  createRouteMetadata,
-  RoutePlaceholder,
-} from "@/components/common/route-placeholder";
-
-export const metadata: Metadata = createRouteMetadata(
-  "Forgot Password",
-  "Reset your password",
-);
+import { ROUTES } from "@/lib/constants";
 
 export default function ForgotPasswordPage() {
-  return (
-    <RoutePlaceholder
-      title="Forgot Password"
-      description="Reset your password"
-    />
-  );
+  redirect(ROUTES.LOGIN);
 }

@@ -1,13 +1,11 @@
-import type { Metadata } from "next";
+import { createRouteMetadata } from "@/components/common";
+import { SellerNotificationsView } from "@/modules/seller-notifications/notifications-view";
 
-import { createRouteMetadata } from "@/components/common/route-placeholder";
-import { NotificationsView } from "@/modules/notifications";
-
-export const metadata: Metadata = createRouteMetadata(
-  "Notifications Center",
-  "Seller alerts and operational notifications",
+export const metadata = createRouteMetadata(
+  "Notifications",
+  "Seller alerts for offers, orders and payments",
 );
 
 export default function NotificationsPage() {
-  return <NotificationsView />;
+  return <SellerNotificationsView />;
 }

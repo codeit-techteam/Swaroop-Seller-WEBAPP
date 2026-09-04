@@ -1,5 +1,7 @@
 export type OnboardingStepId =
   | "company"
+  | "business"
+  | "locations"
   | "documents"
   | "gst-pan"
   | "bank"
@@ -27,6 +29,7 @@ export interface OnboardingStep {
 
 export interface CompanyFormData {
   companyName: string;
+  legalName: string;
   gstNumber: string;
   panNumber: string;
   businessType: string;
@@ -37,6 +40,7 @@ export interface CompanyFormData {
   industry: string;
   yearsInBusiness: string;
   annualTurnover: string;
+  registeredAddress: string;
 }
 
 export interface DocumentItem {
@@ -84,12 +88,19 @@ export interface BankFormData {
   manualReviewMessage?: string;
 }
 
+export interface AdditionalAddress {
+  id: string;
+  label: string;
+  address: string;
+}
+
 export interface LocationFormData {
   warehouseAddress: string;
   city: string;
   state: string;
   pincode: string;
   registeredAddress: string;
+  additionalAddresses: AdditionalAddress[];
   warehousePhotoFileName?: string;
   warehousePhotoPreview?: string;
   entrancePhotoFileName?: string;
@@ -98,6 +109,16 @@ export interface LocationFormData {
   longitude?: number;
   locationVerified: boolean;
   locationLabel?: string;
+}
+
+export interface BusinessFormData {
+  sellerType: string;
+  yearsInBusiness: string;
+  primaryCategories: string;
+  operatingCapacity: string;
+  monthlyTradingCapacity: string;
+  paymentTerms: string;
+  preferredContactMethod: string;
 }
 
 export interface ReviewData {
@@ -113,6 +134,7 @@ export interface OnboardingState {
   lastSavedAt: string | null;
   isSaving: boolean;
   company: CompanyFormData;
+  business: BusinessFormData;
   documents: DocumentItem[];
   gst: GstVerificationData;
   pan: PanVerificationData;
@@ -130,6 +152,7 @@ export interface OnboardingActions {
   markStepComplete: (step: OnboardingStepId) => void;
   triggerAutoSave: () => void;
   updateCompany: (data: Partial<CompanyFormData>) => void;
+  updateBusiness: (data: Partial<BusinessFormData>) => void;
   updateDocument: (id: string, data: Partial<DocumentItem>) => void;
   updateGst: (data: Partial<GstVerificationData>) => void;
   updatePan: (data: Partial<PanVerificationData>) => void;

@@ -1,12 +1,11 @@
-import type { Metadata } from "next";
+import { createRouteMetadata } from "@/components/common";
+import { SellerOrdersView } from "@/modules/seller-orders/orders-view";
 
-import { OrdersView } from "@/modules/orders";
-
-export const metadata: Metadata = {
-  title: "Orders Management | PetroTrade ADMIN PANEL",
-  description: "View and manage allocated marketplace orders",
-};
+export const metadata = createRouteMetadata(
+  "Orders",
+  "Manage your seller orders",
+);
 
 export default function OrdersPage() {
-  return <OrdersView />;
+  return <SellerOrdersView />;
 }

@@ -35,7 +35,7 @@ export function DocumentPreviewModal({
     toast.success(`Downloading ${document.fileName} (mock)`);
     const blob = new Blob(
       [
-        `PetroTrade ADMIN PANEL Document\n` +
+        `PetroTrade Seller Portal Document\n` +
           `Title: ${document.title}\n` +
           `File: ${document.fileName}\n` +
           `Status: ${document.status}\n` +

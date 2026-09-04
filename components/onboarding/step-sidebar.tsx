@@ -20,6 +20,8 @@ import type { OnboardingStepId } from "@/types/onboarding";
 
 const stepIcons: Record<OnboardingStepId, React.ElementType> = {
   company: Building2,
+  business: Fuel,
+  locations: MapPin,
   documents: FileText,
   "gst-pan": ShieldCheck,
   bank: CreditCard,
@@ -57,7 +59,7 @@ export function StepSidebar({ className }: StepSidebarProps) {
             <Fuel className="h-5 w-5 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold">ADMIN PANEL</p>
+            <p className="text-sm font-semibold">PetroTrade</p>
             <p className="text-xs text-sidebar-foreground/60">
               SELLER ONBOARDING
             </p>

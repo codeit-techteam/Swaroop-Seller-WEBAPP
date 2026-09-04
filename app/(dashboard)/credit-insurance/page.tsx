@@ -1,11 +1,3 @@
-import { createRouteMetadata } from "@/components/common";
-import { CreditInsuranceView } from "@/modules/finance";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-export const metadata = createRouteMetadata(
-  "Credit Insurance",
-  "Buyer credit cover and exposure",
-);
-
-export default function CreditInsurancePage() {
-  return <CreditInsuranceView />;
-}
+export default AdminRedirectPage;

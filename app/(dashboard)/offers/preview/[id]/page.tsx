@@ -1,12 +1,3 @@
-import type { Metadata } from "next";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-import { PreviewOfferView } from "@/modules/offers";
-
-export const metadata: Metadata = {
-  title: "Preview Offer | PetroTrade ADMIN PANEL",
-  description: "Preview trading offer as buyer would see it",
-};
-
-export default function PreviewOfferPage() {
-  return <PreviewOfferView />;
-}
+export default AdminRedirectPage;

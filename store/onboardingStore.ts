@@ -47,6 +47,11 @@ export const useOnboardingStore = create<OnboardingStore>()(
         get().triggerAutoSave();
       },
 
+      updateBusiness: (data) => {
+        set((state) => ({ business: { ...state.business, ...data } }));
+        get().triggerAutoSave();
+      },
+
       updateDocument: (id, data) => {
         set((state) => ({
           documents: state.documents.map((doc) =>
@@ -126,7 +131,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "petrotrade-onboarding",
-      version: 2,
+      version: 4,
       migrate: () => ({
         ...initialOnboardingState,
         documents: initialOnboardingState.documents.map((doc) => ({ ...doc })),
@@ -139,6 +144,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
         completedSteps: state.completedSteps,
         lastSavedAt: state.lastSavedAt,
         company: state.company,
+        business: state.business,
         documents: state.documents,
         gst: state.gst,
         pan: state.pan,

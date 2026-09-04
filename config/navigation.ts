@@ -1,26 +1,22 @@
 import {
-  Bell,
   ClipboardList,
   FileText,
-  Headphones,
   LayoutDashboard,
+  LogOut,
+  MapPin,
   Package,
-  Percent,
-  ShieldCheck,
   ShoppingCart,
   Tag,
   Truck,
   User,
-  Users,
   Wallet,
-  Warehouse,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
 import { ROUTES } from "@/lib/constants";
 
 import { canAccess, type Permission } from "./permissions";
-import { isSellerRole, type UserRole } from "./roles";
+import type { UserRole } from "./roles";
 
 export interface NavItem {
   label: string;
@@ -42,7 +38,7 @@ export interface NavSection {
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    id: "overview",
+    id: "main",
     items: [
       {
         label: "Dashboard",
@@ -57,61 +53,28 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "MARKETPLACE",
     items: [
       {
-        label: "Inventory",
-        href: ROUTES.INVENTORY,
-        icon: Warehouse,
-        permission: "inventory.view",
-        hideForSeller: true,
-      },
-      {
-        label: "Catalog",
-        href: ROUTES.MARKETPLACE_CATALOG,
+        label: "My Products",
+        href: ROUTES.PRODUCTS,
         icon: Package,
         permission: "catalog.view",
-        hideForSeller: true,
-        children: [
-          {
-            label: "Categories",
-            href: ROUTES.MARKETPLACE_CATEGORIES,
-            icon: Package,
-            permission: "catalog.manage",
-            hideForSeller: true,
-          },
-          {
-            label: "Products",
-            href: ROUTES.MARKETPLACE_CATALOG,
-            icon: Package,
-            permission: "catalog.manage",
-            hideForSeller: true,
-          },
-          {
-            label: "Pricing",
-            href: ROUTES.MARKETPLACE_PRICING,
-            icon: Percent,
-            permission: "catalog.manage",
-            hideForSeller: true,
-          },
-        ],
       },
       {
-        label: "Active Offers",
+        label: "My Offers",
         href: ROUTES.OFFERS,
         icon: Tag,
         permission: "offers.view",
-        hideForSeller: true,
       },
       {
         label: "Purchase Requests",
         href: ROUTES.PURCHASE_REQUESTS,
         icon: ClipboardList,
         permission: "procurement.view",
-        hideForSeller: true,
       },
     ],
   },
   {
-    id: "commerce",
-    title: "COMMERCE",
+    id: "orders",
+    title: "ORDERS",
     items: [
       {
         label: "Orders",
@@ -120,30 +83,16 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: "orders.view",
       },
       {
-        label: "Customer Orders",
-        href: ROUTES.CUSTOMER_ORDERS,
-        icon: ShoppingCart,
-        permission: "customers.view",
-      },
-    ],
-  },
-  {
-    id: "operations",
-    title: "OPERATIONS",
-    items: [
-      {
-        label: "Dispatch Operations",
+        label: "Dispatch",
         href: ROUTES.DISPATCH,
         icon: Truck,
         permission: "logistics.view",
-        hideForSeller: true,
       },
       {
         label: "Shipment Tracking",
-        href: ROUTES.SHIPMENT_TRACKING,
-        icon: Truck,
+        href: ROUTES.SHIPMENTS,
+        icon: MapPin,
         permission: "logistics.view",
-        hideForSeller: true,
       },
     ],
   },
@@ -152,62 +101,16 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "FINANCE",
     items: [
       {
+        label: "Settlements",
+        href: ROUTES.SETTLEMENTS,
+        icon: Wallet,
+        permission: "finance.view",
+      },
+      {
         label: "Payments",
         href: ROUTES.PAYMENTS,
         icon: Wallet,
         permission: "finance.view",
-      },
-      {
-        label: "Receivables",
-        href: ROUTES.RECEIVABLES,
-        icon: Wallet,
-        permission: "finance.view",
-      },
-      {
-        label: "Credit Insurance",
-        href: ROUTES.CREDIT_INSURANCE,
-        icon: ShieldCheck,
-        permission: "finance.view",
-      },
-    ],
-  },
-  {
-    id: "customer-experience",
-    title: "CUSTOMER EXPERIENCE",
-    items: [
-      {
-        label: "Customers",
-        href: ROUTES.CUSTOMERS,
-        icon: Users,
-        permission: "customers.view",
-        children: [
-          {
-            label: "Directory",
-            href: ROUTES.CUSTOMERS,
-            icon: Users,
-            permission: "customers.view",
-            hideForSeller: true,
-          },
-          {
-            label: "Requests",
-            href: ROUTES.CUSTOMER_REQUESTS,
-            icon: ClipboardList,
-            permission: "customers.view",
-          },
-          {
-            label: "Support",
-            href: ROUTES.CUSTOMER_SUPPORT,
-            icon: Headphones,
-            permission: "support.view",
-          },
-          {
-            label: "Notifications",
-            href: ROUTES.CUSTOMER_NOTIFICATIONS,
-            icon: Bell,
-            permission: "notifications.manage",
-            hideForSeller: true,
-          },
-        ],
       },
     ],
   },
@@ -216,18 +119,10 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "COMPLIANCE",
     items: [
       {
-        label: "KYC",
-        href: ROUTES.KYC,
-        icon: FileText,
-        permission: "compliance.view",
-        hideForSeller: true,
-      },
-      {
         label: "Documents",
-        href: ROUTES.DOCUMENT_CENTER,
+        href: ROUTES.DOCUMENTS,
         icon: FileText,
         permission: "compliance.view",
-        hideForSeller: true,
       },
     ],
   },
@@ -245,10 +140,41 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+export const MOBILE_NAV_ITEMS: NavItem[] = [
+  {
+    label: "Home",
+    href: ROUTES.DASHBOARD,
+    icon: LayoutDashboard,
+    permission: "dashboard.view",
+  },
+  {
+    label: "Offers",
+    href: ROUTES.OFFERS,
+    icon: Tag,
+    permission: "offers.view",
+  },
+  {
+    label: "Requests",
+    href: ROUTES.PURCHASE_REQUESTS,
+    icon: ClipboardList,
+    permission: "procurement.view",
+  },
+  {
+    label: "Orders",
+    href: ROUTES.ORDERS,
+    icon: ShoppingCart,
+    permission: "orders.view",
+  },
+  {
+    label: "Profile",
+    href: ROUTES.PROFILE,
+    icon: User,
+    permission: "profile.view",
+  },
+];
+
 function visibleItem(item: NavItem, role: UserRole): boolean {
   if (!canAccess(role, item.permission)) return false;
-  if (isSellerRole(role) && item.hideForSeller) return false;
-  if (item.sellerOnly && !isSellerRole(role) && role !== "ADMIN") return false;
   return true;
 }
 
@@ -281,7 +207,6 @@ function pathMatchesHref(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** True only for the most specific nav href that matches the current path. */
 export function isNavHrefActive(
   pathname: string,
   href: string,
@@ -293,3 +218,5 @@ export function isNavHrefActive(
       candidate.length > href.length && pathMatchesHref(pathname, candidate),
   );
 }
+
+export { LogOut };

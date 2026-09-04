@@ -1,11 +1,3 @@
-import { createRouteMetadata } from "@/components/common";
-import { CatalogView } from "@/modules/marketplace";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-export const metadata = createRouteMetadata(
-  "Catalog",
-  "Customer-facing product catalog",
-);
-
-export default function CatalogPage() {
-  return <CatalogView />;
-}
+export default AdminRedirectPage;

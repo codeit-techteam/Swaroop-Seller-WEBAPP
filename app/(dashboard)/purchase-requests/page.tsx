@@ -1,13 +1,11 @@
-import type { Metadata } from "next";
+import { createRouteMetadata } from "@/components/common";
+import { SellerRequestsView } from "@/modules/seller-requests/requests-view";
 
-import { PurchaseRequestsView } from "@/modules/purchase-requests";
-
-export const metadata: Metadata = {
-  title: "Purchase Requests | PetroTrade ADMIN PANEL",
-  description:
-    "Manage incoming material enquiries allocated by PetroTrade Procurement",
-};
+export const metadata = createRouteMetadata(
+  "Purchase Requests",
+  "Respond to incoming buyer requests",
+);
 
 export default function PurchaseRequestsPage() {
-  return <PurchaseRequestsView />;
+  return <SellerRequestsView />;
 }

@@ -1,13 +1,11 @@
-import type { Metadata } from "next";
+import { createRouteMetadata } from "@/components/common";
+import { SellerDispatchView } from "@/modules/seller-logistics/logistics-view";
 
-import { DispatchOperationsView } from "@/modules/dispatch";
-
-export const metadata: Metadata = {
-  title: "Dispatch Operations | PetroTrade ADMIN PANEL",
-  description:
-    "Manage dispatch workflow from payment approval to shipment release",
-};
+export const metadata = createRouteMetadata(
+  "Dispatch",
+  "Schedule and mark seller dispatches",
+);
 
 export default function DispatchPage() {
-  return <DispatchOperationsView />;
+  return <SellerDispatchView />;
 }

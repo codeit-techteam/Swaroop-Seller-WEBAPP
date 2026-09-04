@@ -1,12 +1,7 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { AddProductView } from "@/modules/products";
+import { ROUTES } from "@/lib/constants";
 
-export const metadata: Metadata = {
-  title: "Add New Product | PetroTrade ADMIN PANEL",
-  description: "Add new product grades and inventory for trading",
-};
-
-export default function AddProductPage() {
-  return <AddProductView />;
+export default function InventoryAddRedirect() {
+  redirect(ROUTES.PRODUCTS_NEW);
 }

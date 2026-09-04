@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { DocumentCenterView } from "@/modules/document-center";
+import { ROUTES } from "@/lib/constants";
 
-export const metadata: Metadata = {
-  title: "Customer Documents | PetroTrade ADMIN PANEL",
-  description:
-    "Customer onboarding documents from APP/WEB — review, verify and manage uploads.",
-};
-
-export default function DocumentCenterPage() {
-  return <DocumentCenterView />;
+export default function DocumentCenterRedirect() {
+  redirect(ROUTES.DOCUMENTS);
 }

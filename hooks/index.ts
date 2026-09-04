@@ -1,4 +1,5 @@
 export { toast, useToast } from "./use-toast";
+export { useAsyncResource } from "./useAsyncResource";
 export { useClientTable } from "./useClientTable";
 export { useDebounce } from "./useDebounce";
 export { useDisclosure } from "./useDisclosure";

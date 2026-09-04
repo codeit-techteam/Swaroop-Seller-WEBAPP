@@ -1,7 +1,3 @@
-import { redirect } from "next/navigation";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-import { ROUTES } from "@/lib/constants";
-
-export default function OfferReviewRedirectPage() {
-  redirect(ROUTES.OFFER_REVIEW_STATUS);
-}
+export default AdminRedirectPage;

@@ -1,14 +1,5 @@
-"use client";
+import { SellerDispatchView } from "@/modules/seller-logistics/logistics-view";
 
-import { use } from "react";
-
-import { DispatchOperationsView } from "@/modules/dispatch";
-
-export default function DispatchDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
-  return <DispatchOperationsView initialDispatchId={id} />;
+export default function DispatchDetailPage() {
+  return <SellerDispatchView />;
 }

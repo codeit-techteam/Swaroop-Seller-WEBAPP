@@ -10,15 +10,17 @@ export interface SessionUser {
   roleLabel: string;
   lastActive: string;
   sellerId?: string;
+  mobile?: string;
 }
 
 export const CURRENT_USER: SessionUser = {
-  id: "usr-ops-001",
-  name: "Amit Shah",
-  email: "amit.shah@reliance-poly.in",
+  id: "usr-seller-001",
+  name: "Rajesh Kumar",
+  email: "rajesh.kumar@reliance-poly.in",
   company: "Reliance Poly Industries",
   role: CURRENT_MOCK_ROLE,
   roleLabel: ROLE_LABELS[CURRENT_MOCK_ROLE],
   lastActive: "Just now",
-  sellerId: "sup-1",
+  sellerId: "sel-001",
+  mobile: "9876543210",
 };

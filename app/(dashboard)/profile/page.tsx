@@ -1,13 +1,11 @@
-import type { Metadata } from "next";
+import { createRouteMetadata } from "@/components/common";
+import { SellerProfileView } from "@/modules/seller-profile/profile-view";
 
-import { ProfileView } from "@/modules/profile";
-
-export const metadata: Metadata = {
-  title: "Admin Profile | PetroTrade ADMIN PANEL",
-  description:
-    "Manage your ADMIN PANEL profile, contact details, and role access",
-};
+export const metadata = createRouteMetadata(
+  "Profile",
+  "Company, locations, bank and account manager",
+);
 
 export default function ProfilePage() {
-  return <ProfileView />;
+  return <SellerProfileView />;
 }

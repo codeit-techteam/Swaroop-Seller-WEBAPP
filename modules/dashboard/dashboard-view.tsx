@@ -1,644 +1,405 @@
 "use client";
 
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Bell,
+  Banknote,
   ClipboardList,
-  Filter,
-  MoreHorizontal,
   Package,
-  ShieldCheck,
+  Plus,
   ShoppingCart,
   Tag,
-  Users,
-  X,
+  Truck,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo } from "react";
-import toast from "react-hot-toast";
+import { useMemo, useState } from "react";
 
-import {
-  ActionDrawer,
-  ActivityCard,
-  ErpPagination,
-  FilterDrawer,
-  PriorityCard,
-  StatusChip,
-  SummaryCard,
-  transactionStatusVariant,
-} from "@/components/erp";
+import { KpiCard } from "@/components/cards/kpi-card";
+import { PageContainer } from "@/components/common/page-container";
+import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants";
-import { formatCompactInr, formatNumber } from "@/lib/utils";
-import { useCustomerStore } from "@/store/customerStore";
-import { useDashboardStore } from "@/store/dashboardStore";
-import type { DashboardFilters } from "@/types/dashboard";
-
-function greetingForHour(date = new Date()) {
-  const hour = date.getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 17) return "Good Afternoon";
-  return "Good Evening";
-}
-
-const FILTER_LABELS: Record<
-  keyof DashboardFilters,
-  Record<string, string> | "date"
-> = {
-  dateFrom: "date",
-  dateTo: "date",
-  warehouse: {
-    hazira: "Hazira Complex",
-    mundra: "Mundra Terminal 3",
-    jnpt: "JNPT Warehouse B",
-    kandla: "Kandla Bulk Yard",
-    panipat: "Panipat Depot",
-    mumbai: "Mumbai CFS Hub",
-  },
-  product: {
-    polypropylene: "Polypropylene",
-    crude: "Crude Oil",
-    lng: "Natural Gas",
-    petcoke: "PetCoke",
-    fuel: "Heavy Fuel Oil",
-    pvc: "PVC",
-    hdpe: "HDPE",
-    lldpe: "LLDPE",
-  },
-  status: {
-    SOURCED: "Sourced",
-    PENDING: "Pending",
-    LIVE: "Live",
-    CLOSED: "Closed",
-  },
-  settlement: {
-    pending: "Settlement pending",
-    verified: "Settlement verified",
-    released: "Settlement released",
-  },
-};
-
-function getActiveFilterChips(filters: DashboardFilters) {
-  const chips: { key: keyof DashboardFilters; label: string }[] = [];
-
-  if (filters.dateFrom || filters.dateTo) {
-    const from = filters.dateFrom || "…";
-    const to = filters.dateTo || "…";
-    chips.push({
-      key: "dateFrom",
-      label: `${from} → ${to}`,
-    });
-  }
-
-  (["warehouse", "product", "status", "settlement"] as const).forEach((key) => {
-    const value = filters[key];
-    if (!value || value === "all") return;
-    const map = FILTER_LABELS[key];
-    const label = typeof map === "object" ? (map[value] ?? value) : value;
-    chips.push({ key, label });
-  });
-
-  return chips;
-}
-
-function SortIcon({
-  active,
-  direction,
-}: {
-  active: boolean;
-  direction: "asc" | "desc";
-}) {
-  if (!active) {
-    return <ArrowUpDown className="h-3 w-3 text-slate-300" />;
-  }
-  return direction === "asc" ? (
-    <ArrowUp className="h-3 w-3 text-[#1B6EF3]" />
-  ) : (
-    <ArrowDown className="h-3 w-3 text-[#1B6EF3]" />
-  );
-}
+import {
+  formatInrShort,
+  formatMt,
+  formatPricePerKg,
+  greetingForHour,
+  hoursLeft,
+} from "@/lib/seller/format";
+import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
+import { useLocationStore } from "@/store/locationStore";
+import { useSellerFinanceStore } from "@/store/sellerFinanceStore";
+import { useSellerNotificationStore } from "@/store/sellerNotificationStore";
+import { useSellerOfferStore } from "@/store/sellerOfferStore";
+import { useSellerOrderStore } from "@/store/sellerOrderStore";
+import { useSellerProductStore } from "@/store/sellerProductStore";
+import { useSellerRequestStore } from "@/store/sellerRequestStore";
+import { useSellerStore } from "@/store/sellerStore";
 
 export function DashboardView() {
-  const seller = useDashboardStore((s) => s.seller);
-  const metrics = useDashboardStore((s) => s.metrics);
-  const priorityTasks = useDashboardStore((s) => s.priorityTasks);
-  const activityLogs = useDashboardStore((s) => s.activityLogs);
-  const filters = useDashboardStore((s) => s.filters);
-  const sortKey = useDashboardStore((s) => s.sortKey);
-  const sortDirection = useDashboardStore((s) => s.sortDirection);
-  const page = useDashboardStore((s) => s.transactionPage);
-  const pageSize = useDashboardStore((s) => s.pageSize);
-  const setPage = useDashboardStore((s) => s.setTransactionPage);
-  const setSort = useDashboardStore((s) => s.setSort);
-  const setFilters = useDashboardStore((s) => s.setFilters);
-  const resetFilters = useDashboardStore((s) => s.resetFilters);
-  const setFilterDrawerOpen = useDashboardStore((s) => s.setFilterDrawerOpen);
-  const openTaskDrawer = useDashboardStore((s) => s.openTaskDrawer);
-  const closeTaskDrawer = useDashboardStore((s) => s.closeTaskDrawer);
-  const selectedTask = useDashboardStore((s) => s.selectedTask);
-  const taskDrawerOpen = useDashboardStore((s) => s.taskDrawerOpen);
-  const getFilteredTransactions = useDashboardStore(
-    (s) => s.getFilteredTransactions,
+  const [ready] = useState(true);
+  const user = useAuthStore((s) => s.user);
+  const seller = useSellerStore((s) => s.seller);
+  const activity = useSellerStore((s) => s.activity);
+  const location = useLocationStore((s) => s.getSelectedLocation());
+  const locationId = useLocationStore((s) => s.selectedLocationId);
+  const products = useSellerProductStore((s) => s.products);
+  const offers = useSellerOfferStore((s) => s.offers);
+  const requests = useSellerRequestStore((s) => s.requests);
+  const orders = useSellerOrderStore((s) => s.orders);
+  const dispatches = useSellerOrderStore((s) => s.dispatches);
+  const settlements = useSellerFinanceStore((s) => s.settlements);
+  const unread = useSellerNotificationStore((s) => s.getUnreadCount());
+
+  const scopedProducts = useMemo(
+    () => products.filter((item) => item.locationId === locationId),
+    [locationId, products],
   );
-  const getPaginatedTransactions = useDashboardStore(
-    (s) => s.getPaginatedTransactions,
+  const scopedOffers = useMemo(
+    () => offers.filter((item) => item.locationId === locationId),
+    [locationId, offers],
+  );
+  const scopedRequests = useMemo(
+    () => requests.filter((item) => item.locationId === locationId),
+    [locationId, requests],
+  );
+  const scopedOrders = useMemo(
+    () => orders.filter((item) => item.locationId === locationId),
+    [locationId, orders],
+  );
+  const scopedDispatch = useMemo(
+    () => dispatches.filter((item) => item.locationId === locationId),
+    [dispatches, locationId],
   );
 
-  const filtered = getFilteredTransactions();
-  const transactions = getPaginatedTransactions();
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const urgentCount = priorityTasks.filter((task) => task.urgent).length;
-  const activeChips = useMemo(() => getActiveFilterChips(filters), [filters]);
+  const activeOffers = scopedOffers.filter(
+    (item) => item.status === "active",
+  ).length;
+  const pendingRequests = scopedRequests.filter(
+    (item) => item.status === "new" || item.status === "under_review",
+  ).length;
+  const activeOrders = scopedOrders.filter(
+    (item) => !["delivered", "cancelled"].includes(item.status),
+  ).length;
+  const pendingDispatch = scopedDispatch.filter(
+    (item) => item.status !== "dispatched",
+  ).length;
+  const receivable = settlements
+    .filter((item) => item.status !== "settled")
+    .reduce((sum, item) => sum + item.amount, 0);
 
-  const clearChip = (key: keyof DashboardFilters) => {
-    if (key === "dateFrom") {
-      setFilters({ dateFrom: "", dateTo: "" });
-      return;
-    }
-    setFilters({ [key]: "all" });
-  };
+  const name = user?.name ?? seller.contactPerson;
+
+  if (!ready) {
+    return (
+      <PageContainer className="space-y-4">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-24" />
+          ))}
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6 px-4 py-6 md:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            {greetingForHour()}, {seller.role}
+    <PageContainer className="space-y-6">
+      <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            {greetingForHour()}, {name}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Live overview of marketplace, procurement and operations
-            {seller.company ? (
-              <>
-                {" "}
-                ·{" "}
-                <span className="font-medium text-slate-600">
-                  {seller.company}
-                </span>
-                {seller.warehouse ? (
-                  <span className="text-slate-400"> · {seller.warehouse}</span>
-                ) : null}
-              </>
-            ) : null}
+            {location?.name ?? "Select location"} ·{" "}
+            <span className="capitalize">{location?.status ?? "inactive"}</span>
+            {unread > 0 ? ` · ${unread} unread notifications` : null}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="relative gap-2 border-slate-200 bg-white"
-            onClick={() => setFilterDrawerOpen(true)}
-          >
-            <Filter className="h-4 w-4" />
-            Filter
-            {activeChips.length > 0 ? (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#1B6EF3] px-1.5 text-[11px] font-semibold text-white">
-                {activeChips.length}
-              </span>
-            ) : null}
+        <div className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link href={ROUTES.OFFERS_NEW}>
+              <Plus className="mr-1 h-4 w-4" /> Add Offer
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={ROUTES.PURCHASE_REQUESTS}>View Purchase Requests</Link>
           </Button>
         </div>
       </div>
 
-      {activeChips.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {activeChips.map((chip) => (
-            <button
-              key={`${chip.key}-${chip.label}`}
-              type="button"
-              onClick={() => clearChip(chip.key)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-            >
-              {chip.label}
-              <X className="h-3 w-3 text-slate-400" />
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              resetFilters();
-              toast.success("Filters cleared");
-            }}
-            className="text-xs font-medium text-[#1B6EF3] hover:underline"
-          >
-            Clear all
-          </button>
-        </div>
-      ) : null}
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <SummaryCard
-          title="My Inventory"
-          value={metrics.availableInventory}
-          suffix={metrics.availableInventoryUnit}
-          href={ROUTES.INVENTORY}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <KpiCard
+          label="My Products"
+          value={`${scopedProducts.length} Grades`}
           icon={Package}
-          accent="blue"
-          hint="Available stock"
         />
-        <SummaryCard
-          title="Active Orders"
-          value={metrics.activeOrders}
-          href={ROUTES.ORDERS}
-          icon={ShoppingCart}
-          accent="blue"
-          hint="In progress · tap to open"
-          className="border-[#1B6EF3]/30 bg-gradient-to-br from-[#1B6EF3]/10 to-white shadow-md ring-1 ring-[#1B6EF3]/15"
+        <KpiCard
+          label="Active Offers"
+          value={String(activeOffers)}
+          icon={Tag}
         />
-        <SummaryCard
-          title="Pending Request"
-          value={metrics.pendingRequests}
-          href={ROUTES.PURCHASE_REQUESTS}
+        <KpiCard
+          label="Purchase Requests"
+          value={String(pendingRequests)}
+          hint="Awaiting response"
           icon={ClipboardList}
-          accent="amber"
-          hint="Awaiting review"
         />
-        <CxMetricCards />
+        <KpiCard
+          label="Active Orders"
+          value={String(activeOrders)}
+          icon={ShoppingCart}
+        />
+        <KpiCard
+          label="Pending Dispatch"
+          value={String(pendingDispatch)}
+          icon={Truck}
+        />
+        <KpiCard
+          label="Outstanding Settlement"
+          value={formatInrShort(receivable)}
+          icon={Banknote}
+        />
       </div>
 
-      <QuickActions />
-
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">
-              Recent Transactions
-            </h2>
-            <p className="mt-0.5 text-xs text-slate-400">
-              {filtered.length} matching{" "}
-              {filtered.length === 1 ? "order" : "orders"}
-            </p>
-          </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {[
+          { href: ROUTES.OFFERS_NEW, label: "+ Add Offer" },
+          { href: ROUTES.PURCHASE_REQUESTS, label: "View Purchase Requests" },
+          { href: ROUTES.ORDERS, label: "View Orders" },
+          { href: ROUTES.DISPATCH, label: "Dispatch" },
+          { href: ROUTES.SHIPMENTS, label: "Shipment Tracking" },
+        ].map((action) => (
           <Link
-            href={ROUTES.ORDERS}
-            className="text-sm font-medium text-[#1B6EF3] hover:underline"
-          >
-            View all orders
-          </Link>
-        </div>
-
-        {transactions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-              <ShoppingCart className="h-5 w-5" />
-            </div>
-            <p className="mt-3 text-sm font-semibold text-slate-800">
-              No transactions match
-            </p>
-            <p className="mt-1 max-w-sm text-sm text-slate-500">
-              Try adjusting filters or clearing the current selection.
-            </p>
-            {activeChips.length > 0 ? (
-              <Button
-                variant="outline"
-                className="mt-4 border-slate-200"
-                onClick={() => {
-                  resetFilters();
-                  toast.success("Filters cleared");
-                }}
-              >
-                Clear filters
-              </Button>
-            ) : null}
-          </div>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  {(
-                    [
-                      { key: "orderId" as const, label: "Order ID" },
-                      { key: "commodity" as const, label: "Commodity" },
-                    ] as const
-                  ).map((col) => (
-                    <TableHead
-                      key={col.key}
-                      className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-                      onClick={() => setSort(col.key)}
-                    >
-                      <span className="inline-flex items-center gap-1.5">
-                        {col.label}
-                        <SortIcon
-                          active={sortKey === col.key}
-                          direction={sortDirection}
-                        />
-                      </span>
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Buyer
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Quantity
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-                    onClick={() => setSort("value")}
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      Value
-                      <SortIcon
-                        active={sortKey === "value"}
-                        direction={sortDirection}
-                      />
-                    </span>
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-                    onClick={() => setSort("status")}
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      Status
-                      <SortIcon
-                        active={sortKey === "status"}
-                        direction={sortDirection}
-                      />
-                    </span>
-                  </TableHead>
-                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Action
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.map((txn) => (
-                  <TableRow key={txn.id} className="hover:bg-slate-50/80">
-                    <TableCell>
-                      <button
-                        type="button"
-                        className="font-medium text-[#1B6EF3] hover:underline"
-                        onClick={() =>
-                          toast.success(`Opened order #${txn.orderId}`)
-                        }
-                      >
-                        #{txn.orderId}
-                      </button>
-                    </TableCell>
-                    <TableCell className="font-medium text-slate-700">
-                      {txn.commodity}
-                    </TableCell>
-                    <TableCell className="text-slate-600">
-                      {txn.buyer}
-                    </TableCell>
-                    <TableCell className="tabular-nums text-slate-700">
-                      {formatNumber(txn.quantityMt)} MT
-                    </TableCell>
-                    <TableCell className="tabular-nums text-slate-700">
-                      {formatCompactInr(txn.value)}
-                    </TableCell>
-                    <TableCell>
-                      <StatusChip
-                        label={txn.status}
-                        variant={transactionStatusVariant(txn.status)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              toast.success(`Viewing #${txn.orderId}`)
-                            }
-                          >
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              toast.success(`Downloading #${txn.orderId}`)
-                            }
-                          >
-                            Download
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              toast.success(`Printing #${txn.orderId}`)
-                            }
-                          >
-                            Print
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <ErpPagination
-              page={page}
-              totalPages={totalPages}
-              totalItems={filtered.length}
-              pageSize={pageSize}
-              onPageChange={setPage}
-            />
-          </>
-        )}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                Today&apos;s Priority Tasks
-              </h3>
-              <p className="mt-0.5 text-xs text-slate-400">
-                {priorityTasks.length} items need attention
-              </p>
-            </div>
-            {urgentCount > 0 ? (
-              <StatusChip label={`${urgentCount} URGENT`} variant="urgent" />
-            ) : null}
-          </div>
-          <div className="space-y-2">
-            {priorityTasks.map((task) => (
-              <PriorityCard
-                key={task.id}
-                task={task}
-                onClick={() => openTaskDrawer(task)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <ActivityCard logs={activityLogs.slice(0, 6)} />
-      </div>
-
-      <FilterDrawer />
-
-      <ActionDrawer
-        open={taskDrawerOpen}
-        onClose={closeTaskDrawer}
-        title="Task Details"
-        footer={
-          <Button
-            className="w-full bg-[#1B6EF3] hover:bg-[#1558C8]"
-            onClick={() => {
-              toast.success("Task marked as in progress (mock)");
-              closeTaskDrawer();
-            }}
-          >
-            Take Action
-          </Button>
-        }
-      >
-        {selectedTask ? (
-          <div className="space-y-4">
-            <div>
-              <StatusChip
-                label={selectedTask.urgent ? "URGENT" : "NORMAL"}
-                variant={selectedTask.urgent ? "urgent" : "default"}
-              />
-              <h3 className="mt-3 text-lg font-semibold text-slate-900">
-                {selectedTask.title}
-              </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                {selectedTask.description}
-              </p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-              <p>
-                <span className="font-medium text-slate-700">Type:</span>{" "}
-                {selectedTask.type}
-              </p>
-              {selectedTask.meta ? (
-                <p className="mt-1">
-                  <span className="font-medium text-slate-700">Location:</span>{" "}
-                  {selectedTask.meta}
-                </p>
-              ) : null}
-              {selectedTask.time ? (
-                <p className="mt-1">
-                  <span className="font-medium text-slate-700">Time:</span>{" "}
-                  {selectedTask.time}
-                </p>
-              ) : null}
-              {selectedTask.value ? (
-                <p className="mt-1">
-                  <span className="font-medium text-slate-700">Value:</span>{" "}
-                  {selectedTask.value}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </ActionDrawer>
-    </div>
-  );
-}
-
-function CxMetricCards() {
-  const customers = useCustomerStore((s) => s.customers);
-  const gmv = customers.reduce((sum, row) => sum + row.totalPurchaseValue, 0);
-  const orders = customers.reduce((sum, row) => sum + row.totalOrders, 0);
-  const aov = orders ? gmv / orders : 0;
-
-  return (
-    <>
-      <SummaryCard
-        title="Total Customers"
-        value={customers.length}
-        href={ROUTES.CUSTOMERS}
-        icon={Users}
-        accent="blue"
-        hint="Customer directory"
-      />
-      <SummaryCard
-        title="Avg Order Value"
-        value={aov / 1_00_000}
-        prefix="₹"
-        suffix="L"
-        decimals={1}
-        href={ROUTES.CUSTOMER_ORDERS}
-        icon={ShoppingCart}
-        accent="emerald"
-        hint="Customer orders"
-      />
-    </>
-  );
-}
-
-const QUICK_ACTIONS = [
-  {
-    href: ROUTES.MARKETPLACE_CATALOG,
-    label: "Add product",
-    icon: Package,
-    tone: "bg-[#1B6EF3] text-white shadow-sm hover:bg-[#1558C8] hover:shadow-md",
-    iconWrap: "bg-white/20 text-white",
-  },
-  {
-    href: ROUTES.MARKETPLACE_OFFERS,
-    label: "Create offer",
-    icon: Tag,
-    tone: "border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100",
-    iconWrap: "bg-emerald-100 text-emerald-700",
-  },
-  {
-    href: ROUTES.CUSTOMER_NOTIFICATIONS,
-    label: "Create notification",
-    icon: Bell,
-    tone: "border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-300 hover:bg-amber-100",
-    iconWrap: "bg-amber-100 text-amber-700",
-  },
-  {
-    href: ROUTES.PROCUREMENT,
-    label: "Review PR",
-    icon: ClipboardList,
-    tone: "border-sky-200 bg-sky-50 text-sky-800 hover:border-sky-300 hover:bg-sky-100",
-    iconWrap: "bg-sky-100 text-sky-700",
-  },
-  {
-    href: ROUTES.KYC,
-    label: "Review KYC",
-    icon: ShieldCheck,
-    tone: "border-violet-200 bg-violet-50 text-violet-800 hover:border-violet-300 hover:bg-violet-100",
-    iconWrap: "bg-violet-100 text-violet-700",
-  },
-] as const;
-
-function QuickActions() {
-  return (
-    <div className="flex flex-wrap gap-3">
-      {QUICK_ACTIONS.map((action) => {
-        const Icon = action.icon;
-        return (
-          <Link
-            key={action.label}
+            key={action.href}
             href={action.href}
-            className={`inline-flex items-center gap-2.5 rounded-xl border border-transparent px-4 py-2.5 text-sm font-semibold transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1B6EF3] focus-visible:ring-offset-2 ${action.tone}`}
+            className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-[#1B6EF3] hover:text-[#1B6EF3]"
           >
-            <span
-              className={`flex h-8 w-8 items-center justify-center rounded-lg ${action.iconWrap}`}
-            >
-              <Icon className="h-4 w-4" />
-            </span>
             {action.label}
           </Link>
-        );
-      })}
-    </div>
+        ))}
+      </div>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold">My Offers</h2>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={ROUTES.OFFERS}>View all</Link>
+          </Button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {scopedOffers.slice(0, 3).map((offer) => (
+            <Link
+              key={offer.id}
+              href={`${ROUTES.OFFERS}/${offer.id}`}
+              className="rounded-lg border border-slate-200 p-4 hover:border-[#1B6EF3]"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {offer.category}
+              </p>
+              <p className="mt-1 font-semibold text-slate-900">
+                {offer.gradeName}
+              </p>
+              <p className="mt-2 text-lg font-semibold text-[#1B6EF3]">
+                {formatPricePerKg(offer.price)}
+              </p>
+              <div className="mt-3">
+                <SellerStatusBadge status={offer.status} />
+              </div>
+            </Link>
+          ))}
+          {scopedOffers.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              No offers at this location. Create one to start receiving
+              requests.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Purchase Requests</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={ROUTES.PURCHASE_REQUESTS}>View all</Link>
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {scopedRequests.slice(0, 4).map((request) => (
+              <div
+                key={request.id}
+                className="flex items-start justify-between gap-3 rounded-lg border border-slate-100 p-3"
+              >
+                <div>
+                  <p className="text-sm font-semibold">
+                    {request.requestNumber}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {formatMt(request.quantityMt)} · {request.gradeName}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {request.buyerLabel} · {request.buyerId}
+                  </p>
+                </div>
+                <SellerStatusBadge status={request.status} />
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Upcoming Dispatch</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={ROUTES.DISPATCH}>View all</Link>
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {scopedDispatch.slice(0, 4).map((item) => (
+              <div
+                key={item.id}
+                className="flex items-start justify-between gap-3 rounded-lg border border-slate-100 p-3"
+              >
+                <div>
+                  <p className="text-sm font-semibold">{item.orderId}</p>
+                  <p className="text-xs text-slate-500">
+                    {formatMt(item.quantityMt)} · {item.gradeName}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {item.loadingLocation} · {item.scheduledDate}
+                  </p>
+                </div>
+                <SellerStatusBadge status={item.status} />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold">Recent Orders</h2>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={ROUTES.ORDERS}>View all</Link>
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="text-xs uppercase text-slate-500">
+              <tr>
+                <th className="pb-2 font-medium">Order ID</th>
+                <th className="pb-2 font-medium">Grade</th>
+                <th className="pb-2 font-medium">Qty</th>
+                <th className="pb-2 font-medium">Location</th>
+                <th className="pb-2 font-medium">Value</th>
+                <th className="pb-2 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scopedOrders.slice(0, 5).map((order) => (
+                <tr key={order.id} className="border-t border-slate-100">
+                  <td className="py-3 font-medium">
+                    <Link
+                      href={`${ROUTES.ORDERS}/${order.id}`}
+                      className="text-[#1B6EF3]"
+                    >
+                      {order.orderId}
+                    </Link>
+                  </td>
+                  <td>{order.gradeName}</td>
+                  <td>{formatMt(order.quantityMt)}</td>
+                  <td>{order.locationName}</td>
+                  <td>{formatInrShort(order.orderValue)}</td>
+                  <td>
+                    <SellerStatusBadge status={order.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Offer Alerts</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={ROUTES.OFFERS}>Manage offers</Link>
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {scopedOffers
+              .filter((offer) => hoursLeft(offer.validUntil) <= 16)
+              .slice(0, 4)
+              .map((offer) => (
+                <div
+                  key={offer.id}
+                  className="flex items-start justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50/50 p-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold">{offer.gradeName}</p>
+                    <p className="text-xs text-slate-500">
+                      {hoursLeft(offer.validUntil)} hours left ·{" "}
+                      {formatPricePerKg(offer.price)}
+                    </p>
+                  </div>
+                  <SellerStatusBadge status={offer.status} />
+                </div>
+              ))}
+            {scopedOffers.filter((offer) => hoursLeft(offer.validUntil) <= 16)
+              .length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No expiring offers right now.
+              </p>
+            ) : null}
+          </div>
+        </section>
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold">Settlement Summary</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={ROUTES.SETTLEMENTS}>View all</Link>
+            </Button>
+          </div>
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Settled</dt>
+              <dd className="font-semibold">
+                {formatInrShort(
+                  settlements
+                    .filter((item) => item.status === "settled")
+                    .reduce((sum, item) => sum + item.amount, 0),
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Outstanding</dt>
+              <dd className="font-semibold">{formatInrShort(receivable)}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 className="mb-4 text-base font-semibold">Seller Activity</h2>
+        <ol className="space-y-3">
+          {activity.slice(0, 6).map((item, index) => (
+            <li key={item.id} className="flex gap-3">
+              <span
+                className={cn(
+                  "mt-1 h-2 w-2 rounded-full",
+                  index === 0 ? "bg-[#1B6EF3]" : "bg-slate-300",
+                )}
+              />
+              <div>
+                <p className="text-sm font-medium">{item.title}</p>
+                <p className="text-xs text-slate-500">{item.description}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </PageContainer>
   );
 }

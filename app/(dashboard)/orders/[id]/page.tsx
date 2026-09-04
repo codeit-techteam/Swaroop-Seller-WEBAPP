@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
+"use client";
 
-import { OrderDetailView } from "@/modules/orders";
+import { useParams } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Order Details | PetroTrade ADMIN PANEL",
-  description:
-    "Manage customer order from acceptance through payment, dispatch, tracking and delivery",
-};
+import { SellerOrderDetailView } from "@/modules/seller-orders/orders-view";
 
 export default function OrderDetailPage() {
-  return <OrderDetailView />;
+  const params = useParams<{ id: string }>();
+  return <SellerOrderDetailView id={params.id} />;
 }

@@ -53,7 +53,7 @@ function buildTimeline(
     {
       id: "2",
       title: "Seller Notified",
-      description: "Alert delivered to ADMIN PANEL inbox",
+      description: "Alert delivered to Seller Portal inbox",
       timestamp: new Date(base.getTime() - 2 * 60 * 1000).toISOString(),
       status: "completed",
     },
@@ -197,9 +197,9 @@ const TEMPLATES: Template[] = [
   {
     category: "System Update",
     priority: "Low",
-    title: () => "System Update: New ADMIN PANEL Features",
+    title: () => "System Update: New Seller Portal Features",
     description: () =>
-      "PetroTrade ADMIN PANEL has been updated with enhanced notification controls, export tools, and performance analytics.",
+      "PetroTrade Seller Portal has been updated with enhanced notification controls, export tools, and performance analytics.",
   },
 ];
 

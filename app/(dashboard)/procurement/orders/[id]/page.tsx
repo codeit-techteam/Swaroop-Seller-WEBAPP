@@ -1,16 +1,3 @@
-import { createRouteMetadata } from "@/components/common";
-import { ProcurementDetailView } from "@/modules/procurement";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-export const metadata = createRouteMetadata(
-  "Procurement Order",
-  "Purchase order detail",
-);
-
-export default async function ProcurementOrderDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  return <ProcurementDetailView id={id} />;
-}
+export default AdminRedirectPage;

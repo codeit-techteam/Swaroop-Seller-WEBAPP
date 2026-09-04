@@ -1,4 +1,5 @@
 export { EmptyState } from "./empty-state";
+export { ErrorState } from "./error-state";
 export { ActionMenu, FileCard } from "./file-card";
 export { FilterBar } from "./filter-bar";
 export { LoadingOverlay } from "./loading-overlay";

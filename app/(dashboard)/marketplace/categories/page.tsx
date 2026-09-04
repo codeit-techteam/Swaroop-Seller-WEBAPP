@@ -1,11 +1,3 @@
-import { createRouteMetadata } from "@/components/common";
-import { CategoriesView } from "@/modules/marketplace";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-export const metadata = createRouteMetadata(
-  "Categories",
-  "Marketplace categories",
-);
-
-export default function CategoriesPage() {
-  return <CategoriesView />;
-}
+export default AdminRedirectPage;

@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-import {
-  gstSchema,
-  panSchema,
-  phoneSchema,
-  pincodeSchema,
-} from "@/lib/utils/validators";
+import { gstSchema, phoneSchema, pincodeSchema } from "@/lib/utils/validators";
 
 export const loginSchema = z.object({
   mobileNumber: z
@@ -21,41 +16,50 @@ export const otpSchema = z.object({
     .regex(/^\d{6}$/, "OTP must contain only digits"),
 });
 
-export const companySchema = z.object({
-  companyName: z.string().min(1, "Company name is required"),
+export const optionalPanSchema = z
+  .string()
+  .trim()
+  .transform((value) => value.toUpperCase())
+  .refine(
+    (value) => value === "" || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value),
+    "Enter a valid PAN number",
+  );
+
+export const companyDetailsSchema = z.object({
+  companyName: z.string().min(2, "Company name is required"),
   gstNumber: z
     .string()
     .trim()
     .transform((value) => value.toUpperCase())
-    .refine(
-      (value) =>
-        value === "" ||
-        /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
-          value,
-        ),
-      "Enter a valid GST number",
-    ),
-  panNumber: z
-    .string()
-    .trim()
-    .transform((value) => value.toUpperCase())
-    .refine(
-      (value) => value === "" || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value),
-      "Enter a valid PAN number",
-    ),
+    .pipe(gstSchema),
+  panNumber: optionalPanSchema,
+  businessType: z.string().min(1, "Business type is required"),
+  contactName: z.string().min(2, "Contact person is required"),
+  phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid mobile number"),
+  email: z.string().email("Enter a valid email"),
+});
+
+export const companySchema = z.object({
+  companyName: z.string().min(1, "Company name is required"),
+  gstNumber: gstSchema,
+  panNumber: optionalPanSchema,
   businessType: z.string().min(1, "Business type is required"),
   contactName: z.string().min(1, "Full name is required"),
   designation: z.string().min(1, "Designation is required"),
   phone: phoneSchema,
   email: z.string().min(1, "Email is required").email("Enter a valid email"),
   industry: z.string().min(1, "Industry is required"),
-  yearsInBusiness: z.string().min(1, "Years in business is required"),
+  yearsInBusiness: z.string().optional().default(""),
   annualTurnover: z.string().min(1, "Annual turnover is required"),
 });
 
 export const gstPanSchema = z.object({
-  gstNumber: gstSchema,
-  panNumber: panSchema,
+  gstNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .pipe(gstSchema),
+  panNumber: optionalPanSchema,
 });
 
 export const bankSchema = z
@@ -79,11 +83,19 @@ export const bankSchema = z
   });
 
 export const locationSchema = z.object({
-  warehouseAddress: z.string().min(10, "Warehouse address is required"),
+  warehouseAddress: z.string().min(8, "Warehouse address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   pincode: pincodeSchema,
-  registeredAddress: z.string().min(10, "Registered address is required"),
+  registeredAddress: z.string().min(8, "Registered address is required"),
+  additionalAddresses: z
+    .array(
+      z.object({
+        label: z.string().optional().default(""),
+        address: z.string().min(8, "Enter the address or remove this row"),
+      }),
+    )
+    .default([]),
 });
 
 export const reviewSchema = z.object({
@@ -96,6 +108,7 @@ export const reviewSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type OtpFormValues = z.infer<typeof otpSchema>;
+export type CompanyDetailsFormValues = z.infer<typeof companyDetailsSchema>;
 export type CompanyFormValues = z.infer<typeof companySchema>;
 export type GstPanFormValues = z.infer<typeof gstPanSchema>;
 export type BankFormValues = z.infer<typeof bankSchema>;

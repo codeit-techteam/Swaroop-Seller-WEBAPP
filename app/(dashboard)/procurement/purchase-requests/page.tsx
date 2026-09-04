@@ -1,11 +1,3 @@
-import { createRouteMetadata } from "@/components/common";
-import { ProcurementQueueView } from "@/modules/procurement";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-export const metadata = createRouteMetadata(
-  "Purchase Requests",
-  "Procurement purchase requests",
-);
-
-export default function PurchaseRequestsPage() {
-  return <ProcurementQueueView />;
-}
+export default AdminRedirectPage;

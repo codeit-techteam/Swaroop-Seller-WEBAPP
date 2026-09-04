@@ -1,17 +1,7 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import {
-  createRouteMetadata,
-  RoutePlaceholder,
-} from "@/components/common/route-placeholder";
-
-export const metadata: Metadata = createRouteMetadata(
-  "Register",
-  "Create a seller account",
-);
+import { ROUTES } from "@/lib/constants";
 
 export default function RegisterPage() {
-  return (
-    <RoutePlaceholder title="Register" description="Create a seller account" />
-  );
+  redirect(ROUTES.LOGIN);
 }

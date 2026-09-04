@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  AlertTriangle,
-  BadgeCheck,
-  ChevronDown,
-  LogOut,
-  Package,
-} from "lucide-react";
+import { ChevronDown, LogOut, Package, PanelLeft } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -21,34 +15,32 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   collectNavHrefs,
-  CURRENT_USER,
   getVisibleNavSections,
   isNavHrefActive,
-  ROLE_LABELS,
 } from "@/config";
 import { ROUTES } from "@/lib/constants";
-import { cn, getInitials } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
+import { useUiStore } from "@/store/uiStore";
 
 interface SidebarProps {
   collapsed?: boolean;
 }
 
-export function Sidebar({ collapsed = false }: SidebarProps) {
+export function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const role = user?.role ?? CURRENT_USER.role;
-  const navSections = useMemo(() => getVisibleNavSections(role), [role]);
+  const storeCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleCollapsed = useUiStore((s) => s.toggleSidebarCollapsed);
+  const isCollapsed = collapsed ?? storeCollapsed;
+  const navSections = useMemo(() => getVisibleNavSections("SELLER"), []);
   const allHrefs = useMemo(() => collectNavHrefs(navSections), [navSections]);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  // Auto-expand active nav groups during render (no effect sync).
   const autoOpenGroups = useMemo(() => {
     const next: Record<string, boolean> = {};
     for (const section of navSections) {
@@ -66,7 +58,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
   const handleLogoutConfirm = () => {
     setLogoutOpen(false);
     logout();
-    router.push(ROUTES.SELLER_LOGIN);
+    router.push(ROUTES.LOGIN);
     router.refresh();
   };
 
@@ -74,26 +66,42 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
     <aside
       className={cn(
         "flex h-full flex-col border-r border-slate-200 bg-white transition-all duration-200",
-        collapsed ? "w-16" : "w-[260px]",
+        isCollapsed ? "w-16" : "w-[260px]",
       )}
     >
-      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-slate-100 px-4">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-3">
         <Link href={ROUTES.DASHBOARD} className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#0B1F3A] text-white">
             <Package className="h-4 w-4" />
           </div>
-          {!collapsed ? (
-            <div className="leading-tight">
-              <p className="text-sm font-bold tracking-tight text-[#0B1F3A]">
-                PetroTrade
-              </p>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                ADMIN PANEL
-              </p>
-            </div>
+          {!isCollapsed ? (
+            <p className="text-sm font-bold tracking-tight text-[#0B1F3A]">
+              PetroTrade
+            </p>
           ) : null}
         </Link>
+        {!isCollapsed ? (
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="hidden h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-50 hover:text-slate-700 lg:flex"
+            aria-label="Collapse sidebar"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
+
+      {isCollapsed ? (
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="mx-auto mt-2 hidden h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-50 lg:flex"
+          aria-label="Expand sidebar"
+        >
+          <PanelLeft className="h-4 w-4" />
+        </button>
+      ) : null}
 
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
         {navSections.map((section, sectionIndex) => (
@@ -101,7 +109,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             key={section.id ?? `section-${sectionIndex}`}
             className="space-y-1"
           >
-            {section.title && !collapsed ? (
+            {section.title && !isCollapsed ? (
               <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 {section.title}
               </p>
@@ -125,7 +133,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                     <div
                       className={cn(
                         "rounded-lg transition-colors",
-                        expanded && !collapsed && "bg-slate-50",
+                        expanded && !isCollapsed && "bg-slate-50",
                       )}
                     >
                       <div className="flex items-center">
@@ -144,11 +152,11 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                               groupActive ? "text-[#1B6EF3]" : "text-slate-400",
                             )}
                           />
-                          {!collapsed ? (
+                          {!isCollapsed ? (
                             <span className="truncate">{item.label}</span>
                           ) : null}
                         </Link>
-                        {!collapsed ? (
+                        {!isCollapsed ? (
                           <button
                             type="button"
                             aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
@@ -170,7 +178,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                           </button>
                         ) : null}
                       </div>
-                      {expanded && !collapsed ? (
+                      {expanded && !isCollapsed ? (
                         <div className="ml-[22px] space-y-0.5 border-l border-slate-200 pb-1.5 pl-2 pr-1.5">
                           {children.map((child) => {
                             const childActive = isNavHrefActive(
@@ -191,9 +199,6 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                                     : "text-slate-500 hover:bg-white hover:text-slate-800",
                                 )}
                               >
-                                {childActive ? (
-                                  <span className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-[#1B6EF3]" />
-                                ) : null}
                                 <ChildIcon className="h-3.5 w-3.5 shrink-0" />
                                 <span className="truncate">{child.label}</span>
                               </Link>
@@ -206,14 +211,16 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                     <Link
                       href={item.href}
                       aria-current={isActive ? "page" : undefined}
+                      title={isCollapsed ? item.label : undefined}
                       className={cn(
                         "group relative flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
                         isActive
-                          ? "bg-[#E8F1FF] text-[#1B6EF3]"
+                          ? "rounded-l-none rounded-r-lg bg-[#E8F1FF] text-[#1B6EF3]"
                           : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                        isCollapsed && "justify-center px-0",
                       )}
                     >
-                      {isActive ? (
+                      {isActive && !isCollapsed ? (
                         <span className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-[#1B6EF3]" />
                       ) : null}
                       <Icon
@@ -224,18 +231,8 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                             : "text-slate-400 group-hover:text-slate-600",
                         )}
                       />
-                      {!collapsed ? (
-                        <>
-                          <span className="flex-1 truncate">{item.label}</span>
-                          {item.badge ? (
-                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#1B6EF3] px-1.5 text-[10px] font-semibold text-white">
-                              {item.badge}
-                            </span>
-                          ) : null}
-                          {item.alert ? (
-                            <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                          ) : null}
-                        </>
+                      {!isCollapsed ? (
+                        <span className="flex-1 truncate">{item.label}</span>
                       ) : null}
                     </Link>
                   )}
@@ -250,47 +247,27 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
         <button
           type="button"
           onClick={() => setLogoutOpen(true)}
-          className="group flex w-full items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium text-red-600 transition-colors hover:bg-red-50"
+          className={cn(
+            "group flex w-full items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium text-red-600 transition-colors hover:bg-red-50",
+            isCollapsed && "justify-center px-0",
+          )}
         >
           <LogOut className="h-4 w-4 shrink-0 text-red-600" />
-          {!collapsed ? <span className="flex-1 truncate">Logout</span> : null}
+          {!isCollapsed ? (
+            <span className="flex-1 truncate">Logout</span>
+          ) : null}
         </button>
       </div>
-
-      {!collapsed ? (
-        <div className="border-t border-slate-100 p-3">
-          <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src="" alt={user?.name ?? CURRENT_USER.name} />
-              <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
-                {getInitials(user?.name ?? CURRENT_USER.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-slate-800">
-                {user?.name ?? CURRENT_USER.name}
-              </p>
-              <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-[#1B6EF3]">
-                <BadgeCheck className="h-3 w-3" />
-                {ROLE_LABELS[role]}
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <LogOut className="h-6 w-6 text-red-600" />
-            </div>
             <AlertDialogTitle className="text-center">
               Confirm Logout
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center">
-              Are you sure you want to log out of PetroTrade ADMIN PANEL? Any
-              unsaved changes will be lost.
+              Log out of PetroTrade Seller Portal? You can sign back in with
+              your mobile number.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col">

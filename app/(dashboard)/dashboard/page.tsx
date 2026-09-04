@@ -2,8 +2,8 @@ import { createRouteMetadata } from "@/components/common";
 import { DashboardView } from "@/modules/dashboard";
 
 export const metadata = createRouteMetadata(
-  "Operations Command Center",
-  "Live overview of PetroTrade marketplace, procurement and operations",
+  "Seller Dashboard",
+  "What you need to do as a PetroTrade seller today",
 );
 
 export default function DashboardPage() {

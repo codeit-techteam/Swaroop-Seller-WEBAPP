@@ -39,13 +39,10 @@ export function TopNavigation({
           </>
         ) : (
           <div
-            className={cn(
-              "flex items-center gap-2",
-              !showBrand && "lg:hidden",
-            )}
+            className={cn("flex items-center gap-2", !showBrand && "lg:hidden")}
           >
             <Fuel className="h-5 w-5 text-primary" />
-            <span className="font-semibold">ADMIN PANEL</span>
+            <span className="font-semibold">PetroTrade</span>
           </div>
         )}
       </div>

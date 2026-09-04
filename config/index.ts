@@ -2,6 +2,7 @@ export {
   collectNavHrefs,
   getVisibleNavSections,
   isNavHrefActive,
+  MOBILE_NAV_ITEMS,
   NAV_SECTIONS,
   type NavItem,
   type NavSection,

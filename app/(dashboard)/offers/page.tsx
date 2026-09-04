@@ -1,12 +1,11 @@
-import type { Metadata } from "next";
+import { createRouteMetadata } from "@/components/common";
+import { SellerOffersView } from "@/modules/seller-offers/offers-view";
 
-import { OffersView } from "@/modules/offers";
-
-export const metadata: Metadata = {
-  title: "Active Offers | PetroTrade ADMIN PANEL",
-  description: "Manage active marketplace offers",
-};
+export const metadata = createRouteMetadata(
+  "My Offers",
+  "Create, activate and manage selling offers",
+);
 
 export default function OffersPage() {
-  return <OffersView />;
+  return <SellerOffersView />;
 }

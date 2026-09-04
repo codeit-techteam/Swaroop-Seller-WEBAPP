@@ -55,17 +55,11 @@ export const defaultDocuments: DocumentItem[] = [
     status: "empty",
   },
   {
-    id: "pan_card",
-    name: "PAN Card",
-    description: "Permanent Account Number card of the business entity.",
-    required: false,
-    status: "empty",
-  },
-  {
-    id: "aadhaar_card",
-    name: "Aadhaar Card",
-    description: "Aadhaar card of the authorized signatory.",
-    required: false,
+    id: "payment_slips",
+    name: "Payment Slips (Last 3 Years)",
+    description:
+      "Bank statements or payment slips covering the last 3 financial years.",
+    required: true,
     status: "empty",
   },
   {
@@ -80,6 +74,13 @@ export const defaultDocuments: DocumentItem[] = [
     name: "Registration Certificate",
     description: "Certificate of incorporation or business registration.",
     required: true,
+    status: "empty",
+  },
+  {
+    id: "pan_card",
+    name: "PAN Card",
+    description: "Permanent Account Number card of the business entity.",
+    required: false,
     status: "empty",
   },
   {

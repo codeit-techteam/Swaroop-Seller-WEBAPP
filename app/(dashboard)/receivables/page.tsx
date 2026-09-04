@@ -1,11 +1,3 @@
-import { createRouteMetadata } from "@/components/common";
-import { ReceivablesView } from "@/modules/finance";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-export const metadata = createRouteMetadata(
-  "Receivables",
-  "Customer credit receivables and collection tracking",
-);
-
-export default function ReceivablesPage() {
-  return <ReceivablesView />;
-}
+export default AdminRedirectPage;

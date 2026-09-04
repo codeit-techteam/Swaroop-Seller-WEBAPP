@@ -1,7 +1,11 @@
-import { redirect } from "next/navigation";
+import { createRouteMetadata } from "@/components/common";
+import { SellerProductsView } from "@/modules/grades/products-view";
 
-import { ROUTES } from "@/lib/constants";
+export const metadata = createRouteMetadata(
+  "My Products",
+  "Manage grades, stock and offer readiness",
+);
 
 export default function ProductsPage() {
-  redirect(ROUTES.MARKETPLACE_CATALOG);
+  return <SellerProductsView />;
 }

@@ -20,18 +20,18 @@ export const USER_ROLES: UserRole[] = [
 ];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  ADMIN: "ADMIN PANEL",
+  ADMIN: "Administrator",
   OPERATIONS: "Operations Manager",
   PROCUREMENT: "Procurement Manager",
   FINANCE: "Finance Manager",
   LOGISTICS: "Logistics Manager",
   COMPLIANCE: "Compliance Manager",
   VIEWER: "Viewer",
-  SELLER: "Seller / Supplier",
+  SELLER: "Seller",
 };
 
 export function isSellerRole(role: UserRole): boolean {
   return role === "SELLER";
 }
 
-export const CURRENT_MOCK_ROLE: UserRole = "ADMIN";
+export const CURRENT_MOCK_ROLE: UserRole = "SELLER";

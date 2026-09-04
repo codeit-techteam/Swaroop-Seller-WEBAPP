@@ -1,11 +1,3 @@
-import { createRouteMetadata } from "@/components/common";
-import { NegotiationListView } from "@/modules/procurement";
+import { AdminRedirectPage } from "@/components/common/admin-redirect";
 
-export const metadata = createRouteMetadata(
-  "Price Negotiation",
-  "Active commercial negotiations",
-);
-
-export default function NegotiationListPage() {
-  return <NegotiationListView />;
-}
+export default AdminRedirectPage;
