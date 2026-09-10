@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
 import { defaultProductForm, sellerProductsMock } from "@/lib/mock/products";
+import { stockAdjustmentsMock } from "@/lib/mock/stock-adjustments";
 import type {
   ProductFormValues,
   SellerProduct,
@@ -36,7 +37,7 @@ export const useSellerProductStore = create<SellerProductState>()(
   devtools(
     (set, get) => ({
       products: sellerProductsMock,
-      adjustments: [],
+      adjustments: stockAdjustmentsMock,
       search: "",
       category: "all",
       offerStatus: "all",

@@ -45,6 +45,7 @@ interface SellerOrderState {
   markDispatchStatus: (id: string, status: DispatchStatus) => void;
   generateEwayBill: (id: string) => string;
   markShipmentStatus: (id: string, status: ShipmentStatus) => void;
+  upsertDispatch: (dispatch: SellerDispatch) => void;
   openDispatch: (id: string) => void;
   closeDispatch: () => void;
   openShipment: (id: string) => void;
@@ -152,6 +153,20 @@ export const useSellerOrderStore = create<SellerOrderState>()(
             item.id === id ? { ...item, status } : item,
           ),
         })),
+      upsertDispatch: (dispatch) =>
+        set((state) => {
+          const index = state.dispatches.findIndex(
+            (item) => item.id === dispatch.id || item.orderId === dispatch.orderId,
+          );
+          if (index === -1) {
+            return { dispatches: [dispatch, ...state.dispatches] };
+          }
+          const next = [...state.dispatches];
+          const current = next[index];
+          if (!current) return state;
+          next[index] = { ...current, ...dispatch };
+          return { dispatches: next };
+        }),
       openDispatch: (id) => set({ selectedDispatchId: id }),
       closeDispatch: () => set({ selectedDispatchId: null }),
       openShipment: (id) => set({ selectedShipmentId: id }),

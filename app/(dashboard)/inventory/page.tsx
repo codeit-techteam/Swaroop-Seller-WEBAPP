@@ -1,7 +1,11 @@
-import { redirect } from "next/navigation";
+import { createRouteMetadata } from "@/components/common";
+import { InventoryView } from "@/modules/inventory";
 
-import { ROUTES } from "@/lib/constants";
+export const metadata = createRouteMetadata(
+  "Inventory",
+  "Track warehouse stock, sellable quantity and replenishment alerts",
+);
 
-export default function InventoryRedirect() {
-  redirect(ROUTES.PRODUCTS);
+export default function InventoryPage() {
+  return <InventoryView />;
 }

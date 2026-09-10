@@ -82,6 +82,8 @@ export default function OnboardingReviewPage() {
           rows={[
             ["Registered address", location.registeredAddress],
             ["City", location.city],
+            ["State", location.state],
+            ["Pincode", location.pincode],
             ["Warehouse", location.warehouseAddress],
             ...(location.additionalAddresses ?? []).map(
               (item, index): [string, string] => [

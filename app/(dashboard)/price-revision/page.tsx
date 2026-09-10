@@ -1,3 +1,7 @@
-import { AdminRedirectPage } from "@/components/common/admin-redirect";
+import { redirect } from "next/navigation";
 
-export default AdminRedirectPage;
+import { ROUTES } from "@/lib/constants";
+
+export default function PriceRevisionAliasPage() {
+  redirect(ROUTES.PRICE_REVISIONS);
+}

@@ -34,16 +34,7 @@ export const annualTurnoverOptions = [
   { label: "Above ₹100 Crore", value: "above_100cr" },
 ];
 
-export const indianStates = [
-  { label: "Maharashtra", value: "maharashtra" },
-  { label: "Gujarat", value: "gujarat" },
-  { label: "Rajasthan", value: "rajasthan" },
-  { label: "Karnataka", value: "karnataka" },
-  { label: "Tamil Nadu", value: "tamil_nadu" },
-  { label: "Delhi", value: "delhi" },
-  { label: "West Bengal", value: "west_bengal" },
-  { label: "Uttar Pradesh", value: "uttar_pradesh" },
-];
+export { INDIAN_STATE_OPTIONS as indianStates } from "@/lib/constants/india";
 
 export const defaultDocuments: DocumentItem[] = [
   {

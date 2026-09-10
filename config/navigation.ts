@@ -1,6 +1,9 @@
 import {
+  CalendarClock,
   ClipboardList,
   FileText,
+  IndianRupee,
+  KanbanSquare,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -10,6 +13,7 @@ import {
   Truck,
   User,
   Wallet,
+  Warehouse,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -59,6 +63,12 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: "catalog.view",
       },
       {
+        label: "Inventory",
+        href: ROUTES.INVENTORY,
+        icon: Warehouse,
+        permission: "inventory.view",
+      },
+      {
         label: "My Offers",
         href: ROUTES.OFFERS,
         icon: Tag,
@@ -89,6 +99,12 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: "logistics.view",
       },
       {
+        label: "Vehicle Slots",
+        href: ROUTES.VEHICLE_SLOTS,
+        icon: CalendarClock,
+        permission: "logistics.view",
+      },
+      {
         label: "Shipment Tracking",
         href: ROUTES.SHIPMENTS,
         icon: MapPin,
@@ -111,6 +127,24 @@ export const NAV_SECTIONS: NavSection[] = [
         href: ROUTES.PAYMENTS,
         icon: Wallet,
         permission: "finance.view",
+      },
+      {
+        label: "Price Revision",
+        href: ROUTES.PRICE_REVISIONS,
+        icon: IndianRupee,
+        permission: "finance.view",
+      },
+    ],
+  },
+  {
+    id: "procurement",
+    title: "PROCUREMENT",
+    items: [
+      {
+        label: "Procurement Workbench",
+        href: ROUTES.PROCUREMENT_WORKBENCH,
+        icon: KanbanSquare,
+        permission: "procurement.view",
       },
     ],
   },

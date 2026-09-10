@@ -24,6 +24,7 @@ export { useSearchStore } from "./searchStore";
 export { useSellerFinanceStore } from "./sellerFinanceStore";
 export { useSellerNotificationStore } from "./sellerNotificationStore";
 export { useSellerOfferStore } from "./sellerOfferStore";
+export { useSellerOpsStore } from "./sellerOpsStore";
 export { useSellerOrderStore } from "./sellerOrderStore";
 export { useSellerProductStore } from "./sellerProductStore";
 export { useSellerRequestStore } from "./sellerRequestStore";

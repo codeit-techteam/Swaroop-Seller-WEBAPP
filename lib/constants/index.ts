@@ -5,6 +5,9 @@ export const APP_URL =
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
+export const ADMIN_API_URL =
+  process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:3002";
+
 export const IS_DEV = process.env.NODE_ENV === "development";
 
 export const IS_PROD = process.env.NODE_ENV === "production";
@@ -49,7 +52,7 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   PRODUCTS: "/products",
   PRODUCTS_NEW: "/products/new",
-  INVENTORY: "/products",
+  INVENTORY: "/inventory",
   INVENTORY_ADD_PRODUCT: "/products/new",
   OFFERS: "/offers",
   OFFERS_NEW: "/offers/new",
@@ -61,7 +64,8 @@ export const ROUTES = {
   ORDER_MANAGEMENT: "/orders",
   ORDER_DETAIL: "/orders",
   DISPATCH: "/dispatch",
-  VEHICLE_SLOT_BOOKING: "/dispatch",
+  VEHICLE_SLOT_BOOKING: "/vehicle-slots",
+  VEHICLE_SLOTS: "/vehicle-slots",
   SHIPMENTS: "/shipments",
   SHIPMENT_TRACKING: "/shipments",
   SETTLEMENTS: "/settlements",
@@ -81,7 +85,7 @@ export const ROUTES = {
   SEARCH: "/search",
   LOGOUT: "/login",
   KYC: "/dashboard",
-  PRICE_REVISIONS: "/offers",
+  PRICE_REVISIONS: "/price-revisions",
   OFFER_REVIEW: "/offers",
   OFFER_REVIEW_STATUS: "/offers",
   ANALYTICS: "/dashboard",
@@ -114,6 +118,7 @@ export const ROUTES = {
   PROCUREMENT_TRACKING: "/shipments",
   PROCUREMENT_DOCUMENTS: "/documents",
   PROCUREMENT_SELLERS_NEW: "/dashboard",
+  PROCUREMENT_WORKBENCH: "/procurement-workbench",
 } as const;
 
 export const QUERY_KEYS = {

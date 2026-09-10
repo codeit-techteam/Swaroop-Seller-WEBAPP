@@ -10,6 +10,7 @@ interface SellerNotificationState {
   markRead: (id: string) => void;
   markAllRead: () => void;
   setFilter: (filter: SellerNotificationState["filter"]) => void;
+  ingestAdminPushes: (items: SellerNotification[]) => number;
   getFiltered: () => SellerNotification[];
   getUnreadCount: () => number;
 }
@@ -33,6 +34,15 @@ export const useSellerNotificationStore = create<SellerNotificationState>()(
           })),
         })),
       setFilter: (filter) => set({ filter }),
+      ingestAdminPushes: (items) => {
+        const existing = new Set(get().notifications.map((item) => item.id));
+        const incoming = items.filter((item) => !existing.has(item.id));
+        if (incoming.length === 0) return 0;
+        set((state) => ({
+          notifications: [...incoming, ...state.notifications],
+        }));
+        return incoming.length;
+      },
       getFiltered: () => {
         const { notifications, filter } = get();
         if (filter === "all") return notifications;

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { INDIAN_STATE_VALUES } from "@/lib/constants/india";
 import { gstSchema, phoneSchema, pincodeSchema } from "@/lib/utils/validators";
 
 export const loginSchema = z.object({
@@ -85,7 +86,13 @@ export const bankSchema = z
 export const locationSchema = z.object({
   warehouseAddress: z.string().min(8, "Warehouse address is required"),
   city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
+  state: z
+    .string()
+    .min(1, "Select a state")
+    .refine(
+      (value) => (INDIAN_STATE_VALUES as readonly string[]).includes(value),
+      "Select a valid Indian state",
+    ),
   pincode: pincodeSchema,
   registeredAddress: z.string().min(8, "Registered address is required"),
   additionalAddresses: z.array(

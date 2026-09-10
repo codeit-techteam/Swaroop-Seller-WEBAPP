@@ -162,9 +162,10 @@ export function DashboardView() {
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[
           { href: ROUTES.OFFERS_NEW, label: "+ Add Offer" },
+          { href: ROUTES.INVENTORY, label: "Inventory" },
           { href: ROUTES.PURCHASE_REQUESTS, label: "View Purchase Requests" },
           { href: ROUTES.ORDERS, label: "View Orders" },
           { href: ROUTES.DISPATCH, label: "Dispatch" },

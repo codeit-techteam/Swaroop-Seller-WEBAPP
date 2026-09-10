@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -16,7 +17,23 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  INDIAN_STATES,
+  INDIAN_UNION_TERRITORIES,
+  normalizeIndianState,
+  PINCODE_LOOKUP,
+} from "@/lib/constants/india";
 import {
   type LocationFormValues,
   locationSchema,
@@ -51,7 +68,7 @@ export function OnboardingLocationForm({
     resolver: zodResolver(locationSchema),
     defaultValues: {
       city: location.city,
-      state: location.state,
+      state: normalizeIndianState(location.state),
       pincode: location.pincode,
       warehouseAddress: location.warehouseAddress,
       registeredAddress:
@@ -67,6 +84,25 @@ export function OnboardingLocationForm({
     control: form.control,
     name: "additionalAddresses",
   });
+
+  const pincode = form.watch("pincode");
+  const lastLookedUpPincode = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (lastLookedUpPincode.current === pincode) return;
+    lastLookedUpPincode.current = pincode;
+    if (!/^[1-9][0-9]{5}$/.test(pincode)) return;
+    const match = PINCODE_LOOKUP[pincode];
+    if (!match) return;
+    form.setValue("city", match.city, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    form.setValue("state", match.state, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  }, [pincode, form]);
 
   return (
     <Form {...form}>
@@ -122,29 +158,97 @@ export function OnboardingLocationForm({
         />
 
         <div className="grid gap-4 md:grid-cols-2">
-          {(
-            [
-              ["city", "City"],
-              ["state", "State"],
-              ["pincode", "Pincode"],
-              ["warehouseAddress", "Warehouse / Stock Point"],
-            ] as const
-          ).map(([name, label]) => (
-            <FormField
-              key={name}
-              control={form.control}
-              name={name}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{label}</FormLabel>
+          <FormField
+            control={form.control}
+            name="city"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>City</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. Kolkata" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="state"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>State</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || undefined}
+                >
                   <FormControl>
-                    <Input {...field} />
+                    <SelectTrigger aria-label="State">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
+                  <SelectContent className="max-h-72">
+                    <SelectGroup>
+                      <SelectLabel>States</SelectLabel>
+                      {INDIAN_STATES.map((state) => (
+                        <SelectItem key={state} value={state}>
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel>Union Territories</SelectLabel>
+                      {INDIAN_UNION_TERRITORIES.map((territory) => (
+                        <SelectItem key={territory} value={territory}>
+                          {territory}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="pincode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pincode</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="6-digit pincode"
+                    inputMode="numeric"
+                    maxLength={6}
+                    {...field}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value.replace(/\D/g, "").slice(0, 6),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="warehouseAddress"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Warehouse / Stock Point</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Primary warehouse or stock point"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <div className="space-y-3">
