@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { INDIAN_STATE_VALUES } from "@/lib/constants/india";
-import { gstSchema, phoneSchema, pincodeSchema } from "@/lib/utils/validators";
+import { gstSchema, panSchema, phoneSchema, pincodeSchema } from "@/lib/utils/validators";
 
 export const loginSchema = z.object({
   mobileNumber: z
@@ -33,7 +33,11 @@ export const companyDetailsSchema = z.object({
     .trim()
     .transform((value) => value.toUpperCase())
     .pipe(gstSchema),
-  panNumber: optionalPanSchema,
+  panNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .pipe(panSchema),
   businessType: z.string().min(1, "Business type is required"),
   contactName: z.string().min(2, "Contact person is required"),
   phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid mobile number"),
@@ -60,7 +64,11 @@ export const gstPanSchema = z.object({
     .trim()
     .transform((value) => value.toUpperCase())
     .pipe(gstSchema),
-  panNumber: optionalPanSchema,
+  panNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .pipe(panSchema),
 });
 
 export const bankSchema = z

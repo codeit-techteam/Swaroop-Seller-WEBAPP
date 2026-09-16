@@ -64,6 +64,9 @@ export interface GstVerificationData {
   gstStatus?: string;
   registeredAddress?: string;
   gstType?: string;
+  stateCode?: string;
+  state?: string;
+  pan?: string;
 }
 
 export interface PanVerificationData {

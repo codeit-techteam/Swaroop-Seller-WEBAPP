@@ -8,7 +8,7 @@ import {
   ONBOARDING_STEPS,
   STEP_PROGRESS,
 } from "@/lib/constants/onboarding";
-import type { OnboardingStore } from "@/types/onboarding";
+import type { OnboardingState, OnboardingStore } from "@/types/onboarding";
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -131,11 +131,26 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "petrotrade-onboarding",
-      version: 4,
-      migrate: () => ({
-        ...initialOnboardingState,
-        documents: initialOnboardingState.documents.map((doc) => ({ ...doc })),
-      }),
+      version: 5,
+      migrate: (persistedState) => {
+        const previous = (persistedState ?? {}) as Partial<OnboardingState>;
+        return {
+          ...initialOnboardingState,
+          ...previous,
+          documents: initialOnboardingState.documents.map((doc) => {
+            const existing = previous.documents?.find((item) => item.id === doc.id);
+            return existing
+              ? {
+                  ...doc,
+                  ...existing,
+                  name: doc.name,
+                  description: doc.description,
+                  required: doc.required,
+                }
+              : { ...doc };
+          }),
+        };
+      },
       partialize: (state) => ({
         mobileNumber: state.mobileNumber,
         countryCode: state.countryCode,

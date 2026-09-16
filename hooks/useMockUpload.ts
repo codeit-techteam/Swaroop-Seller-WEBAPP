@@ -2,8 +2,8 @@
 
 import { useCallback } from "react";
 
+import { parseGstin } from "@/lib/utils/gst";
 import { useOnboardingStore } from "@/store/onboardingStore";
-import type { DocumentItem } from "@/types/onboarding";
 
 export function useMockUpload() {
   const updateDocument = useOnboardingStore((s) => s.updateDocument);
@@ -27,16 +27,8 @@ export function useMockUpload() {
         progress += Math.random() * 25 + 10;
         if (progress >= 100) {
           clearInterval(interval);
-          const statuses: DocumentItem["status"][] = [
-            "uploaded",
-            "verified",
-            "pending_review",
-          ];
-          const randomStatus =
-            statuses[Math.floor(Math.random() * statuses.length)] ?? "uploaded";
-
           updateDocument(docId, {
-            status: randomStatus,
+            status: "uploaded",
             uploadProgress: 100,
             uploadedAt: new Date().toISOString(),
             previewUrl,
@@ -91,14 +83,15 @@ export function useMockVerification() {
       new Promise<void>((resolve) => {
         updateGst({ gstNumber, status: "loading" });
         setTimeout(() => {
+          const parsed = parseGstin(gstNumber);
           updateGst({
-            gstNumber,
-            status: "verified",
-            companyName: "PetroCorp International Private Limited",
-            gstStatus: "ACTIVE",
-            registeredAddress:
-              "Floor 12, Energy Plaza, BKC G Block, Mumbai, Maharashtra 400051",
-            gstType: "Regular",
+            gstNumber: parsed.gstNumber,
+            status: parsed.isValid ? "verified" : "rejected",
+            gstStatus: parsed.isValid ? "ACTIVE" : undefined,
+            gstType: parsed.isValid ? "Regular" : undefined,
+            stateCode: parsed.stateCode,
+            state: parsed.state,
+            pan: parsed.pan,
           });
           resolve();
         }, 1500);

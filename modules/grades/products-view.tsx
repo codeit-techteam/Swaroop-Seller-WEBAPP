@@ -200,9 +200,11 @@ export function SellerProductsView() {
                   <td className="px-4 py-3">
                     {priceFor(product.id)
                       ? formatPricePerKg(priceFor(product.id) ?? 0)
-                      : product.basePrice
-                        ? formatPricePerKg(product.basePrice)
-                        : "—"}
+                      : product.paymentPricing?.advance
+                        ? `₹${product.paymentPricing.advance}/MT`
+                        : product.basePrice
+                          ? formatPricePerKg(product.basePrice)
+                          : "—"}
                   </td>
                   <td className="px-4 py-3">
                     {locations.find((item) => item.id === product.locationId)
@@ -348,6 +350,42 @@ export function SellerProductsView() {
             <div>
               <dt className="text-xs uppercase text-slate-500">Application</dt>
               <dd className="font-medium">{detail.application}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Advance</dt>
+              <dd className="font-medium">
+                {detail.paymentPricing?.advance
+                  ? `₹${detail.paymentPricing.advance}/MT`
+                  : detail.basePrice
+                    ? formatPricePerKg(detail.basePrice)
+                    : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">On Loading</dt>
+              <dd className="font-medium">
+                {detail.paymentPricing?.onLoading
+                  ? `₹${detail.paymentPricing.onLoading}/MT`
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">On Delivery</dt>
+              <dd className="font-medium">
+                {detail.paymentPricing?.onDelivery
+                  ? `₹${detail.paymentPricing.onDelivery}/MT`
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">
+                15 / 30 Days Credit
+              </dt>
+              <dd className="font-medium">
+                {detail.paymentPricing
+                  ? `₹${detail.paymentPricing.credit15Days}/MT · ₹${detail.paymentPricing.credit30Days}/MT`
+                  : "—"}
+              </dd>
             </div>
             <div>
               <dt className="text-xs uppercase text-slate-500">Stock</dt>

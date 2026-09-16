@@ -111,6 +111,22 @@ export interface SellerProfile {
   accountManager: AccountManager;
 }
 
+export interface PaymentTermPricing {
+  advance: number;
+  onLoading: number;
+  onDelivery: number;
+  credit15Days: number;
+  credit30Days: number;
+}
+
+export interface BulkPriceSlab {
+  id: string;
+  minQty: number;
+  maxQty: number | null;
+  price: number;
+  discountLabel?: string;
+}
+
 export interface SellerProduct {
   id: string;
   category: string;
@@ -120,6 +136,7 @@ export interface SellerProduct {
   polymerType: string;
   application: string;
   mfi: string;
+  density?: string;
   packagingType: string;
   unit: "MT" | "kg";
   availableStock: number;
@@ -134,16 +151,11 @@ export interface SellerProduct {
   currency?: string;
   gstPercent?: number;
   paymentTerms?: string;
+  paymentPricing?: PaymentTermPricing;
+  bulkPricing?: BulkPriceSlab[];
   warehouse?: string;
   updatedAt: string;
   createdAt: string;
-}
-
-export interface BulkPriceSlab {
-  id: string;
-  minQty: number;
-  maxQty: number | null;
-  price: number;
 }
 
 export interface SellerOffer {
@@ -353,6 +365,7 @@ export interface ProductFormValues {
   polymerType: string;
   application: string;
   mfi: string;
+  density?: string;
   packagingType: string;
   unit: "MT" | "kg";
   availableStock: number;
@@ -364,6 +377,8 @@ export interface ProductFormValues {
   currency?: string;
   gstPercent?: number;
   paymentTerms?: string;
+  paymentPricing?: PaymentTermPricing;
+  bulkPricing?: BulkPriceSlab[];
   warehouse?: string;
   reservedStock?: number;
 }

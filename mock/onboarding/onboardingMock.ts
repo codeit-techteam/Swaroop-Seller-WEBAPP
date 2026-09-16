@@ -36,49 +36,34 @@ export const annualTurnoverOptions = [
 
 export { INDIAN_STATE_OPTIONS as indianStates } from "@/lib/constants/india";
 
+/** Matches SWAROOP seller onboarding: GST, PAN, Aadhaar, Cancelled Cheque. */
 export const defaultDocuments: DocumentItem[] = [
   {
-    id: "gst_certificate",
+    id: "gst",
     name: "GST Certificate",
-    description:
-      "Official GST registration certificate issued by the government.",
+    description: "Upload GST registration proof",
     required: true,
     status: "empty",
   },
   {
-    id: "payment_slips",
-    name: "Payment Slips (Last 3 Years)",
-    description:
-      "Bank statements or payment slips covering the last 3 financial years.",
-    required: true,
-    status: "empty",
-  },
-  {
-    id: "cancelled_cheque",
-    name: "Cancelled Cheque",
-    description: "Cancelled cheque for bank account verification.",
-    required: true,
-    status: "empty",
-  },
-  {
-    id: "registration_certificate",
-    name: "Registration Certificate",
-    description: "Certificate of incorporation or business registration.",
-    required: true,
-    status: "empty",
-  },
-  {
-    id: "pan_card",
+    id: "pan",
     name: "PAN Card",
-    description: "Permanent Account Number card of the business entity.",
-    required: false,
+    description: "Upload company PAN document",
+    required: true,
     status: "empty",
   },
   {
-    id: "address_proof",
-    name: "Address Proof",
-    description: "Utility bill or rental agreement as address proof.",
-    required: false,
+    id: "aadhaar",
+    name: "Aadhaar",
+    description: "Upload authorized person Aadhaar",
+    required: true,
+    status: "empty",
+  },
+  {
+    id: "cancelledCheque",
+    name: "Cancelled Cheque",
+    description: "Upload bank account cheque copy",
+    required: true,
     status: "empty",
   },
 ];
@@ -89,6 +74,9 @@ export const mockGstVerification = {
   registeredAddress:
     "Floor 12, Energy Plaza, BKC G Block, Mumbai, Maharashtra 400051",
   gstType: "Regular",
+  stateCode: "27",
+  state: "Maharashtra",
+  pan: "AABCR1234M",
 };
 
 export const mockPanVerification = {
@@ -160,7 +148,7 @@ export const reviewChecklist = [
 
 export const submissionSummary = {
   businessName: "PetroLink Industrial Solutions Ltd.",
-  documentsCount: 6,
+  documentsCount: 4,
   bankName: "HDFC Bank",
   location: "Mumbai, Maharashtra",
   estimatedReviewTime: "24 - 48 business hours",

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { ReactNode } from "react";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
@@ -13,19 +14,34 @@ import { useSellerStore } from "@/store/sellerStore";
 
 export default function OnboardingReviewPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const previewSuffix = searchParams.get("preview") === "1" ? "?preview=1" : "";
   const company = useOnboardingStore((s) => s.company);
   const business = useOnboardingStore((s) => s.business);
   const location = useOnboardingStore((s) => s.location);
   const bank = useOnboardingStore((s) => s.bank);
+  const gst = useOnboardingStore((s) => s.gst);
+  const documents = useOnboardingStore((s) => s.documents);
   const review = useOnboardingStore((s) => s.review);
   const updateReview = useOnboardingStore((s) => s.updateReview);
   const submitOnboarding = useOnboardingStore((s) => s.submitOnboarding);
   const completeOnboarding = useAuthStore((s) => s.completeOnboarding);
   const updateSeller = useSellerStore((s) => s.updateSeller);
 
+  const uploadedDocuments = documents.filter((doc) => doc.status !== "empty");
+
   const submit = () => {
     if (!review.termsAccepted) {
       toast.error("Please confirm the information is correct");
+      return;
+    }
+    const missing = documents.filter(
+      (doc) => doc.required && doc.status === "empty",
+    );
+    if (missing.length > 0) {
+      toast.error(
+        `Upload required documents: ${missing.map((doc) => doc.name).join(", ")}`,
+      );
       return;
     }
     submitOnboarding();
@@ -58,14 +74,46 @@ export default function OnboardingReviewPage() {
       </div>
       <section className="grid gap-4 md:grid-cols-2">
         <ReviewCard
-          title="Company"
+          title="Business Info"
+          actionLabel="Edit"
+          onEdit={() =>
+            router.push(`${ROUTES.ONBOARDING_COMPANY}${previewSuffix}`)
+          }
           rows={[
             ["Company", company.companyName],
             ["GST", company.gstNumber],
-            ["PAN", company.panNumber || "Not provided"],
+            ["PAN", company.panNumber || gst.pan || "Not provided"],
+            ["State", gst.state || location.state],
             ["Contact", company.contactName],
           ]}
         />
+        <ReviewCard
+          title="Documents"
+          actionLabel="Edit"
+          onEdit={() =>
+            router.push(`${ROUTES.ONBOARDING_DOCUMENTS}${previewSuffix}`)
+          }
+        >
+          <div className="mt-3 space-y-2">
+            {uploadedDocuments.length === 0 ? (
+              <p className="text-sm text-slate-500">No documents uploaded</p>
+            ) : (
+              uploadedDocuments.map((document) => (
+                <div
+                  key={document.id}
+                  className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5"
+                >
+                  <p className="text-sm font-medium text-slate-800">
+                    {document.name}
+                  </p>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    Uploaded
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </ReviewCard>
         <ReviewCard
           title="Business"
           rows={[
@@ -116,7 +164,7 @@ export default function OnboardingReviewPage() {
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Back
         </Button>
-        <Button onClick={submit}>Submit & Enter Portal</Button>
+        <Button onClick={submit}>Submit For Verification</Button>
       </div>
     </div>
   );
@@ -125,21 +173,40 @@ export default function OnboardingReviewPage() {
 function ReviewCard({
   title,
   rows,
+  actionLabel,
+  onEdit,
+  children,
 }: {
   title: string;
-  rows: [string, string][];
+  rows?: [string, string][];
+  actionLabel?: string;
+  onEdit?: () => void;
+  children?: ReactNode;
 }) {
   return (
     <div className="rounded-lg border border-slate-200 p-4">
-      <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
-      <dl className="mt-3 space-y-2">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-4 text-sm">
-            <dt className="text-slate-500">{label}</dt>
-            <dd className="font-medium text-slate-800">{value || "—"}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
+        {actionLabel && onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="text-sm font-medium text-blue-600 hover:underline"
+          >
+            {actionLabel}
+          </button>
+        ) : null}
+      </div>
+      {children ?? (
+        <dl className="mt-3 space-y-2">
+          {rows?.map(([label, value]) => (
+            <div key={label} className="flex justify-between gap-4 text-sm">
+              <dt className="text-slate-500">{label}</dt>
+              <dd className="font-medium text-slate-800">{value || "—"}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   );
 }

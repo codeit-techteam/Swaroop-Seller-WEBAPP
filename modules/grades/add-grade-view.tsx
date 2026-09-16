@@ -1,7 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -28,13 +30,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import {
+  PAYMENT_TERM_PRICE_FIELDS,
   packagingTypes,
+  paymentTermsSummary,
   polymerTypes,
   productCategories,
 } from "@/lib/mock/products";
+import { slabsOverlap } from "@/lib/seller/format";
 import { useLocationStore } from "@/store/locationStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 import { useSellerStore } from "@/store/sellerStore";
+import type { BulkPriceSlab } from "@/types/seller";
 
 const schema = z.object({
   category: z.string().min(1, "Select a category"),
@@ -44,18 +50,22 @@ const schema = z.object({
   polymerType: z.string().min(1, "Required"),
   application: z.string().min(2, "Required"),
   mfi: z.string().min(1, "Required"),
+  density: z.string().optional(),
   packagingType: z.string().min(1, "Required"),
   unit: z.enum(["MT", "kg"]),
   availableStock: z.coerce.number().min(0),
   moq: z.coerce.number().min(1),
   origin: z.string().min(2, "Origin is required"),
-  basePrice: z.coerce.number().min(0),
   currency: z.string().min(1),
   gstPercent: z.coerce.number().min(0),
-  paymentTerms: z.string().min(1),
   warehouse: z.string().min(1),
   reservedStock: z.coerce.number().min(0),
   notes: z.string().optional(),
+  advance: z.coerce.number().min(0),
+  onLoading: z.coerce.number().min(0),
+  onDelivery: z.coerce.number().min(0),
+  credit15Days: z.coerce.number().min(0),
+  credit30Days: z.coerce.number().min(0),
 });
 
 type Values = z.infer<typeof schema>;
@@ -65,6 +75,8 @@ export function AddGradeView() {
   const locationId = useLocationStore((s) => s.selectedLocationId);
   const addProduct = useSellerProductStore((s) => s.addProduct);
   const addActivity = useSellerStore((s) => s.addActivity);
+  const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
+  const overlap = useMemo(() => slabsOverlap(slabs), [slabs]);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -76,28 +88,64 @@ export function AddGradeView() {
       polymerType: "",
       application: "",
       mfi: "",
+      density: "",
       packagingType: "25 kg bags",
       unit: "MT",
       availableStock: 0,
       origin: "India",
-      basePrice: 0,
       currency: "INR",
       gstPercent: 18,
-      paymentTerms: "Advance",
       warehouse: "",
       reservedStock: 0,
       moq: 20,
       notes: "",
+      advance: 0,
+      onLoading: 0,
+      onDelivery: 0,
+      credit15Days: 0,
+      credit30Days: 0,
     },
   });
 
   const save = (values: Values, asDraft: boolean) => {
+    if (overlap) {
+      toast.error("Bulk price ranges cannot overlap");
+      return;
+    }
+
+    const paymentPricing = {
+      advance: values.advance,
+      onLoading: values.onLoading,
+      onDelivery: values.onDelivery,
+      credit15Days: values.credit15Days,
+      credit30Days: values.credit30Days,
+    };
+
     addProduct(
       {
-        ...values,
+        category: values.category,
+        gradeName: values.gradeName,
+        manufacturer: values.manufacturer,
+        gradeCode: values.gradeCode,
+        polymerType: values.polymerType,
+        application: values.application,
+        mfi: values.mfi,
+        density: values.density ?? "",
+        packagingType: values.packagingType,
+        unit: values.unit,
+        availableStock: values.availableStock,
+        moq: values.moq,
+        origin: values.origin,
+        currency: values.currency,
+        gstPercent: values.gstPercent,
+        warehouse: values.warehouse,
+        reservedStock: values.reservedStock,
         notes: values.notes ?? "",
         locationId,
-        unit: values.unit,
+        basePrice: values.advance,
+        paymentPricing,
+        paymentTerms: paymentTermsSummary(paymentPricing),
+        bulkPricing: slabs,
       },
       asDraft,
     );
@@ -114,7 +162,7 @@ export function AddGradeView() {
     <PageContainer className="max-w-4xl">
       <PageHeader
         title="Add Product / Grade"
-        description="Structured grade information only. Product images are not used on this platform."
+        description="Structured grade information with payment-term pricing. Product images are not used on this platform."
       />
       <Form {...form}>
         <form
@@ -237,6 +285,19 @@ export function AddGradeView() {
             />
             <FormField
               control={form.control}
+              name="density"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Density (g/cm3)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="0.954" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="packagingType"
               render={({ field }) => (
                 <FormItem>
@@ -308,19 +369,6 @@ export function AddGradeView() {
             />
             <FormField
               control={form.control}
-              name="basePrice"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Base Price</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="currency"
               render={({ field }) => (
                 <FormItem>
@@ -340,19 +388,6 @@ export function AddGradeView() {
                   <FormLabel>GST %</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="paymentTerms"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Terms</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Advance" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -398,6 +433,182 @@ export function AddGradeView() {
               )}
             />
           </div>
+
+          <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-800">
+                Payment Term Pricing
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Configure pricing variations based on buyer payment flexibility.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {PAYMENT_TERM_PRICE_FIELDS.map((item) => (
+                <FormField
+                  key={item.key}
+                  control={form.control}
+                  name={item.key}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{item.label} (₹/MT)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                            ₹
+                          </span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className="pl-7"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-800">
+                  Bulk Pricing Tiers
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Quantity bands with a unit price. Leave max empty for open-ended
+                  tiers.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setSlabs((current) => [
+                    ...current,
+                    {
+                      id: `bp-${Date.now()}`,
+                      minQty: current.length === 0 ? 1 : 50,
+                      maxQty: current.length === 0 ? 10 : null,
+                      price: Number(form.getValues("advance")) || 0,
+                      discountLabel: current.length === 0 ? "Standard" : "",
+                    },
+                  ])
+                }
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" /> Add Tier
+              </Button>
+            </div>
+            {overlap ? (
+              <p className="mb-2 text-sm text-red-600">
+                Quantity ranges overlap. Adjust min/max values.
+              </p>
+            ) : null}
+            {slabs.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-500">
+                No volume tiers yet. Add a tier to offer quantity-based pricing.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {slabs.map((slab) => (
+                  <div
+                    key={slab.id}
+                    className="grid grid-cols-12 items-center gap-2"
+                  >
+                    <Input
+                      type="number"
+                      className="col-span-2"
+                      value={slab.minQty}
+                      onChange={(event) =>
+                        setSlabs((current) =>
+                          current.map((item) =>
+                            item.id === slab.id
+                              ? { ...item, minQty: Number(event.target.value) }
+                              : item,
+                          ),
+                        )
+                      }
+                      aria-label="Minimum quantity"
+                      placeholder="Min MT"
+                    />
+                    <Input
+                      type="number"
+                      className="col-span-2"
+                      value={slab.maxQty ?? ""}
+                      placeholder="Max"
+                      onChange={(event) =>
+                        setSlabs((current) =>
+                          current.map((item) =>
+                            item.id === slab.id
+                              ? {
+                                  ...item,
+                                  maxQty: event.target.value
+                                    ? Number(event.target.value)
+                                    : null,
+                                }
+                              : item,
+                          ),
+                        )
+                      }
+                      aria-label="Maximum quantity"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      className="col-span-3"
+                      value={slab.price}
+                      onChange={(event) =>
+                        setSlabs((current) =>
+                          current.map((item) =>
+                            item.id === slab.id
+                              ? { ...item, price: Number(event.target.value) }
+                              : item,
+                          ),
+                        )
+                      }
+                      aria-label="Tier price"
+                      placeholder="₹/MT"
+                    />
+                    <Input
+                      className="col-span-4"
+                      value={slab.discountLabel ?? ""}
+                      onChange={(event) =>
+                        setSlabs((current) =>
+                          current.map((item) =>
+                            item.id === slab.id
+                              ? { ...item, discountLabel: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      aria-label="Discount label"
+                      placeholder="Standard / Save ₹3/MT"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setSlabs((current) =>
+                          current.filter((item) => item.id !== slab.id),
+                        )
+                      }
+                      aria-label="Delete tier"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           <FormField
             control={form.control}
             name="notes"

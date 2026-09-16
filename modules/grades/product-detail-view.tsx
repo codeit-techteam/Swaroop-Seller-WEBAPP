@@ -16,9 +16,8 @@ export function ProductDetailView() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const product = useSellerProductStore((s) => s.getById(params.id));
-  const offers = useSellerOfferStore((s) =>
-    s.offers.filter((offer) => offer.productId === params.id),
-  );
+  const allOffers = useSellerOfferStore((s) => s.offers);
+  const offers = allOffers.filter((offer) => offer.productId === params.id);
 
   if (!product) {
     return (
@@ -48,9 +47,12 @@ export function ProductDetailView() {
           ["Polymer", product.polymerType],
           ["Application", product.application],
           ["MFI", product.mfi],
+          ["Density", product.density || "—"],
           ["Packaging", product.packagingType],
           ["MOQ", formatMt(product.moq)],
           ["Unit", product.unit],
+          ["GST", product.gstPercent != null ? `${product.gstPercent}%` : "—"],
+          ["Warehouse", product.warehouse || "—"],
         ].map(([label, value]) => (
           <div
             key={label}
@@ -74,6 +76,48 @@ export function ProductDetailView() {
           )}
         />
       </div>
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold">Payment Term Pricing</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Advance", product.paymentPricing?.advance ?? product.basePrice],
+            ["On Loading", product.paymentPricing?.onLoading],
+            ["On Delivery", product.paymentPricing?.onDelivery],
+            ["15 Days Credit", product.paymentPricing?.credit15Days],
+            ["30 Days Credit", product.paymentPricing?.credit30Days],
+          ].map(([label, value]) => (
+            <div
+              key={String(label)}
+              className="rounded-lg border border-slate-100 bg-slate-50 p-3"
+            >
+              <p className="text-xs uppercase text-slate-500">{label}</p>
+              <p className="mt-1 font-semibold">
+                {typeof value === "number" && value > 0 ? `₹${value}/MT` : "—"}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+      {(product.bulkPricing?.length ?? 0) > 0 ? (
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <h2 className="mb-3 font-semibold">Bulk Pricing Tiers</h2>
+          <div className="space-y-2">
+            {product.bulkPricing?.map((tier) => (
+              <div
+                key={tier.id}
+                className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2 text-sm"
+              >
+                <span>
+                  {tier.minQty}
+                  {tier.maxQty == null ? "+" : `-${tier.maxQty}`} MT
+                  {tier.discountLabel ? ` · ${tier.discountLabel}` : ""}
+                </span>
+                <span className="font-medium">₹{tier.price}/MT</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <section className="rounded-xl border border-slate-200 bg-white p-5">
         <h2 className="mb-3 font-semibold">Active Offers</h2>
         {offers.length === 0 ? (
