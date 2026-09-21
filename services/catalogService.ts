@@ -76,7 +76,7 @@ export const catalogService = {
       industry:
         input.industry ?? existing?.industry ?? "Petrochemicals & Packaging",
       etaLabel: input.etaLabel ?? existing?.etaLabel ?? "2–5 Days",
-      creditEligible: input.creditEligible ?? existing?.creditEligible ?? true,
+      creditEligible: true,
       highlights: input.highlights ??
         existing?.highlights ?? [
           "PetroTrade Verified",

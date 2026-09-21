@@ -105,7 +105,7 @@ export function ReceivablesView() {
     <OperationsShell
       className="space-y-6 py-6"
       title="Receivables"
-      subtitle="Track customer credit receivables — outstanding balance, aging, and collection progress."
+      subtitle="Track PetroTrade settlement status for fulfilled orders. Customer credit collection is managed by PetroTrade."
       kpis={[
         {
           title: "Total Receivables",

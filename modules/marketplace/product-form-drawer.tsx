@@ -107,7 +107,6 @@ const schema = z.object({
   industry: z.string().optional(),
   etaLabel: z.string().min(1, "Delivery ETA is required"),
   transportMode: z.string().optional(),
-  creditEligible: z.boolean(),
   sellingPrice: z.coerce.number().positive("Selling price is required"),
   marketPrice: z.coerce.number().min(0),
   internalCost: z.coerce.number().min(0),
@@ -369,7 +368,6 @@ function emptyForm(categories: CatalogCategory[]): FormValues {
     industry: "Petrochemicals & Packaging",
     etaLabel: "2–3 Days",
     transportMode: "Road Freight (FTL)",
-    creditEligible: true,
     sellingPrice: undefined as unknown as number,
     marketPrice: undefined as unknown as number,
     internalCost: undefined as unknown as number,
@@ -414,7 +412,6 @@ function productToForm(product: CatalogProduct): FormValues {
     industry: product.industry ?? "Petrochemicals & Packaging",
     etaLabel: product.etaLabel ?? "2–5 Days",
     transportMode: product.transportMode ?? "Road Freight (FTL)",
-    creditEligible: product.creditEligible ?? true,
     sellingPrice: product.sellingPrice,
     marketPrice: product.marketPrice,
     internalCost: product.internalCost,
@@ -495,12 +492,11 @@ function buildProductPayload(
     industry: values.industry || "Petrochemicals & Packaging",
     etaLabel: values.etaLabel || "2–3 Days",
     transportMode: values.transportMode || "Road Freight (FTL)",
-    creditEligible: values.creditEligible,
+    creditEligible: true,
     highlights: product?.highlights ?? [
       "PetroTrade Verified",
       "GST Invoice Available",
       "Fast Dispatch",
-      values.creditEligible ? "Credit Eligible" : "Advance Preferred",
       "Quality Certified",
     ],
     qualityBadges: product?.qualityBadges ?? [...DEFAULT_QUALITY_BADGES],
@@ -1237,21 +1233,14 @@ export function ProductFormDrawer({
                     ))}
                   </datalist>
                 </Field>
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-4 sm:col-span-2">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
-                      Credit eligible
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-400">
-                      Enables credit payment options on PDP
-                    </p>
-                  </div>
-                  <Switch
-                    checked={form.watch("creditEligible")}
-                    onCheckedChange={(checked) =>
-                      form.setValue("creditEligible", checked)
-                    }
-                  />
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-4 sm:col-span-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+                    Credit — Managed by PetroTrade
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Customer credit eligibility and payment terms are determined
+                    by PetroTrade. Seller credit configuration is not required.
+                  </p>
                 </div>
               </div>
             </Section>
@@ -1567,41 +1556,42 @@ export function ProductFormDrawer({
 
             <Section
               title="Payment options"
-              description="Toggle which terms appear on the customer PDP."
+              description="Cash terms can be offered on this listing. Credit is always managed by PetroTrade."
               icon={<Tag className="h-4 w-4" />}
             >
               <div className="space-y-2.5">
-                {paymentTerms.map((term, index) => (
-                  <div
-                    key={term.id}
-                    className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/40 px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-800">
-                        {term.title}
-                        {term.discountPct ? (
-                          <span className="ml-2 text-xs font-semibold text-emerald-600">
-                            −{term.discountPct}%
-                          </span>
-                        ) : null}
-                        {term.surchargePct ? (
-                          <span className="ml-2 text-xs font-semibold text-amber-600">
-                            +{term.surchargePct}%
-                          </span>
-                        ) : null}
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {term.description}
-                      </p>
+                {paymentTerms.map((term, index) => {
+                  const isCredit = term.id === "credit_15" || term.id === "credit_30";
+                  return (
+                    <div
+                      key={term.id}
+                      className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/40 px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-800">
+                          {isCredit ? "Credit — PetroTrade Managed" : term.title}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {isCredit
+                            ? "Customer credit eligibility, tenure, and charges are determined by PetroTrade."
+                            : term.description}
+                        </p>
+                      </div>
+                      {isCredit ? (
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500">
+                          Platform
+                        </span>
+                      ) : (
+                        <Switch
+                          checked={term.enabled}
+                          onCheckedChange={(checked) =>
+                            form.setValue(`paymentTerms.${index}.enabled`, checked)
+                          }
+                        />
+                      )}
                     </div>
-                    <Switch
-                      checked={term.enabled}
-                      onCheckedChange={(checked) =>
-                        form.setValue(`paymentTerms.${index}.enabled`, checked)
-                      }
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Section>
           </TabsContent>

@@ -25,12 +25,7 @@ export interface ProductUpload {
 }
 
 export interface ProductPricing {
-  basePrice: number;
-  advancePrice: number;
-  onLoading: number;
-  onDelivery: number;
-  credit15Days: number;
-  credit30Days: number;
+  sellingPrice: number;
 }
 
 export interface ProductInventory {
@@ -115,12 +110,7 @@ export const defaultProductFormData = (): ProductFormData => ({
     isActive: true,
   },
   pricing: {
-    basePrice: 0,
-    advancePrice: 0,
-    onLoading: 0,
-    onDelivery: 0,
-    credit15Days: 0,
-    credit30Days: 0,
+    sellingPrice: 0,
   },
   technicalSpecs: {
     mfi: "",

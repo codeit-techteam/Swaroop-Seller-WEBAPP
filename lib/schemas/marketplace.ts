@@ -14,12 +14,7 @@ export const productFormSchema = z.object({
     isActive: z.boolean(),
   }),
   pricing: z.object({
-    basePrice: z.number().positive("Base price must be greater than 0"),
-    advancePrice: z.number().min(0),
-    onLoading: z.number().min(0),
-    onDelivery: z.number().min(0),
-    credit15Days: z.number().min(0),
-    credit30Days: z.number().min(0),
+    sellingPrice: z.number().positive("Selling price must be greater than 0"),
   }),
   technicalSpecs: z.object({
     mfi: z.string().optional(),

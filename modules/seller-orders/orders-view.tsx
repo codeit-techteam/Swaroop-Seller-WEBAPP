@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageContainer } from "@/components/common/page-container";
 import { PageHeader } from "@/components/common/page-header";
+import { OrdersPageSkeleton } from "@/components/skeleton";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Timeline } from "@/components/status/timeline";
 import { Button } from "@/components/ui/button";
@@ -31,10 +32,16 @@ const TABS: { id: "all" | SellerOrderStatus; label: string }[] = [
 export function SellerOrdersView() {
   const locationId = useLocationStore((s) => s.selectedLocationId);
   const orders = useSellerOrderStore((s) => s.orders);
+  const loading = useSellerOrderStore((s) => s.loading);
+  const hydrate = useSellerOrderStore((s) => s.hydrate);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 8;
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   const rows = useMemo(() => {
     return orders.filter((order) => {
@@ -50,6 +57,10 @@ export function SellerOrdersView() {
   }, [locationId, orders, search, tab]);
   const paged = rows.slice((page - 1) * pageSize, page * pageSize);
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
+
+  if (loading) {
+    return <OrdersPageSkeleton />;
+  }
 
   return (
     <PageContainer>

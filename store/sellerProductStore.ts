@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { defaultProductForm, sellerProductsMock } from "@/lib/mock/products";
+import { defaultProductForm } from "@/lib/mock/products";
 import { stockAdjustmentsMock } from "@/lib/mock/stock-adjustments";
+import { fetchSellerProducts } from "@/services/catalog";
 import type {
   ProductFormValues,
   SellerProduct,
@@ -18,6 +19,8 @@ interface SellerProductState {
   page: number;
   pageSize: number;
   loading: boolean;
+  loadError: string | null;
+  fetchProducts: () => Promise<void>;
   selectedProductId: string | null;
   stockDrawerOpen: boolean;
   setSearch: (search: string) => void;
@@ -36,20 +39,37 @@ interface SellerProductState {
 export const useSellerProductStore = create<SellerProductState>()(
   devtools(
     (set, get) => ({
-      products: sellerProductsMock,
+      products: [],
       adjustments: stockAdjustmentsMock,
       search: "",
       category: "all",
       offerStatus: "all",
       page: 1,
       pageSize: 10,
-      loading: false,
+      loading: true,
+      loadError: null,
       selectedProductId: null,
       stockDrawerOpen: false,
       setSearch: (search) => set({ search, page: 1 }),
       setCategory: (category) => set({ category, page: 1 }),
       setOfferStatus: (offerStatus) => set({ offerStatus, page: 1 }),
       setPage: (page) => set({ page }),
+      fetchProducts: async () => {
+        set({ loading: true, loadError: null });
+        try {
+          const products = await fetchSellerProducts();
+          set({ products, loading: false, loadError: null });
+        } catch (error) {
+          set({
+            products: [],
+            loading: false,
+            loadError:
+              error instanceof Error
+                ? error.message
+                : "Unable to load seller catalog.",
+          });
+        }
+      },
       addProduct: (values, asDraft = false) => {
         const now = new Date().toISOString();
         const product: SellerProduct = {

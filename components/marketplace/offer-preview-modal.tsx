@@ -18,8 +18,8 @@ const paymentLabels: Record<string, string> = {
   advance: "Advance",
   on_loading: "On Loading",
   on_delivery: "On Delivery",
-  credit_15: "15 Days Credit",
-  credit_30: "30 Days Credit",
+  credit_15: "Credit — PetroTrade Managed",
+  credit_30: "Credit — PetroTrade Managed",
 };
 
 interface OfferPreviewModalProps {

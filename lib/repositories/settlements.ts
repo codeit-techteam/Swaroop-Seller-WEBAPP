@@ -1,12 +1,8 @@
-import {
-  sellerPaymentsMock,
-  sellerSettlementsMock,
-} from "@/lib/mock/settlements";
-import { delay } from "@/lib/repositories/delay";
+import { fetchSellerPayments, fetchSellerSettlements } from "@/services/commerce";
 import type { SellerPayment, SellerSettlement } from "@/types/seller";
 
 export async function getSettlements(): Promise<SellerSettlement[]> {
-  return delay(sellerSettlementsMock);
+  return fetchSellerSettlements();
 }
 
 export async function getSettlementById(
@@ -22,5 +18,5 @@ export async function getSettlementById(
 }
 
 export async function getPayments(): Promise<SellerPayment[]> {
-  return delay(sellerPaymentsMock);
+  return fetchSellerPayments();
 }

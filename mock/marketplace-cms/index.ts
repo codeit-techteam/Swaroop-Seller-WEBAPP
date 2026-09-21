@@ -26,9 +26,8 @@ export const DEFAULT_PAYMENT_TERMS: CatalogPaymentTerm[] = [
   {
     id: "advance",
     title: "Advance Payment",
-    description: "Pay before dispatch for preferred pricing.",
+    description: "Pay before dispatch.",
     enabled: true,
-    discountPct: 5,
   },
   {
     id: "on_loading",
@@ -44,17 +43,10 @@ export const DEFAULT_PAYMENT_TERMS: CatalogPaymentTerm[] = [
   },
   {
     id: "credit_15",
-    title: "Credit 15 Days",
-    description: "Net 15 days working capital.",
+    title: "Credit — PetroTrade Managed",
+    description:
+      "Customer credit eligibility, tenure, and charges are determined by PetroTrade.",
     enabled: true,
-    surchargePct: 1.5,
-  },
-  {
-    id: "credit_30",
-    title: "Credit 30 Days",
-    description: "Net 30 days extended terms.",
-    enabled: true,
-    surchargePct: 2.5,
   },
 ];
 

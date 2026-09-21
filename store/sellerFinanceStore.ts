@@ -2,10 +2,10 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
 import {
-  sellerDocumentsMock,
-  sellerPaymentsMock,
-  sellerSettlementsMock,
-} from "@/lib/mock/settlements";
+  fetchSellerDocuments,
+  fetchSellerPayments,
+  fetchSellerSettlements,
+} from "@/services/commerce";
 import type {
   SellerDocumentRecord,
   SellerPayment,
@@ -18,6 +18,9 @@ interface SellerFinanceState {
   documents: SellerDocumentRecord[];
   search: string;
   status: string;
+  documentsLoading: boolean;
+  loadError: string | null;
+  hydrateDocuments: () => Promise<void>;
   selectedSettlementId: string | null;
   setSearch: (search: string) => void;
   setStatus: (status: string) => void;
@@ -35,11 +38,38 @@ interface SellerFinanceState {
 export const useSellerFinanceStore = create<SellerFinanceState>()(
   devtools(
     (set, get) => ({
-      settlements: sellerSettlementsMock,
-      payments: sellerPaymentsMock,
-      documents: sellerDocumentsMock,
+      settlements: [],
+      payments: [],
+      documents: [],
       search: "",
       status: "all",
+      documentsLoading: true,
+      loadError: null,
+      hydrateDocuments: async () => {
+        set({ documentsLoading: true, loadError: null });
+        try {
+          const [settlements, payments, documents] = await Promise.all([
+            fetchSellerSettlements(),
+            fetchSellerPayments(),
+            fetchSellerDocuments(),
+          ]);
+          set({
+            settlements,
+            payments,
+            documents,
+            documentsLoading: false,
+            loadError: null,
+          });
+        } catch (error) {
+          set({
+            settlements: [],
+            payments: [],
+            documents: [],
+            documentsLoading: false,
+            loadError: error instanceof Error ? error.message : "Unable to load finance data.",
+          });
+        }
+      },
       selectedSettlementId: null,
       setSearch: (search) => set({ search }),
       setStatus: (status) => set({ status }),

@@ -1,12 +1,13 @@
-import { sellerDispatchesMock } from "@/lib/mock/orders";
-import { sellerShipmentsMock } from "@/lib/mock/shipments";
-import { delay } from "@/lib/repositories/delay";
+import { fetchSellerDispatches, fetchSellerShipments } from "@/services/commerce";
+import { useLocationStore } from "@/store/locationStore";
 
 export const dispatchService = {
   async list() {
-    return delay(sellerDispatchesMock);
+    const locationId = useLocationStore.getState().selectedLocationId ?? "";
+    return fetchSellerDispatches(locationId);
   },
   async shipments() {
-    return delay(sellerShipmentsMock);
+    const locationId = useLocationStore.getState().selectedLocationId ?? "";
+    return fetchSellerShipments(locationId);
   },
 };

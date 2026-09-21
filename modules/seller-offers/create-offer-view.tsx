@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -355,17 +355,31 @@ export function CreateOfferView() {
               type="button"
               variant="outline"
               onClick={() => router.push(ROUTES.OFFERS)}
+              disabled={form.formState.isSubmitting}
             >
               Cancel
             </Button>
             <Button
               type="button"
               variant="secondary"
+              disabled={form.formState.isSubmitting}
               onClick={form.handleSubmit((values) => save(values, true))}
             >
+              {form.formState.isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
               Save Draft
             </Button>
-            <Button type="submit">Add Offer</Button>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Add Offer"
+              )}
+            </Button>
           </div>
         </form>
       </Form>

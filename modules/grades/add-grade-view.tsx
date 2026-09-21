@@ -1,9 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -30,13 +30,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import {
-  PAYMENT_TERM_PRICE_FIELDS,
   packagingTypes,
   paymentTermsSummary,
   polymerTypes,
-  productCategories,
 } from "@/lib/mock/products";
 import { slabsOverlap } from "@/lib/seller/format";
+import { createSellerListing, fetchSellerGrades, type SellerGradeOption } from "@/services/catalog";
 import { useLocationStore } from "@/store/locationStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 import { useSellerStore } from "@/store/sellerStore";
@@ -61,11 +60,7 @@ const schema = z.object({
   warehouse: z.string().min(1),
   reservedStock: z.coerce.number().min(0),
   notes: z.string().optional(),
-  advance: z.coerce.number().min(0),
-  onLoading: z.coerce.number().min(0),
-  onDelivery: z.coerce.number().min(0),
-  credit15Days: z.coerce.number().min(0),
-  credit30Days: z.coerce.number().min(0),
+  sellingPrice: z.coerce.number().min(0.01, "Selling price is required"),
 });
 
 type Values = z.infer<typeof schema>;
@@ -76,7 +71,23 @@ export function AddGradeView() {
   const addProduct = useSellerProductStore((s) => s.addProduct);
   const addActivity = useSellerStore((s) => s.addActivity);
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
+  const [grades, setGrades] = useState<SellerGradeOption[]>([]);
+  const [gradesError, setGradesError] = useState<string | null>(null);
   const overlap = useMemo(() => slabsOverlap(slabs), [slabs]);
+
+  useEffect(() => {
+    void fetchSellerGrades()
+      .then((items) => {
+        setGrades(items);
+        setGradesError(null);
+      })
+      .catch((error: unknown) => {
+        setGrades([]);
+        setGradesError(
+          error instanceof Error ? error.message : "Unable to load Grade Master.",
+        );
+      });
+  }, []);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -99,31 +110,45 @@ export function AddGradeView() {
       reservedStock: 0,
       moq: 20,
       notes: "",
-      advance: 0,
-      onLoading: 0,
-      onDelivery: 0,
-      credit15Days: 0,
-      credit30Days: 0,
+      sellingPrice: 0,
     },
   });
 
-  const save = (values: Values, asDraft: boolean) => {
+  const save = async (values: Values, asDraft: boolean) => {
     if (overlap) {
       toast.error("Bulk price ranges cannot overlap");
       return;
     }
 
+    const selectedGrade = grades.find((item) => item.id === values.category);
+    if (!selectedGrade) {
+      toast.error("Select a grade from the central Grade Master.");
+      return;
+    }
+
     const paymentPricing = {
-      advance: values.advance,
-      onLoading: values.onLoading,
-      onDelivery: values.onDelivery,
-      credit15Days: values.credit15Days,
-      credit30Days: values.credit30Days,
+      sellingPrice: values.sellingPrice,
     };
+
+    try {
+      await createSellerListing({
+        gradeId: selectedGrade.id,
+        name: values.gradeName,
+        code: values.gradeCode,
+        mfi: values.mfi,
+        density: values.density,
+        packaging: values.packagingType,
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save listing on backend.",
+      );
+      return;
+    }
 
     addProduct(
       {
-        category: values.category,
+        category: selectedGrade.category?.name ?? selectedGrade.name,
         gradeName: values.gradeName,
         manufacturer: values.manufacturer,
         gradeCode: values.gradeCode,
@@ -142,7 +167,7 @@ export function AddGradeView() {
         reservedStock: values.reservedStock,
         notes: values.notes ?? "",
         locationId,
-        basePrice: values.advance,
+        basePrice: values.sellingPrice,
         paymentPricing,
         paymentTerms: paymentTermsSummary(paymentPricing),
         bulkPricing: slabs,
@@ -162,7 +187,7 @@ export function AddGradeView() {
     <PageContainer className="max-w-4xl">
       <PageHeader
         title="Add Product / Grade"
-        description="Structured grade information with payment-term pricing. Product images are not used on this platform."
+        description="Structured grade information with a single selling price. Product images are not used on this platform."
       />
       <Form {...form}>
         <form
@@ -175,21 +200,36 @@ export function AddGradeView() {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Grade Master</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      const selected = grades.find((item) => item.id === value);
+                      if (selected) {
+                        form.setValue("gradeName", selected.displayName ?? selected.name);
+                        form.setValue("gradeCode", selected.code);
+                        form.setValue("polymerType", selected.category?.code ?? selected.code);
+                      }
+                    }}
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose category" />
+                        <SelectValue placeholder="Select central grade" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {productCategories.map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
+                      {grades.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.displayName ?? item.name}
+                          {item.category?.name ? ` · ${item.category.name}` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {gradesError ? (
+                    <p className="text-xs text-red-600">{gradesError}</p>
+                  ) : null}
                   <FormMessage />
                 </FormItem>
               )}
@@ -437,40 +477,39 @@ export function AddGradeView() {
           <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
             <div>
               <h2 className="text-sm font-semibold text-slate-800">
-                Payment Term Pricing
+                Selling Price
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Configure pricing variations based on buyer payment flexibility.
+                Enter the commercial selling price for this listing. Credit
+                payments are managed by PetroTrade. Seller credit configuration
+                is not required.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {PAYMENT_TERM_PRICE_FIELDS.map((item) => (
-                <FormField
-                  key={item.key}
-                  control={form.control}
-                  name={item.key}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{item.label} (₹/MT)</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                            ₹
-                          </span>
-                          <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            className="pl-7"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
+              <FormField
+                control={form.control}
+                name="sellingPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Selling Price (₹/MT)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                          ₹
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          className="pl-7"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </section>
 
@@ -496,7 +535,7 @@ export function AddGradeView() {
                       id: `bp-${Date.now()}`,
                       minQty: current.length === 0 ? 1 : 50,
                       maxQty: current.length === 0 ? 10 : null,
-                      price: Number(form.getValues("advance")) || 0,
+                      price: Number(form.getValues("sellingPrice")) || 0,
                       discountLabel: current.length === 0 ? "Standard" : "",
                     },
                   ])
@@ -627,18 +666,30 @@ export function AddGradeView() {
               type="button"
               variant="outline"
               onClick={() => router.push(ROUTES.PRODUCTS)}
+              disabled={form.formState.isSubmitting}
             >
               Cancel
             </Button>
             <Button
               type="button"
               variant="secondary"
+              disabled={form.formState.isSubmitting}
               onClick={form.handleSubmit((values) => save(values, true))}
             >
+              {form.formState.isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
               Save Draft
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              Add Grade
+              {form.formState.isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Add Grade"
+              )}
             </Button>
           </div>
         </form>

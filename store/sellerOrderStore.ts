@@ -1,8 +1,12 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { sellerDispatchesMock, sellerOrdersMock } from "@/lib/mock/orders";
-import { sellerShipmentsMock } from "@/lib/mock/shipments";
+import {
+  fetchSellerDispatches,
+  fetchSellerOrders,
+  fetchSellerShipments,
+} from "@/services/commerce";
+import { useLocationStore } from "@/store/locationStore";
 import type {
   DispatchStatus,
   SellerDispatch,
@@ -28,6 +32,9 @@ interface SellerOrderState {
   status: string;
   page: number;
   pageSize: number;
+  loading: boolean;
+  loadError: string | null;
+  hydrate: () => Promise<void>;
   selectedDispatchId: string | null;
   selectedShipmentId: string | null;
   setSearch: (search: string) => void;
@@ -90,13 +97,35 @@ function syncTimeline(
 export const useSellerOrderStore = create<SellerOrderState>()(
   devtools(
     (set, get) => ({
-      orders: sellerOrdersMock,
-      dispatches: sellerDispatchesMock,
-      shipments: sellerShipmentsMock,
+      orders: [],
+      dispatches: [],
+      shipments: [],
       search: "",
       status: "all",
       page: 1,
       pageSize: 10,
+      loading: true,
+      loadError: null,
+      hydrate: async () => {
+        set({ loading: true, loadError: null });
+        try {
+          const locationId = useLocationStore.getState().selectedLocationId ?? "";
+          const [orders, dispatches, shipments] = await Promise.all([
+            fetchSellerOrders(locationId),
+            fetchSellerDispatches(locationId),
+            fetchSellerShipments(locationId),
+          ]);
+          set({ orders, dispatches, shipments, loading: false, loadError: null });
+        } catch (error) {
+          set({
+            orders: [],
+            dispatches: [],
+            shipments: [],
+            loading: false,
+            loadError: error instanceof Error ? error.message : "Unable to load orders.",
+          });
+        }
+      },
       selectedDispatchId: null,
       selectedShipmentId: null,
       setSearch: (search) => set({ search, page: 1 }),

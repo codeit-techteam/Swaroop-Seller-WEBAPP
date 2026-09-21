@@ -99,7 +99,7 @@ export const sellerOrdersMock: SellerOrder[] = [
     locationName: "Hazira",
     deliveryLocation: "Ahmedabad",
     buyerRef: "BUY-1028",
-    paymentTerms: "Credit 15",
+    paymentTerms: "Credit — PetroTrade Managed",
     status: "ready_for_dispatch",
     orderDate: "2026-08-30T09:00:00.000Z",
     documents: [

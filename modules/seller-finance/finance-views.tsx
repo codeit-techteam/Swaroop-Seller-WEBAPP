@@ -11,7 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { KpiCard } from "@/components/cards/kpi-card";
@@ -21,6 +21,7 @@ import { PageContainer } from "@/components/common/page-container";
 import { PageHeader } from "@/components/common/page-header";
 import { SkeletonTable } from "@/components/common/skeleton-card";
 import { DetailDrawer } from "@/components/drawers/detail-drawer";
+import { DocumentsPageSkeleton } from "@/components/skeleton";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Timeline } from "@/components/status/timeline";
 import { Button } from "@/components/ui/button";
@@ -325,6 +326,14 @@ export function SellerSettlementsView() {
 }
 
 export function SellerPaymentsView() {
+  const hydrateDocuments = useSellerFinanceStore((s) => s.hydrateDocuments);
+  const documentsLoading = useSellerFinanceStore((s) => s.documentsLoading);
+  useEffect(() => {
+    void hydrateDocuments();
+  }, [hydrateDocuments]);
+  if (documentsLoading) {
+    return <DocumentsPageSkeleton />;
+  }
   const all = useSellerFinanceStore((s) => s.payments);
   const search = useSellerFinanceStore((s) => s.search);
   const payments = useMemo(() => {
@@ -416,18 +425,18 @@ export function SellerPaymentsView() {
 
 export function SellerDocumentsView() {
   const documents = useSellerFinanceStore((s) => s.documents);
+  const documentsLoading = useSellerFinanceStore((s) => s.documentsLoading);
+  const hydrateDocuments = useSellerFinanceStore((s) => s.hydrateDocuments);
   const uploadDocument = useSellerFinanceStore((s) => s.uploadDocument);
   const replaceDocument = useSellerFinanceStore((s) => s.replaceDocument);
   const [category, setCategory] = useState<DocumentCategory>("GST");
-  const [loading] = useState(false);
 
-  if (loading) {
-    return (
-      <PageContainer>
-        <PageHeader title="Documents" />
-        <SkeletonTable />
-      </PageContainer>
-    );
+  useEffect(() => {
+    hydrateDocuments();
+  }, [hydrateDocuments]);
+
+  if (documentsLoading) {
+    return <DocumentsPageSkeleton />;
   }
 
   return (

@@ -37,7 +37,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { productFormSchema } from "@/lib/schemas/marketplace";
-import { productCategories } from "@/mock/products";
+import { fetchSellerGrades, type SellerGradeOption } from "@/services/catalog";
 import { useProductStore } from "@/store/productStore";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -57,6 +57,13 @@ export function AddProductView() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [createOfferOpen, setCreateOfferOpen] = useState(false);
+  const [grades, setGrades] = useState<SellerGradeOption[]>([]);
+
+  useEffect(() => {
+    void fetchSellerGrades()
+      .then(setGrades)
+      .catch(() => setGrades([]));
+  }, []);
 
   const simulateUpload = useCallback(
     (uploadId: string, file: File) => {
@@ -190,9 +197,9 @@ export function AddProductView() {
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {productCategories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
+                {grades.map((grade) => (
+                  <SelectItem key={grade.id} value={grade.code}>
+                    {grade.displayName ?? grade.name}
                   </SelectItem>
                 ))}
               </SelectContent>

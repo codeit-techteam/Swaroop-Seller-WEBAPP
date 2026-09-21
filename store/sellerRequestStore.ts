@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { sellerRequestsMock } from "@/lib/mock/requests";
+import {
+  acceptSellerPurchaseRequest,
+  counterSellerPurchaseRequest,
+  fetchSellerPurchaseRequests,
+  rejectSellerPurchaseRequest,
+} from "@/services/commerce";
+import { useLocationStore } from "@/store/locationStore";
 import type { CounterOfferValues, SellerPurchaseRequest } from "@/types/seller";
 
 interface SellerRequestState {
@@ -10,6 +16,9 @@ interface SellerRequestState {
   status: string;
   page: number;
   pageSize: number;
+  loading: boolean;
+  loadError: string | null;
+  hydrate: () => Promise<void>;
   selectedId: string | null;
   drawerOpen: boolean;
   counterOpen: boolean;
@@ -30,11 +39,27 @@ interface SellerRequestState {
 export const useSellerRequestStore = create<SellerRequestState>()(
   devtools(
     (set, get) => ({
-      requests: sellerRequestsMock,
+      requests: [],
       search: "",
       status: "all",
       page: 1,
       pageSize: 10,
+      loading: true,
+      loadError: null,
+      hydrate: async () => {
+        set({ loading: true, loadError: null });
+        try {
+          const locationId = useLocationStore.getState().selectedLocationId ?? "";
+          const requests = await fetchSellerPurchaseRequests(locationId);
+          set({ requests, loading: false, loadError: null });
+        } catch (error) {
+          set({
+            requests: [],
+            loading: false,
+            loadError: error instanceof Error ? error.message : "Unable to load purchase requests.",
+          });
+        }
+      },
       selectedId: null,
       drawerOpen: false,
       counterOpen: false,
@@ -45,19 +70,28 @@ export const useSellerRequestStore = create<SellerRequestState>()(
       closeDrawer: () => set({ drawerOpen: false, selectedId: null }),
       openCounter: () => set({ counterOpen: true }),
       closeCounter: () => set({ counterOpen: false }),
-      accept: (id) =>
+      accept: (id) => {
+        void acceptSellerPurchaseRequest(id).then(() => get().hydrate());
         set((state) => ({
           requests: state.requests.map((request) =>
             request.id === id ? { ...request, status: "accepted" } : request,
           ),
-        })),
-      reject: (id) =>
+        }));
+      },
+      reject: (id) => {
+        void rejectSellerPurchaseRequest(id).then(() => get().hydrate());
         set((state) => ({
           requests: state.requests.map((request) =>
             request.id === id ? { ...request, status: "rejected" } : request,
           ),
-        })),
-      counter: (id, values) =>
+        }));
+      },
+      counter: (id, values) => {
+        void counterSellerPurchaseRequest(id, {
+          unitPrice: values.price,
+          quantity: values.quantity,
+          note: values.remark,
+        }).then(() => get().hydrate());
         set((state) => ({
           requests: state.requests.map((request) =>
             request.id === id
@@ -72,7 +106,8 @@ export const useSellerRequestStore = create<SellerRequestState>()(
               : request,
           ),
           counterOpen: false,
-        })),
+        }));
+      },
       getFiltered: (locationId) => {
         const { requests, search, status } = get();
         const query = search.trim().toLowerCase();

@@ -1,9 +1,8 @@
-import { sellerProductsMock } from "@/lib/mock/products";
-import { delay } from "@/lib/repositories/delay";
+import { fetchSellerProducts } from "@/services/catalog";
 import type { SellerProduct } from "@/types/seller";
 
 export async function getProducts(): Promise<SellerProduct[]> {
-  return delay(sellerProductsMock);
+  return fetchSellerProducts();
 }
 
 export async function getProductsByLocation(

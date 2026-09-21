@@ -335,8 +335,8 @@ export const ORDER_VALUE_RANGES: OrderValueRange[] = [
 
 export const PAYMENT_TERM_LABELS: Record<PaymentTerm, string> = {
   advance: "100% Advance",
-  credit_15: "Credit 15 Days",
-  credit_30: "Credit 30 Days",
+  credit_15: "Credit — PetroTrade Managed",
+  credit_30: "Credit — PetroTrade Managed",
   on_delivery: "On Delivery",
 };
 

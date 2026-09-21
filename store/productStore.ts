@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { productsMock } from "@/mock/products";
 import type { Product, ProductFormData } from "@/types/products";
 import { defaultProductFormData } from "@/types/products";
 
@@ -25,7 +24,7 @@ interface ProductState {
 export const useProductStore = create<ProductState>()(
   devtools(
     (set, get) => ({
-      products: productsMock,
+      products: [],
       draft: defaultProductFormData(),
       lastSavedAt: null,
       isSaving: false,

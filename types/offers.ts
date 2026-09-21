@@ -146,7 +146,7 @@ export const defaultOfferFormData = (): OfferFormData => ({
   basePrice: 0,
   moq: 5,
   validUntil: "",
-  paymentTerms: ["advance", "credit_15"],
+  paymentTerms: ["advance"],
   remarks: "",
   tiers: defaultOfferTiers(),
 });

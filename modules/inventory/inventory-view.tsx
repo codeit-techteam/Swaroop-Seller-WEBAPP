@@ -12,12 +12,13 @@ import {
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageContainer } from "@/components/common/page-container";
 import { PageHeader } from "@/components/common/page-header";
+import { InventoryPageSkeleton } from "@/components/skeleton";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ROUTES } from "@/lib/constants";
-import { productCategories } from "@/lib/mock/products";
 import { availableToSell, formatMt } from "@/lib/seller/format";
 import {
   inventoryStatus,
@@ -111,6 +111,9 @@ export function InventoryView() {
   const locations = useLocationStore((s) => s.locations);
   const selectedLocation = useLocationStore((s) => s.getSelectedLocation());
   const products = useSellerProductStore((s) => s.products);
+  const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
+  const loading = useSellerProductStore((s) => s.loading);
+  const loadError = useSellerProductStore((s) => s.loadError);
   const adjustments = useSellerProductStore((s) => s.adjustments);
   const adjustStock = useSellerProductStore((s) => s.adjustStock);
 
@@ -122,6 +125,15 @@ export function InventoryView() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [adjustId, setAdjustId] = useState<string | null>(null);
   const [adjustOpen, setAdjustOpen] = useState(false);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
+
+  const categoryOptions = useMemo(
+    () => Array.from(new Set(products.map((product) => product.category).filter(Boolean))).sort(),
+    [products],
+  );
 
   const scoped = useMemo(() => {
     return products.filter((product) =>
@@ -303,6 +315,25 @@ export function InventoryView() {
       count: summary.out.length,
     },
   ];
+
+  if (loading) {
+    return <InventoryPageSkeleton />;
+  }
+
+  if (loadError) {
+    return (
+      <PageContainer>
+        <PageHeader title="Inventory" />
+        <EmptyState
+          title="Unable to load inventory"
+          description={loadError}
+          action={
+            <Button onClick={() => void fetchProducts()}>Retry</Button>
+          }
+        />
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer className="space-y-6">
@@ -574,7 +605,7 @@ export function InventoryView() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
-            {productCategories.map((item) => (
+            {categoryOptions.map((item) => (
               <SelectItem key={item} value={item}>
                 {item}
               </SelectItem>

@@ -13,11 +13,12 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageContainer } from "@/components/common/page-container";
+import { OffersPageSkeleton } from "@/components/skeleton";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import {
   AlertDialog,
@@ -50,6 +51,8 @@ export function SellerOffersView() {
   const location = useLocationStore((s) => s.getSelectedLocation());
   const locationId = useLocationStore((s) => s.selectedLocationId);
   const offers = useSellerOfferStore((s) => s.offers);
+  const loading = useSellerOfferStore((s) => s.loading);
+  const hydrate = useSellerOfferStore((s) => s.hydrate);
   const search = useSellerOfferStore((s) => s.search);
   const setSearch = useSellerOfferStore((s) => s.setSearch);
   const confirm = useSellerOfferStore((s) => s.confirm);
@@ -65,6 +68,10 @@ export function SellerOffersView() {
   const addActivity = useSellerStore((s) => s.addActivity);
   const [remarkId, setRemarkId] = useState<string | null>(null);
   const [remark, setRemark] = useState("");
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   const scoped = useMemo(
     () =>
@@ -108,6 +115,10 @@ export function SellerOffersView() {
     }
     closeConfirm();
   };
+
+  if (loading) {
+    return <OffersPageSkeleton />;
+  }
 
   return (
     <PageContainer className="space-y-5">

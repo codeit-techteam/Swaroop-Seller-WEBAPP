@@ -9,6 +9,7 @@ import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
 import { availableToSell, formatMt } from "@/lib/seller/format";
+import { getSellingPrice, PETROTRADE_CREDIT_NOTE } from "@/lib/seller/payment";
 import { useSellerOfferStore } from "@/store/sellerOfferStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 
@@ -53,6 +54,10 @@ export function ProductDetailView() {
           ["Unit", product.unit],
           ["GST", product.gstPercent != null ? `${product.gstPercent}%` : "—"],
           ["Warehouse", product.warehouse || "—"],
+          [
+            "Selling Price",
+            getSellingPrice(product) > 0 ? `₹${getSellingPrice(product)}/MT` : "—",
+          ],
         ].map(([label, value]) => (
           <div
             key={label}
@@ -77,26 +82,11 @@ export function ProductDetailView() {
         />
       </div>
       <section className="rounded-xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-3 font-semibold">Payment Term Pricing</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {[
-            ["Advance", product.paymentPricing?.advance ?? product.basePrice],
-            ["On Loading", product.paymentPricing?.onLoading],
-            ["On Delivery", product.paymentPricing?.onDelivery],
-            ["15 Days Credit", product.paymentPricing?.credit15Days],
-            ["30 Days Credit", product.paymentPricing?.credit30Days],
-          ].map(([label, value]) => (
-            <div
-              key={String(label)}
-              className="rounded-lg border border-slate-100 bg-slate-50 p-3"
-            >
-              <p className="text-xs uppercase text-slate-500">{label}</p>
-              <p className="mt-1 font-semibold">
-                {typeof value === "number" && value > 0 ? `₹${value}/MT` : "—"}
-              </p>
-            </div>
-          ))}
-        </div>
+        <h2 className="mb-3 font-semibold">Commercial</h2>
+        <p className="text-sm text-slate-600">
+          Selling price ₹{getSellingPrice(product) || "—"}/MT. Payment is
+          platform-managed. {PETROTRADE_CREDIT_NOTE}
+        </p>
       </section>
       {(product.bulkPricing?.length ?? 0) > 0 ? (
         <section className="rounded-xl border border-slate-200 bg-white p-5">

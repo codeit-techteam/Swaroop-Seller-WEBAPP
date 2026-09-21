@@ -46,7 +46,7 @@ export default function SellerLoginPage() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { mobileNumber: "" },
+    defaultValues: { mobileNumber: "8240890242" },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -152,7 +152,8 @@ export default function SellerLoginPage() {
               </form>
             </Form>
             <p className="mt-4 text-xs text-slate-400">
-              Demo OTP is{" "}
+              Dev login: <span className="font-semibold text-slate-600">Karan Veer</span> ·{" "}
+              <span className="font-semibold text-slate-600">8240890242</span> · OTP{" "}
               <span className="font-semibold text-slate-600">123456</span>
             </p>
           </motion.div>

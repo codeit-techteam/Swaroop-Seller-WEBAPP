@@ -10,13 +10,13 @@ import {
   Truck,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import { KpiCard } from "@/components/cards/kpi-card";
 import { PageContainer } from "@/components/common/page-container";
+import { DashboardPageSkeleton } from "@/components/skeleton";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants";
 import {
   formatInrShort,
@@ -37,19 +37,26 @@ import { useSellerRequestStore } from "@/store/sellerRequestStore";
 import { useSellerStore } from "@/store/sellerStore";
 
 export function DashboardView() {
-  const [ready] = useState(true);
   const user = useAuthStore((s) => s.user);
   const seller = useSellerStore((s) => s.seller);
   const activity = useSellerStore((s) => s.activity);
   const location = useLocationStore((s) => s.getSelectedLocation());
   const locationId = useLocationStore((s) => s.selectedLocationId);
   const products = useSellerProductStore((s) => s.products);
+  const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
+  const productsLoading = useSellerProductStore((s) => s.loading);
   const offers = useSellerOfferStore((s) => s.offers);
   const requests = useSellerRequestStore((s) => s.requests);
   const orders = useSellerOrderStore((s) => s.orders);
   const dispatches = useSellerOrderStore((s) => s.dispatches);
   const settlements = useSellerFinanceStore((s) => s.settlements);
   const unread = useSellerNotificationStore((s) => s.getUnreadCount());
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
+
+  const ready = !productsLoading;
 
   const scopedProducts = useMemo(
     () => products.filter((item) => item.locationId === locationId),
@@ -91,16 +98,7 @@ export function DashboardView() {
   const name = user?.name ?? seller.contactPerson;
 
   if (!ready) {
-    return (
-      <PageContainer className="space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-24" />
-          ))}
-        </div>
-      </PageContainer>
-    );
+    return <DashboardPageSkeleton />;
   }
 
   return (

@@ -9,12 +9,12 @@ export const authService = {
   },
   async verifyOtp(mobile: string, otp: string) {
     await delay(null, 500);
-    const valid = otp === "123456" || /^\d{6}$/.test(otp);
-    if (!valid) return { ok: false as const, message: "Invalid OTP" };
+    const valid = otp === "123456";
+    if (!valid) return { ok: false as const, message: "Invalid OTP. Use 123456 for demo." };
     const user: User = {
       id: "usr-seller-001",
       email: sellerProfileMock.email,
-      name: sellerProfileMock.contactPerson,
+      name: "Karan Veer",
       role: "SELLER",
       company: sellerProfileMock.companyName,
       sellerId: sellerProfileMock.id,

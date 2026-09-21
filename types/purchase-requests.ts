@@ -113,8 +113,6 @@ export const COUNTER_PAYMENT_TERMS: {
   { value: "advance", label: "Advance" },
   { value: "on_loading", label: "On Loading" },
   { value: "on_delivery", label: "On Delivery" },
-  { value: "credit_15", label: "Credit 15" },
-  { value: "credit_30", label: "Credit 30" },
 ];
 
 export const PURCHASE_STATUSES = [

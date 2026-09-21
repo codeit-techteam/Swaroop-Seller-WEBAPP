@@ -24,7 +24,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type {
   CounterOffer,
-  CounterPaymentTerm,
   PurchaseRequest,
 } from "@/types/purchase-requests";
 import { COUNTER_PAYMENT_TERMS } from "@/types/purchase-requests";
@@ -49,13 +48,7 @@ const counterSchema = z.object({
       message: "Enter a valid quantity",
     }),
   dispatchDate: z.string().min(1, "Dispatch date is required"),
-  paymentTerms: z.enum([
-    "advance",
-    "on_loading",
-    "on_delivery",
-    "credit_15",
-    "credit_30",
-  ]),
+  paymentTerms: z.enum(["advance", "on_loading", "on_delivery"]),
   remarks: z.string().optional(),
   bulkPricing: z.string().optional(),
 });
@@ -212,9 +205,13 @@ export function CounterOfferModal({
                 <Select
                   value={values.paymentTerms}
                   onValueChange={(value) =>
-                    form.setValue("paymentTerms", value as CounterPaymentTerm, {
-                      shouldValidate: true,
-                    })
+                    form.setValue(
+                      "paymentTerms",
+                      value as CounterFormValues["paymentTerms"],
+                      {
+                        shouldValidate: true,
+                      },
+                    )
                   }
                 >
                   <SelectTrigger className="border-slate-200">

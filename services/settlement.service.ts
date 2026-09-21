@@ -1,17 +1,14 @@
-import {
-  getPayments,
-  getSettlementById,
-  getSettlements,
-} from "@/lib/repositories/settlements";
+import { fetchSellerPayments, fetchSellerSettlements } from "@/services/commerce";
 
 export const settlementService = {
   async list() {
-    return getSettlements();
+    return fetchSellerSettlements();
   },
   async getById(id: string) {
-    return getSettlementById(id);
+    const items = await fetchSellerSettlements();
+    return items.find((item) => item.id === id);
   },
   async payments() {
-    return getPayments();
+    return fetchSellerPayments();
   },
 };

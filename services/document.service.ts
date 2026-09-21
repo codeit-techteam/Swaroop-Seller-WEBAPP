@@ -1,8 +1,7 @@
-import { sellerDocumentsMock } from "@/lib/mock/settlements";
-import { delay } from "@/services/mock";
+import { fetchSellerDocuments } from "@/services/commerce";
 
 export const documentService = {
   async list() {
-    return delay(sellerDocumentsMock);
+    return fetchSellerDocuments();
   },
 };

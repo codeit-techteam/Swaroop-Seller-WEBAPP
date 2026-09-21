@@ -1,10 +1,13 @@
-import { getOrderById, getOrders } from "@/lib/repositories/orders";
+import { fetchSellerOrders } from "@/services/commerce";
+import { useLocationStore } from "@/store/locationStore";
 
 export const orderService = {
   async list() {
-    return getOrders();
+    const locationId = useLocationStore.getState().selectedLocationId ?? "";
+    return fetchSellerOrders(locationId);
   },
   async getById(id: string) {
-    return getOrderById(id);
+    const items = await this.list();
+    return items.find((item) => item.id === id);
   },
 };

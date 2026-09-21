@@ -6,19 +6,11 @@ import type {
 } from "@/types/seller";
 
 export const PAYMENT_TERM_PRICE_FIELDS = [
-  { key: "advance", label: "Advance Price" },
-  { key: "onLoading", label: "On Loading" },
-  { key: "onDelivery", label: "On Delivery" },
-  { key: "credit15Days", label: "15 Days Credit" },
-  { key: "credit30Days", label: "30 Days Credit" },
+  { key: "sellingPrice", label: "Selling Price" },
 ] as const;
 
 export const defaultPaymentPricing = (base = 0): PaymentTermPricing => ({
-  advance: base,
-  onLoading: base > 0 ? base + 2 : 0,
-  onDelivery: base > 0 ? base + 3 : 0,
-  credit15Days: base > 0 ? base + 7 : 0,
-  credit30Days: base > 0 ? base + 8 : 0,
+  sellingPrice: base,
 });
 
 export const defaultBulkPricing = (base = 0): BulkPriceSlab[] => {
@@ -48,12 +40,8 @@ export const defaultBulkPricing = (base = 0): BulkPriceSlab[] => {
   ];
 };
 
-export const paymentTermsSummary = (pricing: PaymentTermPricing): string => {
-  const labels = PAYMENT_TERM_PRICE_FIELDS.filter(
-    (field) => pricing[field.key] > 0,
-  ).map((field) => field.label.replace(" Price", ""));
-  return labels.length > 0 ? labels.join(", ") : "Advance";
-};
+export const paymentTermsSummary = (_pricing?: PaymentTermPricing): string =>
+  "Platform-managed. Credit eligibility is determined by PetroTrade.";
 
 export const productCategories = [
   "PVC K67 ETHYLENE",
@@ -82,7 +70,7 @@ export const packagingTypes = [
   "Palletized bags",
 ] as const;
 
-const sellerProductsSeed: SellerProduct[] = [
+const _sellerProductsSeed: SellerProduct[] = [
   {
     id: "prod-pvc-hs1000r",
     category: "PVC K67 ETHYLENE",
@@ -331,21 +319,7 @@ const sellerProductsSeed: SellerProduct[] = [
   },
 ];
 
-export const sellerProductsMock: SellerProduct[] = sellerProductsSeed.map(
-  (product) => {
-    const base = product.basePrice && product.basePrice > 0 ? product.basePrice : 100;
-    const paymentPricing = product.paymentPricing ?? defaultPaymentPricing(base);
-    return {
-      ...product,
-      basePrice: product.basePrice ?? paymentPricing.advance,
-      density: product.density ?? "",
-      paymentPricing,
-      bulkPricing: product.bulkPricing ?? defaultBulkPricing(base),
-      paymentTerms:
-        product.paymentTerms ?? paymentTermsSummary(paymentPricing),
-    };
-  },
-);
+export const sellerProductsMock: SellerProduct[] = [];
 
 export const defaultProductForm = (
   locationId = "loc-chennai",

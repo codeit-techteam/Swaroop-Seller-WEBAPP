@@ -105,10 +105,10 @@ export function CreditInsuranceView() {
       <OperationsShell
         className="space-y-6 py-6"
         title="Credit Insurance"
-        subtitle="Buyer cover limits, utilization and policy health. Mock data only."
+        subtitle="PetroTrade-managed buyer cover. Sellers do not underwrite or collect customer credit."
         kpis={[
           {
-            title: "Credit Exposure",
+            title: "Platform Cover",
             value: summary.creditExposure / 1_00_00_000,
             prefix: "₹",
             suffix: "Cr",

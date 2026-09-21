@@ -190,7 +190,7 @@ export function PaymentRiskCard({ order, className }: PaymentRiskCardProps) {
         className,
       )}
     >
-      <h3 className="text-sm font-bold text-slate-900">Payment & Risk</h3>
+      <h3 className="text-sm font-bold text-slate-900">Payment</h3>
       <div className="mt-4 space-y-3">
         <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3">
           <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
@@ -198,27 +198,19 @@ export function PaymentRiskCard({ order, className }: PaymentRiskCardProps) {
           </span>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
-              Credit Status
+              Payment Method
             </p>
             <p className="text-sm font-semibold text-emerald-900">
-              {paymentRisk.creditStatus}
+              {paymentRisk.paymentTermsLabel}
             </p>
           </div>
         </div>
         <div className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600">
-            Trade Insurance
+            Settlement
           </p>
           <p className="mt-0.5 text-sm font-semibold text-sky-900">
-            {paymentRisk.tradeInsurance}
-          </p>
-        </div>
-        <div className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-600">
-            Standard Terms
-          </p>
-          <p className="mt-0.5 text-sm font-semibold text-sky-900">
-            {paymentRisk.paymentTermsLabel}
+            Managed by PetroTrade
           </p>
         </div>
         <div className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-3">

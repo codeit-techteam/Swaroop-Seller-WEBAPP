@@ -10,13 +10,14 @@ import {
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageContainer } from "@/components/common/page-container";
 import { PageHeader } from "@/components/common/page-header";
 import { DetailDrawer } from "@/components/drawers/detail-drawer";
+import { ProductsPageSkeleton } from "@/components/skeleton";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,12 +36,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ROUTES } from "@/lib/constants";
-import { productCategories } from "@/lib/mock/products";
 import {
   availableToSell,
   formatMt,
   formatPricePerKg,
 } from "@/lib/seller/format";
+import { getSellingPrice } from "@/lib/seller/payment";
 import { formatDateTime } from "@/lib/utils";
 import { useLocationStore } from "@/store/locationStore";
 import { useSellerOfferStore } from "@/store/sellerOfferStore";
@@ -48,6 +49,13 @@ import { useSellerProductStore } from "@/store/sellerProductStore";
 
 export function SellerProductsView() {
   const locationId = useLocationStore((s) => s.selectedLocationId);
+  const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
+  const loading = useSellerProductStore((s) => s.loading);
+  const loadError = useSellerProductStore((s) => s.loadError);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
   const locations = useLocationStore((s) => s.locations);
   const products = useSellerProductStore((s) => s.products);
   const offers = useSellerOfferStore((s) => s.offers);
@@ -64,11 +72,21 @@ export function SellerProductsView() {
   const [reason, setReason] = useState("Physical count");
   const [sort, setSort] = useState("updated");
   const [detailId, setDetailId] = useState<string | null>(null);
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(new Set(products.map((product) => product.category).filter(Boolean))).sort(),
+    [products],
+  );
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
     return products
-      .filter((product) => product.locationId === locationId)
+      .filter(
+        (product) =>
+          !locationId ||
+          product.locationId === locationId ||
+          product.locationId === "loc-default",
+      )
       .filter((product) => category === "all" || product.category === category)
       .filter(
         (product) =>
@@ -95,6 +113,10 @@ export function SellerProductsView() {
         offer.status === "active",
     )?.price;
 
+  if (loading) {
+    return <ProductsPageSkeleton />;
+  }
+
   return (
     <PageContainer>
       <PageHeader
@@ -108,6 +130,15 @@ export function SellerProductsView() {
           </Button>
         }
       />
+      {loadError ? (
+        <EmptyState
+          title="Unable to load catalog"
+          description={loadError}
+          action={
+            <Button onClick={() => void fetchProducts()}>Retry</Button>
+          }
+        />
+      ) : null}
       <div className="mb-4 flex flex-col gap-3 md:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -124,7 +155,7 @@ export function SellerProductsView() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
-            {productCategories.map((item) => (
+            {categoryOptions.map((item) => (
               <SelectItem key={item} value={item}>
                 {item}
               </SelectItem>
@@ -200,11 +231,9 @@ export function SellerProductsView() {
                   <td className="px-4 py-3">
                     {priceFor(product.id)
                       ? formatPricePerKg(priceFor(product.id) ?? 0)
-                      : product.paymentPricing?.advance
-                        ? `₹${product.paymentPricing.advance}/MT`
-                        : product.basePrice
-                          ? formatPricePerKg(product.basePrice)
-                          : "—"}
+                      : getSellingPrice(product)
+                        ? formatPricePerKg(getSellingPrice(product))
+                        : "—"}
                   </td>
                   <td className="px-4 py-3">
                     {locations.find((item) => item.id === product.locationId)
@@ -352,39 +381,17 @@ export function SellerProductsView() {
               <dd className="font-medium">{detail.application}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase text-slate-500">Advance</dt>
+              <dt className="text-xs uppercase text-slate-500">Selling Price</dt>
               <dd className="font-medium">
-                {detail.paymentPricing?.advance
-                  ? `₹${detail.paymentPricing.advance}/MT`
-                  : detail.basePrice
-                    ? formatPricePerKg(detail.basePrice)
-                    : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-slate-500">On Loading</dt>
-              <dd className="font-medium">
-                {detail.paymentPricing?.onLoading
-                  ? `₹${detail.paymentPricing.onLoading}/MT`
+                {getSellingPrice(detail)
+                  ? `₹${getSellingPrice(detail)}/MT`
                   : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs uppercase text-slate-500">On Delivery</dt>
+              <dt className="text-xs uppercase text-slate-500">Payment</dt>
               <dd className="font-medium">
-                {detail.paymentPricing?.onDelivery
-                  ? `₹${detail.paymentPricing.onDelivery}/MT`
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-slate-500">
-                15 / 30 Days Credit
-              </dt>
-              <dd className="font-medium">
-                {detail.paymentPricing
-                  ? `₹${detail.paymentPricing.credit15Days}/MT · ₹${detail.paymentPricing.credit30Days}/MT`
-                  : "—"}
+                Platform-managed. Credit eligibility is determined by PetroTrade.
               </dd>
             </div>
             <div>

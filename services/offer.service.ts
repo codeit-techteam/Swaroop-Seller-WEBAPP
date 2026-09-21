@@ -1,8 +1,9 @@
-import { sellerOffersMock } from "@/lib/mock/offers";
-import { delay } from "@/services/mock";
+import { fetchSellerOffers } from "@/services/commerce";
+import { useLocationStore } from "@/store/locationStore";
 
 export const offerService = {
   async list() {
-    return delay(sellerOffersMock);
+    const locationId = useLocationStore.getState().selectedLocationId ?? "";
+    return fetchSellerOffers(locationId);
   },
 };

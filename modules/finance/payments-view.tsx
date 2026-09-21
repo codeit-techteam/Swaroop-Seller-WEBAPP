@@ -110,7 +110,7 @@ export function PaymentsView() {
             valueClassName: "text-red-600",
           },
           {
-            title: "Credit Exposure",
+            title: "Pending Settlement",
             value: summary.creditExposure / 1_00_00_000,
             prefix: "₹",
             suffix: "Cr",

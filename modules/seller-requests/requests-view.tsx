@@ -1,14 +1,15 @@
 "use client";
 
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { PageContainer } from "@/components/common/page-container";
 import { PageHeader } from "@/components/common/page-header";
 import { DetailDrawer } from "@/components/drawers/detail-drawer";
+import { RequestsPageSkeleton } from "@/components/skeleton";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,6 +48,8 @@ const REQUEST_STATUS_OPTIONS = [
 export function SellerRequestsView() {
   const locationId = useLocationStore((s) => s.selectedLocationId);
   const requests = useSellerRequestStore((s) => s.requests);
+  const loading = useSellerRequestStore((s) => s.loading);
+  const hydrate = useSellerRequestStore((s) => s.hydrate);
   const search = useSellerRequestStore((s) => s.search);
   const setSearch = useSellerRequestStore((s) => s.setSearch);
   const status = useSellerRequestStore((s) => s.status);
@@ -60,10 +63,15 @@ export function SellerRequestsView() {
   const counter = useSellerRequestStore((s) => s.counter);
   const addActivity = useSellerStore((s) => s.addActivity);
   const [counterOpen, setCounterOpen] = useState(false);
+  const [counterSending, setCounterSending] = useState(false);
   const [price, setPrice] = useState("0");
   const [qty, setQty] = useState("0");
   const [validity, setValidity] = useState("24 hours");
   const [remark, setRemark] = useState("");
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   const rows = useMemo(
     () =>
@@ -80,6 +88,10 @@ export function SellerRequestsView() {
     [locationId, requests, search, status],
   );
   const selected = requests.find((item) => item.id === selectedId);
+
+  if (loading) {
+    return <RequestsPageSkeleton />;
+  }
 
   return (
     <PageContainer>
@@ -285,20 +297,33 @@ export function SellerRequestsView() {
           </div>
           <DialogFooter>
             <Button
+              disabled={counterSending || !selected}
               onClick={() => {
-                if (!selected) return;
-                counter(selected.id, {
-                  price: Number(price),
-                  quantity: Number(qty),
-                  validity,
-                  remark,
-                });
-                toast.success("Counter offer sent");
-                setCounterOpen(false);
-                closeDrawer();
+                if (!selected || counterSending) return;
+                setCounterSending(true);
+                try {
+                  counter(selected.id, {
+                    price: Number(price),
+                    quantity: Number(qty),
+                    validity,
+                    remark,
+                  });
+                  toast.success("Counter offer sent");
+                  setCounterOpen(false);
+                  closeDrawer();
+                } finally {
+                  setCounterSending(false);
+                }
               }}
             >
-              Send counter
+              {counterSending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending…
+                </>
+              ) : (
+                "Send counter"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

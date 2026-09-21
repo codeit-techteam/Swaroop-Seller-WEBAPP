@@ -1,7 +1,15 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { defaultOfferForm, sellerOffersMock } from "@/lib/mock/offers";
+import { defaultOfferForm } from "@/lib/mock/offers";
+import {
+  activateSellerOffer,
+  createSellerOffer,
+  deleteSellerOffer,
+  fetchSellerOffers,
+  pauseSellerOffer,
+} from "@/services/commerce";
+import { useLocationStore } from "@/store/locationStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 import type {
   BulkPriceSlab,
@@ -15,6 +23,9 @@ interface SellerOfferState {
   status: string;
   page: number;
   pageSize: number;
+  loading: boolean;
+  loadError: string | null;
+  hydrate: () => Promise<void>;
   confirm: {
     open: boolean;
     type:
@@ -64,11 +75,27 @@ function hoursFromNow(hours: number): string {
 export const useSellerOfferStore = create<SellerOfferState>()(
   devtools(
     (set, get) => ({
-      offers: sellerOffersMock,
+      offers: [],
       search: "",
       status: "all",
       page: 1,
       pageSize: 12,
+      loading: true,
+      loadError: null,
+      hydrate: async () => {
+        set({ loading: true, loadError: null });
+        try {
+          const locationId = useLocationStore.getState().selectedLocationId ?? "";
+          const offers = await fetchSellerOffers(locationId);
+          set({ offers, loading: false, loadError: null });
+        } catch (error) {
+          set({
+            offers: [],
+            loading: false,
+            loadError: error instanceof Error ? error.message : "Unable to load offers.",
+          });
+        }
+      },
       confirm: { open: false, type: null, offerId: null },
       setSearch: (search) => set({ search, page: 1 }),
       setStatus: (status) => set({ status, page: 1 }),
@@ -103,6 +130,17 @@ export const useSellerOfferStore = create<SellerOfferState>()(
           updatedAt: now,
         };
         set((state) => ({ offers: [offer, ...state.offers] }));
+        void createSellerOffer({
+          productId: values.productId,
+          quantity: values.availableQty,
+          moq: values.moq,
+          basePrice: values.price,
+          validUntil: offer.validUntil,
+          deliveryTerms: values.deliveryLocation,
+          paymentTerms: { method: "ADVANCE" },
+        }).then(() => {
+          void get().hydrate();
+        });
         return offer;
       },
       updateOffer: (id, data) =>
@@ -113,14 +151,17 @@ export const useSellerOfferStore = create<SellerOfferState>()(
               : offer,
           ),
         })),
-      setOfferStatus: (id, status) =>
+      setOfferStatus: (id, status) => {
+        if (status === "active") void activateSellerOffer(id);
+        if (status === "paused") void pauseSellerOffer(id);
         set((state) => ({
           offers: state.offers.map((offer) =>
             offer.id === id
               ? { ...offer, status, updatedAt: new Date().toISOString() }
               : offer,
           ),
-        })),
+        }));
+      },
       activateAll: (locationId) => {
         let count = 0;
         set((state) => ({
@@ -194,10 +235,12 @@ export const useSellerOfferStore = create<SellerOfferState>()(
               : offer,
           ),
         })),
-      deleteOffer: (id) =>
+      deleteOffer: (id) => {
+        void deleteSellerOffer(id);
         set((state) => ({
           offers: state.offers.filter((offer) => offer.id !== id),
-        })),
+        }));
+      },
       openConfirm: (type, offerId) =>
         set({ confirm: { open: true, type, offerId: offerId ?? null } }),
       closeConfirm: () =>
@@ -206,7 +249,7 @@ export const useSellerOfferStore = create<SellerOfferState>()(
         const { offers, search, status } = get();
         const query = search.trim().toLowerCase();
         return offers.filter((offer) => {
-          if (locationId && offer.locationId !== locationId) return false;
+          if (locationId && offer.locationId && offer.locationId !== locationId) return false;
           if (status !== "all" && offer.status !== status) return false;
           if (!query) return true;
           return (

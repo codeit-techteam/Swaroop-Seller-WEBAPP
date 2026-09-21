@@ -5,12 +5,19 @@ import { CURRENT_USER, ROLE_LABELS } from "@/config";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { sellerProfileMock } from "@/lib/mock/locations";
 import { storage } from "@/lib/utils";
+import { apiClient } from "@/services/apiClient";
 import type { AuthState, AuthTokens, User } from "@/types/auth";
+
+const DEMO_OTP = "123456";
+const DEMO_PHONE = "8240890242";
+const DEMO_SELLER_EMAIL = "seller@test.local";
+const DEMO_PASSWORD = "Test@12345";
+const DEMO_USER_NAME = "Karan Veer";
 
 const demoUser: User = {
   id: CURRENT_USER.id,
-  email: CURRENT_USER.email,
-  name: CURRENT_USER.name,
+  email: DEMO_SELLER_EMAIL,
+  name: DEMO_USER_NAME,
   role: "SELLER",
   company: CURRENT_USER.company,
   sellerId: CURRENT_USER.sellerId,
@@ -41,33 +48,52 @@ export const useAuthStore = create<SellerAuthState>()(
       setPendingMobile: (mobile) => set({ pendingMobile: mobile }),
       verifyOtp: async (otp) => {
         set({ isLoading: true });
-        await new Promise((resolve) => window.setTimeout(resolve, 700));
-        const valid = otp === "123456" || /^\d{6}$/.test(otp);
+        await new Promise((resolve) => window.setTimeout(resolve, 400));
+        const valid = otp === DEMO_OTP;
         if (!valid) {
           set({ isLoading: false });
           return { ok: false, message: "Invalid OTP. Use 123456 for demo." };
         }
 
-        const mobile = get().pendingMobile || sellerProfileMock.mobile;
-        const user: User = {
-          ...demoUser,
-          email: sellerProfileMock.email,
-          name: sellerProfileMock.contactPerson,
-          company: sellerProfileMock.companyName,
-        };
+        const mobile = get().pendingMobile || DEMO_PHONE;
 
-        set({
-          user,
-          tokens: {
-            accessToken: "mock-seller-token",
-            refreshToken: "mock-seller-refresh",
-          },
-          isAuthenticated: true,
-          isLoading: false,
-          pendingMobile: mobile,
-        });
-        storage.set(STORAGE_KEYS.AUTH_TOKEN, "mock-seller-token");
-        return { ok: true };
+        try {
+          const response = await apiClient.post("/auth/login", {
+            email: DEMO_SELLER_EMAIL,
+            password: DEMO_PASSWORD,
+          });
+          const payload = response.data?.data ?? response.data;
+          const accessToken = payload.accessToken as string;
+          const refreshToken = (payload.refreshToken as string) ?? "refresh";
+          const backendUser = payload.user as {
+            id: string;
+            email?: string | null;
+            firstName?: string | null;
+            lastName?: string | null;
+          };
+          const user: User = {
+            ...demoUser,
+            id: backendUser?.id ?? demoUser.id,
+            email: backendUser?.email ?? DEMO_SELLER_EMAIL,
+            name:
+              [backendUser?.firstName, backendUser?.lastName].filter(Boolean).join(" ") ||
+              DEMO_USER_NAME,
+            company: sellerProfileMock.companyName,
+          };
+          storage.set(STORAGE_KEYS.AUTH_TOKEN, accessToken);
+          storage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+          set({
+            user,
+            tokens: { accessToken, refreshToken },
+            isAuthenticated: true,
+            isLoading: false,
+            pendingMobile: mobile,
+          });
+          return { ok: true };
+        } catch {
+          set({ isLoading: false });
+          return { ok: false, message: "Unable to sign in. Check API connection." };
+        }
       },
       completeOnboarding: () => set({ onboardingComplete: true }),
       setSession: (user, tokens = null) =>

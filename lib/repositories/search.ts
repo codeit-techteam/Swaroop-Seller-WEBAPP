@@ -1,11 +1,11 @@
 import { ROUTES } from "@/lib/constants";
 import { sellerOffersMock } from "@/lib/mock/offers";
 import { sellerOrdersMock } from "@/lib/mock/orders";
-import { sellerProductsMock } from "@/lib/mock/products";
 import { sellerRequestsMock } from "@/lib/mock/requests";
 import { sellerSettlementsMock } from "@/lib/mock/settlements";
 import { sellerShipmentsMock } from "@/lib/mock/shipments";
 import { delay } from "@/lib/repositories/delay";
+import { fetchSellerProducts } from "@/services/catalog";
 
 export type SellerSearchCategory =
   "Grade" | "Offer" | "Purchase Request" | "Order" | "Shipment" | "Settlement";
@@ -27,8 +27,9 @@ function matches(query: string, ...parts: string[]): boolean {
 export async function searchSellerRecords(
   query: string,
 ): Promise<SellerSearchHit[]> {
+  const sellerProducts = await fetchSellerProducts();
   const hits: SellerSearchHit[] = [
-    ...sellerProductsMock
+    ...sellerProducts
       .filter((item) =>
         matches(query, item.gradeName, item.category, item.manufacturer),
       )

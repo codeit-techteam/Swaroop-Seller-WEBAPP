@@ -112,11 +112,7 @@ export interface SellerProfile {
 }
 
 export interface PaymentTermPricing {
-  advance: number;
-  onLoading: number;
-  onDelivery: number;
-  credit15Days: number;
-  credit30Days: number;
+  sellingPrice: number;
 }
 
 export interface BulkPriceSlab {

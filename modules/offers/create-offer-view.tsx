@@ -45,9 +45,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { offerFormSchema } from "@/lib/schemas/marketplace";
+import { PETROTRADE_CREDIT_NOTE, sellerPaymentMethodLabel } from "@/lib/seller/payment";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
-import { productCatalog, warehouses } from "@/mock/products";
+import { useLocationStore } from "@/store/locationStore";
 import { useOfferStore } from "@/store/offerStore";
+import { useSellerProductStore } from "@/store/sellerProductStore";
 import type { Offer, PaymentTerm } from "@/types/offers";
 import { tiersOverlap } from "@/types/offers";
 
@@ -55,8 +57,6 @@ const paymentOptions: { value: PaymentTerm; label: string }[] = [
   { value: "advance", label: "Advance" },
   { value: "on_loading", label: "On Loading" },
   { value: "on_delivery", label: "On Delivery" },
-  { value: "credit_15", label: "15 Days Credit" },
-  { value: "credit_30", label: "30 Days Credit" },
 ];
 
 const FORM_STEPS = [
@@ -84,6 +84,9 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
   const saveDraft = useOfferStore((s) => s.saveDraft);
   const activateOffer = useOfferStore((s) => s.activateOffer);
   const isActivating = useOfferStore((s) => s.isActivating);
+  const products = useSellerProductStore((s) => s.products);
+  const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
+  const locations = useLocationStore((s) => s.locations);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedTierId, setSelectedTierId] = useState<string>("");
@@ -123,6 +126,10 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
   const completedSteps = Object.values(stepCompletion).filter(Boolean).length;
 
   useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
+
+  useEffect(() => {
     if (editId) {
       loadOfferForEdit(editId);
     } else {
@@ -138,43 +145,53 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
 
   const handleProductChange = useCallback(
     (productId: string) => {
-      const product = productCatalog.find((p) => p.id === productId);
+      const product = products.find((p) => p.id === productId);
       if (!product) return;
-      const warehouse = warehouses.find((w) => w.id === product.warehouseId);
+      const warehouse = locations.find((w) => w.id === product.locationId);
       setFormData({
         productId: product.id,
-        productName: product.name,
-        productGrade: product.grade,
-        productSubtext: product.subtext,
+        productName: product.gradeName,
+        productGrade: product.gradeCode,
+        productSubtext: product.polymerType,
         category: product.category,
-        warehouseId: product.warehouseId,
+        warehouseId: product.locationId,
         warehouseName: warehouse
-          ? `${warehouse.name} (${warehouse.location})`
-          : "",
-        availableInventoryMt: product.availableMt,
-        basePrice: product.basePrice,
-        allocationMt: Math.min(100, product.availableMt),
+          ? `${warehouse.name} (${warehouse.city})`
+          : product.origin ?? "",
+        availableInventoryMt: product.availableStock,
+        basePrice: product.basePrice ?? 0,
+        allocationMt: Math.min(100, product.availableStock),
       });
-      recalculateTiers(product.basePrice);
+      recalculateTiers(product.basePrice ?? 0);
     },
-    [setFormData, recalculateTiers],
+    [locations, products, recalculateTiers, setFormData],
   );
 
   const handleWarehouseChange = useCallback(
     (warehouseId: string) => {
-      const warehouse = warehouses.find((w) => w.id === warehouseId);
+      const warehouse = locations.find((w) => w.id === warehouseId);
       setFormData({
         warehouseId,
         warehouseName: warehouse
-          ? `${warehouse.name} (${warehouse.location})`
+          ? `${warehouse.name} (${warehouse.city})`
           : "",
       });
     },
-    [setFormData],
+    [locations, setFormData],
   );
 
   const togglePaymentTerm = (term: PaymentTerm) => {
     const current = formData.paymentTerms;
+    if (term === "credit_15") {
+      const hasCredit =
+        current.includes("credit_15") || current.includes("credit_30");
+      setFormData({
+        paymentTerms: hasCredit
+          ? current.filter((item) => item !== "credit_15" && item !== "credit_30")
+          : [...current.filter((item) => item !== "credit_30"), "credit_15"],
+      });
+      return;
+    }
     const updated = current.includes(term)
       ? current.filter((t) => t !== term)
       : [...current, term];
@@ -351,9 +368,9 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                     <SelectValue placeholder="Select product" />
                   </SelectTrigger>
                   <SelectContent>
-                    {productCatalog.map((product) => (
+                    {products.map((product) => (
                       <SelectItem key={product.id} value={product.id}>
-                        {product.name}
+                        {product.gradeName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -375,9 +392,9 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                     <SelectValue placeholder="Select warehouse" />
                   </SelectTrigger>
                   <SelectContent>
-                    {warehouses.map((wh) => (
+                    {locations.map((wh) => (
                       <SelectItem key={wh.id} value={wh.id}>
-                        {wh.name} ({wh.location})
+                        {wh.name} ({wh.city})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -572,9 +589,14 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Payment Terms
               </Label>
+              <p className="text-xs text-slate-500">{PETROTRADE_CREDIT_NOTE}</p>
               <div className="flex flex-wrap gap-2">
                 {paymentOptions.map((option) => {
-                  const selected = formData.paymentTerms.includes(option.value);
+                  const selected =
+                    option.value === "credit_15"
+                      ? formData.paymentTerms.includes("credit_15") ||
+                        formData.paymentTerms.includes("credit_30")
+                      : formData.paymentTerms.includes(option.value);
                   return (
                     <button
                       key={option.value}
