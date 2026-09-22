@@ -20,7 +20,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/constants";
 import { type LoginFormValues, loginSchema } from "@/lib/schemas/onboarding";
-import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/authStore";
 
 const features = [
@@ -42,7 +41,7 @@ const features = [
 
 export default function SellerLoginPage() {
   const router = useRouter();
-  const setPendingMobile = useAuthStore((s) => s.setPendingMobile);
+  const sendOtp = useAuthStore((s) => s.sendOtp);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -50,9 +49,16 @@ export default function SellerLoginPage() {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    setPendingMobile(values.mobileNumber);
-    await authService.sendOtp(values.mobileNumber);
-    toast.success("OTP sent to your mobile number");
+    const result = await sendOtp(values.mobileNumber);
+    if (!result.ok) {
+      toast.error(result.message ?? "Unable to send OTP");
+      return;
+    }
+    if (result.message) {
+      toast(result.message, { icon: "⚠️" });
+    } else {
+      toast.success("OTP sent — use 123456 in development");
+    }
     router.push(ROUTES.VERIFY_OTP);
   };
 

@@ -10,6 +10,10 @@ import { z } from "zod";
 
 import { PageContainer } from "@/components/common/page-container";
 import { PageHeader } from "@/components/common/page-header";
+import {
+  ProductDocumentsPanel,
+  type PendingDoc,
+} from "@/components/grades/product-documents-panel";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -36,6 +40,7 @@ import {
 } from "@/lib/mock/products";
 import { slabsOverlap } from "@/lib/seller/format";
 import { createSellerListing, fetchSellerGrades, type SellerGradeOption } from "@/services/catalog";
+import { uploadProductDocument } from "@/services/product-documents";
 import { useLocationStore } from "@/store/locationStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 import { useSellerStore } from "@/store/sellerStore";
@@ -73,6 +78,7 @@ export function AddGradeView() {
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
   const [grades, setGrades] = useState<SellerGradeOption[]>([]);
   const [gradesError, setGradesError] = useState<string | null>(null);
+  const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
   const overlap = useMemo(() => slabsOverlap(slabs), [slabs]);
 
   useEffect(() => {
@@ -130,15 +136,36 @@ export function AddGradeView() {
       sellingPrice: values.sellingPrice,
     };
 
+    let createdProductId: string | null = null;
     try {
-      await createSellerListing({
+      const created = await createSellerListing({
         gradeId: selectedGrade.id,
         name: values.gradeName,
         code: values.gradeCode,
+        manufacturer: values.manufacturer,
         mfi: values.mfi,
         density: values.density,
         packaging: values.packagingType,
+        unit: values.unit,
+        countryOfOrigin: values.origin,
       });
+      createdProductId = created?.id ?? null;
+
+      if (createdProductId && pendingDocs.length > 0) {
+        for (const pending of pendingDocs) {
+          try {
+            await uploadProductDocument(createdProductId, {
+              documentType: pending.documentType,
+              title: pending.title,
+              description: pending.description,
+              file: pending.file,
+            });
+          } catch {
+            toast.error(`Failed to upload ${pending.documentType}`);
+          }
+        }
+        setPendingDocs([]);
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to save listing on backend.",
@@ -647,6 +674,12 @@ export function AddGradeView() {
               </div>
             )}
           </section>
+
+          <ProductDocumentsPanel
+            productId={null}
+            pendingFiles={pendingDocs}
+            onPendingChange={setPendingDocs}
+          />
 
           <FormField
             control={form.control}

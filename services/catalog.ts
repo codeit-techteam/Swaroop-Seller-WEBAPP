@@ -100,9 +100,15 @@ export async function createSellerListing(input: {
   gradeId: string;
   name: string;
   code: string;
+  manufacturer?: string;
+  brand?: string;
   mfi?: string;
   density?: string;
   packaging?: string;
+  unit?: string;
+  countryOfOrigin?: string;
+  supplyOrigin?: string;
+  description?: string;
 }) {
   const response = await apiClient.post<Envelope<BackendSellerProduct>>(
     `/seller/products`,
@@ -110,10 +116,15 @@ export async function createSellerListing(input: {
       gradeId: input.gradeId,
       code: input.code,
       name: input.name,
+      manufacturer: input.manufacturer,
+      brand: input.brand ?? input.manufacturer,
       mfi: input.mfi,
       density: input.density,
       packaging: input.packaging,
-      unit: "MT",
+      unit: input.unit ?? "MT",
+      countryOfOrigin: input.countryOfOrigin,
+      supplyOrigin: input.supplyOrigin,
+      description: input.description,
     },
   );
   return response.data.data;

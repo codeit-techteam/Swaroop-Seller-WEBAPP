@@ -22,6 +22,7 @@ export default function VerifyOtpPage() {
   const router = useRouter();
   const pendingMobile = useAuthStore((s) => s.pendingMobile);
   const verifyOtp = useAuthStore((s) => s.verifyOtp);
+  const sendOtp = useAuthStore((s) => s.sendOtp);
   const onboardingComplete = useAuthStore((s) => s.onboardingComplete);
   const [countdown, setCountdown] = useState(RESEND_SECONDS);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -127,9 +128,11 @@ export default function VerifyOtpPage() {
           <button
             type="button"
             disabled={countdown > 0}
-            onClick={() => {
+            onClick={async () => {
+              const result = await sendOtp(pendingMobile);
               setCountdown(RESEND_SECONDS);
-              toast.success("OTP resent");
+              if (result.message) toast(result.message, { icon: "⚠️" });
+              else toast.success("OTP resent — use 123456 in development");
             }}
             className="mt-4 text-sm font-medium text-[#1B6EF3] disabled:text-slate-400"
           >
