@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { packagingTypes, polymerTypes } from "@/lib/mock/products";
 import { slabsOverlap } from "@/lib/seller/format";
+import { apiErrorMessage } from "@/lib/utils";
 import {
   fetchSellerGrades,
   fetchSellerProduct,
@@ -44,6 +45,31 @@ import {
 import { uploadProductDocument } from "@/services/product-documents";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 import type { BulkPriceSlab } from "@/types/seller";
+
+/** Keep bulk tiers aligned with selling price so customers don't see stale rates. */
+function syncSlabsToSellingPrice(
+  slabs: BulkPriceSlab[],
+  previousBase: number,
+  nextBase: number,
+): BulkPriceSlab[] {
+  if (!slabs.length || nextBase <= 0) return slabs;
+  if (previousBase > 0 && Math.abs(previousBase - nextBase) < 0.01)
+    return slabs;
+
+  const matchedOldBase = slabs.some(
+    (s) => previousBase > 0 && Math.abs(s.price - previousBase) < 0.01,
+  );
+  if (matchedOldBase) {
+    return slabs.map((s) =>
+      Math.abs(s.price - previousBase) < 0.01 ? { ...s, price: nextBase } : s,
+    );
+  }
+
+  const baseTierId = [...slabs].sort((a, b) => a.minQty - b.minQty)[0]?.id;
+  return slabs.map((s) =>
+    s.id === baseTierId ? { ...s, price: nextBase } : s,
+  );
+}
 
 const schema = z.object({
   gradeId: z.string().min(1, "Select a grade"),
@@ -74,6 +100,8 @@ export function EditGradeView() {
   const router = useRouter();
   const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
+  const [loadedBasePrice, setLoadedBasePrice] = useState(0);
+  const [wasPublished, setWasPublished] = useState(true);
   const [grades, setGrades] = useState<SellerGradeOption[]>([]);
   const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,6 +168,8 @@ export function EditGradeView() {
           notes: product.notes ?? "",
           sellingPrice: product.basePrice ?? 0,
         });
+        setLoadedBasePrice(product.basePrice ?? 0);
+        setWasPublished(product.offerStatus === "active");
         setSlabs(product.bulkPricing ?? []);
         setLoading(false);
       })
@@ -166,6 +196,13 @@ export function EditGradeView() {
     }
 
     try {
+      const syncedSlabs = syncSlabsToSellingPrice(
+        slabs,
+        loadedBasePrice,
+        values.sellingPrice,
+      );
+      if (syncedSlabs !== slabs) setSlabs(syncedSlabs);
+
       await updateSellerListing(params.id, {
         gradeId: values.gradeId,
         name: values.gradeName,
@@ -183,14 +220,14 @@ export function EditGradeView() {
         reservedStock: values.reservedStock,
         moq: values.moq,
         sellingPrice: values.sellingPrice,
-        priceTiers: slabs.map((s) => ({
+        priceTiers: syncedSlabs.map((s) => ({
           minQty: s.minQty,
-          maxQty: s.maxQty,
+          maxQty: s.maxQty ?? undefined,
           price: s.price,
           label: s.discountLabel,
         })),
         notes: values.notes,
-        publishToMarketplace: true,
+        publishToMarketplace: wasPublished,
         gstPercent: values.gstPercent,
       });
 
@@ -216,12 +253,10 @@ export function EditGradeView() {
       }
 
       await fetchProducts();
-      toast.success("Grade updated");
+      toast.success("Grade updated — price synced to marketplace");
       router.push(ROUTES.PRODUCTS);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Unable to update grade.",
-      );
+      toast.error(apiErrorMessage(error, "Unable to update grade."));
     }
   };
 
@@ -549,6 +584,18 @@ export function EditGradeView() {
                         step="0.01"
                         className="pl-7"
                         {...field}
+                        onBlur={(e) => {
+                          field.onBlur();
+                          const next = Number(e.target.value) || 0;
+                          setSlabs((current) =>
+                            syncSlabsToSellingPrice(
+                              current,
+                              loadedBasePrice,
+                              next,
+                            ),
+                          );
+                          if (next > 0) setLoadedBasePrice(next);
+                        }}
                       />
                     </div>
                   </FormControl>
