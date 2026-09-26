@@ -1,25 +1,23 @@
-import { sellerOrdersMock } from "@/lib/mock/orders";
-import { delay } from "@/lib/repositories/delay";
+import { fetchSellerOrderById, fetchSellerOrders } from "@/services/commerce";
 import type { SellerOrder } from "@/types/seller";
 
 export async function getOrders(): Promise<SellerOrder[]> {
-  return delay(sellerOrdersMock);
+  return fetchSellerOrders({ page: 1, limit: 100 });
 }
 
 export async function getOrderById(
   id: string,
 ): Promise<SellerOrder | undefined> {
-  const orders = await getOrders();
-  const needle = id.trim().toLowerCase();
-  return orders.find(
-    (item) =>
-      item.id.toLowerCase() === needle || item.orderId.toLowerCase() === needle,
-  );
+  try {
+    return await fetchSellerOrderById(id);
+  } catch {
+    return undefined;
+  }
 }
 
 export async function getOrdersByLocation(
-  locationId: string,
+  _locationId: string,
 ): Promise<SellerOrder[]> {
-  const orders = await getOrders();
-  return orders.filter((item) => item.locationId === locationId);
+  // PurchaseOrders are seller-org scoped (JWT), not warehouse-location scoped.
+  return getOrders();
 }

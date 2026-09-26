@@ -3,7 +3,10 @@ import { devtools } from "zustand/middleware";
 
 import {
   fetchSellerDispatches,
-  fetchSellerOrders,
+  fetchSellerOrderById,
+  fetchSellerOrdersPage,
+  fetchSellerOrderSummary,
+  fetchSellerOrderTimeline,
   fetchSellerShipments,
 } from "@/services/commerce";
 import { useLocationStore } from "@/store/locationStore";
@@ -11,45 +14,53 @@ import type {
   DispatchStatus,
   SellerDispatch,
   SellerOrder,
-  SellerOrderStatus,
+  SellerOrderSummary,
+  SellerOrderTimelineEvent,
   SellerShipment,
   ShipmentStatus,
 } from "@/types/seller";
 
-const ORDER_FLOW: SellerOrderStatus[] = [
-  "confirmed",
-  "processing",
-  "ready_for_dispatch",
-  "in_transit",
-  "delivered",
-];
-
 interface SellerOrderState {
   orders: SellerOrder[];
+  summary: SellerOrderSummary | null;
+  selectedOrder: SellerOrder | null;
+  timelineEvents: SellerOrderTimelineEvent[];
   dispatches: SellerDispatch[];
   shipments: SellerShipment[];
   search: string;
   status: string;
   page: number;
   pageSize: number;
+  total: number;
+  totalPages: number;
   loading: boolean;
+  detailLoading: boolean;
   loadError: string | null;
-  hydrate: () => Promise<void>;
+  detailError: string | null;
+  hydrate: (opts?: {
+    search?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) => Promise<void>;
+  hydrateDetail: (id: string) => Promise<void>;
   selectedDispatchId: string | null;
   selectedShipmentId: string | null;
   setSearch: (search: string) => void;
   setStatus: (status: string) => void;
   setPage: (page: number) => void;
-  advanceOrder: (id: string) => void;
-  setOrderStatus: (id: string, status: SellerOrderStatus) => void;
+  /** @deprecated Client-only; Dispatch page uses seller-dispatches API */
   scheduleDispatch: (id: string, date: string) => void;
+  /** @deprecated Client-only; Dispatch page uses seller-dispatches API */
   assignVehicle: (
     id: string,
     vehicle: string,
     transporter: string,
     driver: string,
   ) => void;
+  /** @deprecated Client-only; Dispatch page uses seller-dispatches API */
   markDispatchStatus: (id: string, status: DispatchStatus) => void;
+  /** @deprecated Client-only; Dispatch page uses seller-dispatches API */
   generateEwayBill: (id: string) => string;
   markShipmentStatus: (id: string, status: ShipmentStatus) => void;
   upsertDispatch: (dispatch: SellerDispatch) => void;
@@ -63,66 +74,131 @@ interface SellerOrderState {
   getFilteredShipments: (locationId?: string) => SellerShipment[];
 }
 
-function syncTimeline(
-  order: SellerOrder,
-  status: SellerOrderStatus,
-): SellerOrder {
-  const labels: Record<SellerOrderStatus, string> = {
-    confirmed: "Order Confirmed",
-    processing: "Processing",
-    ready_for_dispatch: "Dispatch Scheduled",
-    in_transit: "In Transit",
-    delivered: "Delivered",
-    cancelled: "Cancelled",
-  };
-  const currentLabel = labels[status];
-  const now = new Date().toISOString();
-  let seenCurrent = false;
-  return {
-    ...order,
-    status,
-    timeline: order.timeline.map((step) => {
-      if (step.label === currentLabel) {
-        seenCurrent = true;
-        return { ...step, status: "current", at: now };
-      }
-      if (!seenCurrent && status !== "cancelled") {
-        return { ...step, status: "completed", at: step.at ?? now };
-      }
-      return { ...step, status: "pending" };
-    }),
-  };
-}
-
 export const useSellerOrderStore = create<SellerOrderState>()(
   devtools(
     (set, get) => ({
       orders: [],
+      summary: null,
+      selectedOrder: null,
+      timelineEvents: [],
       dispatches: [],
       shipments: [],
       search: "",
       status: "all",
       page: 1,
-      pageSize: 10,
+      pageSize: 20,
+      total: 0,
+      totalPages: 1,
       loading: true,
+      detailLoading: false,
       loadError: null,
-      hydrate: async () => {
-        set({ loading: true, loadError: null });
+      detailError: null,
+      hydrate: async (opts) => {
+        const search = opts?.search ?? get().search;
+        const status = opts?.status ?? get().status;
+        const page = opts?.page ?? get().page;
+        const limit = opts?.limit ?? get().pageSize;
+        set({
+          loading: true,
+          loadError: null,
+          search,
+          status,
+          page,
+          pageSize: limit,
+        });
         try {
-          const locationId = useLocationStore.getState().selectedLocationId ?? "";
-          const [orders, dispatches, shipments] = await Promise.all([
-            fetchSellerOrders(locationId),
-            fetchSellerDispatches(locationId),
-            fetchSellerShipments(locationId),
-          ]);
-          set({ orders, dispatches, shipments, loading: false, loadError: null });
+          const locationId =
+            useLocationStore.getState().selectedLocationId ?? "";
+          const [ordersPage, summary, dispatches, shipments] =
+            await Promise.all([
+              fetchSellerOrdersPage({
+                page,
+                limit,
+                search: search.trim() || undefined,
+                status: status === "all" ? undefined : status,
+                sortBy: "createdAt",
+                sortOrder: "desc",
+              }),
+              fetchSellerOrderSummary().catch(() => null),
+              fetchSellerDispatches(locationId).catch(
+                () => [] as SellerDispatch[],
+              ),
+              fetchSellerShipments(locationId).catch(
+                () => [] as SellerShipment[],
+              ),
+            ]);
+          set({
+            orders: ordersPage.items,
+            summary,
+            total: ordersPage.pagination.total,
+            totalPages: ordersPage.pagination.totalPages,
+            page: ordersPage.pagination.page,
+            pageSize: ordersPage.pagination.limit,
+            dispatches,
+            shipments,
+            loading: false,
+            loadError: null,
+          });
         } catch (error) {
           set({
             orders: [],
+            summary: null,
+            total: 0,
+            totalPages: 1,
             dispatches: [],
             shipments: [],
             loading: false,
-            loadError: error instanceof Error ? error.message : "Unable to load orders.",
+            loadError:
+              error instanceof Error ? error.message : "Unable to load orders.",
+          });
+        }
+      },
+      hydrateDetail: async (id) => {
+        set({ detailLoading: true, detailError: null });
+        try {
+          const [order, timeline] = await Promise.all([
+            fetchSellerOrderById(id),
+            fetchSellerOrderTimeline(id).catch(() => ({
+              poNumber: id,
+              events: [] as SellerOrderTimelineEvent[],
+            })),
+          ]);
+          const timelineSteps =
+            timeline.events.length > 0
+              ? timeline.events.map((event, index, all) => ({
+                  id: `${event.type}-${index}`,
+                  label: event.label,
+                  status:
+                    index === all.length - 1
+                      ? ("current" as const)
+                      : ("completed" as const),
+                  at: event.at,
+                }))
+              : order.timeline;
+          set({
+            selectedOrder: { ...order, timeline: timelineSteps },
+            timelineEvents: timeline.events,
+            detailLoading: false,
+            detailError: null,
+            orders: get().orders.some((item) => item.id === order.id)
+              ? get().orders.map((item) =>
+                  item.id === order.id ? { ...item, ...order } : item,
+                )
+              : [order, ...get().orders],
+          });
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Unable to load order.";
+          const forbidden =
+            message.toLowerCase().includes("403") ||
+            message.toLowerCase().includes("access");
+          set({
+            selectedOrder: null,
+            timelineEvents: [],
+            detailLoading: false,
+            detailError: forbidden
+              ? "You don't have access to this order."
+              : "Unable to load order.",
           });
         }
       },
@@ -131,20 +207,6 @@ export const useSellerOrderStore = create<SellerOrderState>()(
       setSearch: (search) => set({ search, page: 1 }),
       setStatus: (status) => set({ status, page: 1 }),
       setPage: (page) => set({ page }),
-      advanceOrder: (id) => {
-        const order = get().orders.find((item) => item.id === id);
-        if (!order) return;
-        const index = ORDER_FLOW.indexOf(order.status);
-        const next = ORDER_FLOW[index + 1];
-        if (!next) return;
-        get().setOrderStatus(id, next);
-      },
-      setOrderStatus: (id, status) =>
-        set((state) => ({
-          orders: state.orders.map((order) =>
-            order.id === id ? syncTimeline(order, status) : order,
-          ),
-        })),
       scheduleDispatch: (id, date) =>
         set((state) => ({
           dispatches: state.dispatches.map((item) =>
@@ -185,7 +247,8 @@ export const useSellerOrderStore = create<SellerOrderState>()(
       upsertDispatch: (dispatch) =>
         set((state) => {
           const index = state.dispatches.findIndex(
-            (item) => item.id === dispatch.id || item.orderId === dispatch.orderId,
+            (item) =>
+              item.id === dispatch.id || item.orderId === dispatch.orderId,
           );
           if (index === -1) {
             return { dispatches: [dispatch, ...state.dispatches] };
@@ -200,21 +263,13 @@ export const useSellerOrderStore = create<SellerOrderState>()(
       closeDispatch: () => set({ selectedDispatchId: null }),
       openShipment: (id) => set({ selectedShipmentId: id }),
       closeShipment: () => set({ selectedShipmentId: null }),
-      getFilteredOrders: (locationId) => {
-        const { orders, search, status } = get();
-        const query = search.trim().toLowerCase();
-        return orders.filter((order) => {
-          if (locationId && order.locationId !== locationId) return false;
-          if (status !== "all" && order.status !== status) return false;
-          if (!query) return true;
-          return (
-            order.orderId.toLowerCase().includes(query) ||
-            order.gradeName.toLowerCase().includes(query)
-          );
-        });
-      },
+      getFilteredOrders: () => get().orders,
       getOrderById: (id) =>
-        get().orders.find((order) => order.id === id || order.orderId === id),
+        get().selectedOrder?.id === id || get().selectedOrder?.orderId === id
+          ? (get().selectedOrder ?? undefined)
+          : get().orders.find(
+              (order) => order.id === id || order.orderId === id,
+            ),
       getFilteredDispatches: (locationId) => {
         const { dispatches, search, status } = get();
         const query = search.trim().toLowerCase();

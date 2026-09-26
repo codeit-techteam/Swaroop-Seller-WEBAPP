@@ -11,6 +11,10 @@ import {
   poNumberForPr,
   timeSlotAvailability,
 } from "@/lib/seller-ops";
+import {
+  acceptSellerPurchaseRequest,
+  rejectSellerPurchaseRequest,
+} from "@/services/commerce";
 import { updatePriceRevision } from "@/services/priceRevisionService";
 import { getSellerOpsBundle } from "@/services/procurementService";
 import { bookVehicleSlot } from "@/services/vehicleSlotService";
@@ -88,7 +92,12 @@ function markTimeline(
   return steps.map((step) => {
     if (step.label === currentLabel) {
       seen = true;
-      return { ...step, status: "current", at, actor: step.actor ?? "Seller Ops" };
+      return {
+        ...step,
+        status: "current",
+        at,
+        actor: step.actor ?? "Seller Ops",
+      };
     }
     if (!seen) {
       return {
@@ -132,7 +141,7 @@ function syncDispatch(record: ProcurementRecord, slot?: VehicleSlot) {
     driver: slot?.driverName,
     scheduledDate: slot?.date ?? record.expectedDelivery,
     slot: slot?.timeSlot,
-    buyerRef: record.buyerName,
+    buyerRef: "Anonymous Buyer",
     status,
   });
 }
@@ -170,10 +179,7 @@ interface SellerOpsState {
   cancelVehicleSlot: (slotId: string, reason?: string) => Promise<void>;
   advanceSlotStatus: (
     slotId: string,
-    status: Extract<
-      VehicleSlotStatus,
-      "ARRIVED" | "LOADING" | "COMPLETED"
-    >,
+    status: Extract<VehicleSlotStatus, "ARRIVED" | "LOADING" | "COMPLETED">,
   ) => Promise<void>;
   getRecordByPr: (purchaseRequestId: string) => ProcurementRecord | undefined;
   getRevisionById: (id: string) => PriceRevision | undefined;
@@ -193,10 +199,6 @@ export const useSellerOpsStore = create<SellerOpsState>()(
       busy: false,
       bootstrap: async () => {
         if (get().hydrating) return;
-        if (get().procurementRecords.length > 0 && !get().error) {
-          set({ loading: false });
-          return;
-        }
         set({ loading: true, hydrating: true, error: null });
         try {
           const bundle = await getSellerOpsBundle();
@@ -224,63 +226,50 @@ export const useSellerOpsStore = create<SellerOpsState>()(
           vehicleSlots: [],
           procurementRecords: [],
           error: null,
+          loading: true,
         });
         await get().bootstrap();
       },
       acceptPr: async (purchaseRequestId) => {
         set({ busy: true });
-        await updatePriceRevision(true);
-        const at = stamp();
-        set((state) => ({
-          busy: false,
-          purchaseRequests: state.purchaseRequests.map((item) =>
-            item.id === purchaseRequestId
-              ? { ...item, status: "ACCEPTED" }
-              : item,
-          ),
-          procurementRecords: state.procurementRecords.map((record) => {
-            if (record.purchaseRequestId !== purchaseRequestId) return record;
-            return withAlerts({
-              ...record,
-              currentStage: "COMMERCIAL_REVIEW",
-              lastUpdated: at,
-              timeline: markTimeline(
-                record.timeline,
-                "Commercial Negotiation",
-                at,
-              ),
-              activity: [
-                activity("Purchase request accepted.", "Seller Ops", at),
-                ...record.activity,
-              ],
-            });
-          }),
-        }));
+        try {
+          // Workbench may pass UUID (id) or reference — resolve UUID for API.
+          const record =
+            get().procurementRecords.find((r) => r.id === purchaseRequestId) ??
+            get().procurementRecords.find(
+              (r) => r.purchaseRequestId === purchaseRequestId,
+            );
+          if (record?.id) {
+            await acceptSellerPurchaseRequest(record.id);
+          }
+          await get().bootstrap();
+        } catch {
+          set({ busy: false });
+          throw new Error("Unable to accept purchase request.");
+        } finally {
+          set({ busy: false });
+        }
       },
       rejectPr: async (purchaseRequestId, reason) => {
         set({ busy: true });
-        await updatePriceRevision(true);
-        const at = stamp();
-        set((state) => ({
-          busy: false,
-          purchaseRequests: state.purchaseRequests.map((item) =>
-            item.id === purchaseRequestId
-              ? { ...item, status: "REJECTED" }
-              : item,
-          ),
-          procurementRecords: state.procurementRecords.map((record) =>
-            record.purchaseRequestId === purchaseRequestId
-              ? withAlerts({
-                  ...record,
-                  lastUpdated: at,
-                  activity: [
-                    activity(`Purchase request rejected. ${reason}`, "Seller Ops", at),
-                    ...record.activity,
-                  ],
-                })
-              : record,
-          ),
-        }));
+        try {
+          const record =
+            get().procurementRecords.find((r) => r.id === purchaseRequestId) ??
+            get().procurementRecords.find(
+              (r) => r.purchaseRequestId === purchaseRequestId,
+            );
+          if (record?.id) {
+            await rejectSellerPurchaseRequest(record.id, {
+              rejectionReason: reason,
+            });
+          }
+          await get().bootstrap();
+        } catch {
+          set({ busy: false });
+          throw new Error("Unable to reject purchase request.");
+        } finally {
+          set({ busy: false });
+        }
       },
       openPriceRevision: (purchaseRequestId) => {
         const existing = get().priceRevisions.find(
@@ -299,8 +288,7 @@ export const useSellerOpsStore = create<SellerOpsState>()(
         const revision: PriceRevision = {
           id,
           purchaseRequestId,
-          buyerId: pr.buyerId,
-          buyerName: pr.buyerName,
+          buyerDisplayName: "Anonymous Buyer",
           productId: pr.productId,
           productName: pr.productName,
           gradeId: pr.gradeId,
@@ -319,7 +307,11 @@ export const useSellerOpsStore = create<SellerOpsState>()(
           createdAt: at,
           updatedAt: at,
           activity: [
-            activity("Price revision opened from purchase request.", "Seller Ops", at),
+            activity(
+              "Price revision opened from purchase request.",
+              "Seller Ops",
+              at,
+            ),
           ],
         };
         set((state) => ({
@@ -356,7 +348,11 @@ export const useSellerOpsStore = create<SellerOpsState>()(
                   status: "AWAITING_RESPONSE",
                   updatedAt: at,
                   activity: [
-                    activity("Seller opened the revision for review.", "Seller Ops", at),
+                    activity(
+                      "Seller opened the revision for review.",
+                      "Seller Ops",
+                      at,
+                    ),
                     ...item.activity,
                   ],
                 }
@@ -368,14 +364,16 @@ export const useSellerOpsStore = create<SellerOpsState>()(
         set({ busy: true });
         await updatePriceRevision(true);
         const at = stamp();
-        const revision = get().priceRevisions.find((item) => item.id === revisionId);
+        const revision = get().priceRevisions.find(
+          (item) => item.id === revisionId,
+        );
         if (!revision) {
           set({ busy: false });
           return;
         }
-        const finalPrice =
-          revision.counterPrice ?? revision.requestedPrice;
-        const orderId = revision.orderId ?? orderIdForPr(revision.purchaseRequestId);
+        const finalPrice = revision.counterPrice ?? revision.requestedPrice;
+        const orderId =
+          revision.orderId ?? orderIdForPr(revision.purchaseRequestId);
         const poNumber = poNumberForPr(revision.purchaseRequestId);
         const orderValue = kgValue(revision.quantityMt, finalPrice);
 
@@ -451,7 +449,9 @@ export const useSellerOpsStore = create<SellerOpsState>()(
         set({ busy: true });
         await updatePriceRevision(true);
         const at = stamp();
-        const revision = get().priceRevisions.find((item) => item.id === revisionId);
+        const revision = get().priceRevisions.find(
+          (item) => item.id === revisionId,
+        );
         set((state) => ({
           busy: false,
           priceRevisions: state.priceRevisions.map((item) =>
@@ -462,7 +462,11 @@ export const useSellerOpsStore = create<SellerOpsState>()(
                   rejectReason: reason,
                   updatedAt: at,
                   activity: [
-                    activity(`Price revision rejected. ${reason}`, "Seller Ops", at),
+                    activity(
+                      `Price revision rejected. ${reason}`,
+                      "Seller Ops",
+                      at,
+                    ),
                     ...item.activity,
                   ],
                 }
@@ -486,7 +490,9 @@ export const useSellerOpsStore = create<SellerOpsState>()(
         set({ busy: true });
         await updatePriceRevision(true);
         const at = stamp();
-        const revision = get().priceRevisions.find((item) => item.id === revisionId);
+        const revision = get().priceRevisions.find(
+          (item) => item.id === revisionId,
+        );
         set((state) => ({
           busy: false,
           priceRevisions: state.priceRevisions.map((item) =>
@@ -521,7 +527,11 @@ export const useSellerOpsStore = create<SellerOpsState>()(
                     counterPrice: input.counterPrice,
                   },
                   activity: [
-                    activity("Seller submitted counter offer.", "Seller Ops", at),
+                    activity(
+                      "Seller submitted counter offer.",
+                      "Seller Ops",
+                      at,
+                    ),
                     ...record.activity,
                   ],
                 })
@@ -582,7 +592,11 @@ export const useSellerOpsStore = create<SellerOpsState>()(
               },
               timeline: markTimeline(record.timeline, "Dispatch", at),
               activity: [
-                activity("Payment received. Order is ready for dispatch.", "Finance Desk", at),
+                activity(
+                  "Payment received. Order is ready for dispatch.",
+                  "Finance Desk",
+                  at,
+                ),
                 ...record.activity,
               ],
             });
@@ -592,7 +606,9 @@ export const useSellerOpsStore = create<SellerOpsState>()(
         }));
         if (updated) {
           const slot = updated.vehicleSlotId
-            ? get().vehicleSlots.find((item) => item.id === updated?.vehicleSlotId)
+            ? get().vehicleSlots.find(
+                (item) => item.id === updated?.vehicleSlotId,
+              )
             : undefined;
           syncDispatch(updated, slot);
         }
@@ -608,7 +624,9 @@ export const useSellerOpsStore = create<SellerOpsState>()(
           throw new Error("Selected time slot is not available.");
         }
         set({ busy: true });
-        const warehouse = OPS_WAREHOUSES.find((item) => item.id === input.warehouseId);
+        const warehouse = OPS_WAREHOUSES.find(
+          (item) => item.id === input.warehouseId,
+        );
         const at = stamp();
         const slot: VehicleSlot = {
           id: nextSlotId(get().vehicleSlots),
@@ -667,7 +685,9 @@ export const useSellerOpsStore = create<SellerOpsState>()(
               delayed: false,
               lastUpdated: at,
               currentStage:
-                record.paymentStatus === "PAID" ? "DISPATCH" : record.currentStage,
+                record.paymentStatus === "PAID"
+                  ? "DISPATCH"
+                  : record.currentStage,
               dispatchStatus:
                 record.paymentStatus === "PAID"
                   ? "READY_FOR_DISPATCH"
@@ -754,7 +774,9 @@ export const useSellerOpsStore = create<SellerOpsState>()(
               : record,
           ),
         }));
-        const updatedSlot = get().vehicleSlots.find((item) => item.id === slotId);
+        const updatedSlot = get().vehicleSlots.find(
+          (item) => item.id === slotId,
+        );
         const record = get().procurementRecords.find(
           (item) => item.vehicleSlotId === slotId,
         );
@@ -815,7 +837,8 @@ export const useSellerOpsStore = create<SellerOpsState>()(
             const completed =
               status === "COMPLETED"
                 ? markTimeline(timeline, "Gate Out", at).map((step) =>
-                    step.label === "Gate Out" || step.label === "Loading Completed"
+                    step.label === "Gate Out" ||
+                    step.label === "Loading Completed"
                       ? { ...step, status: "completed" as const, at }
                       : step,
                   )
@@ -858,7 +881,11 @@ export const useSellerOpsStore = create<SellerOpsState>()(
                 order: { ...record.order, dispatchStatus: "IN_TRANSIT" },
                 timeline: markTimeline(record.timeline, "Shipment", at),
                 activity: [
-                  activity("Loading completed. Shipment is in transit.", "Logistics", at),
+                  activity(
+                    "Loading completed. Shipment is in transit.",
+                    "Logistics",
+                    at,
+                  ),
                   ...record.activity,
                 ],
               });

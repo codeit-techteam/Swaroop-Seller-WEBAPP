@@ -1,14 +1,14 @@
-import { fetchSellerPayments, fetchSellerSettlements } from "@/services/commerce";
+import {
+  fetchSellerSettlement,
+  fetchSellerSettlementsPage,
+} from "@/services/settlements";
 
 export const settlementService = {
   async list() {
-    return fetchSellerSettlements();
+    const page = await fetchSellerSettlementsPage({ page: 1, limit: 100 });
+    return page.items;
   },
   async getById(id: string) {
-    const items = await fetchSellerSettlements();
-    return items.find((item) => item.id === id);
-  },
-  async payments() {
-    return fetchSellerPayments();
+    return fetchSellerSettlement(id);
   },
 };

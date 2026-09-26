@@ -1,7 +1,14 @@
-import { delay } from "@/lib/repositories/delay";
-import type { VehicleSlot } from "@/types/seller-ops";
+/**
+ * Legacy delay helpers used by the mock sellerOpsStore / workbench.
+ * Production Vehicle Slots UI uses `@/services/vehicle-slots` instead.
+ */
+function delay<T>(value: T, ms = 220): Promise<T> {
+  return new Promise((resolve) => {
+    window.setTimeout(() => resolve(value), ms);
+  });
+}
 
-export async function getVehicleSlots(slots: VehicleSlot[]): Promise<VehicleSlot[]> {
+export async function getVehicleSlots<T>(slots: T): Promise<T> {
   return delay(slots, 220);
 }
 

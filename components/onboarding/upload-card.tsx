@@ -26,6 +26,7 @@ const ACCEPTED_TYPES = {
   "application/pdf": [".pdf"],
   "image/png": [".png"],
   "image/jpeg": [".jpg", ".jpeg"],
+  "image/webp": [".webp"],
 };
 
 interface UploadCardProps {
@@ -34,6 +35,7 @@ interface UploadCardProps {
   onReplace: (file: File) => void;
   onDelete: () => void;
   onCancel?: () => void;
+  onPreview?: () => void;
   className?: string;
 }
 
@@ -60,6 +62,7 @@ export function UploadCard({
   onReplace,
   onDelete,
   onCancel,
+  onPreview,
   className,
 }: UploadCardProps) {
   const [isDragActive, setIsDragActive] = useState(false);
@@ -148,7 +151,7 @@ export function UploadCard({
               </div>
               <p className="text-sm font-medium">Browse or Drag Files</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                PDF, PNG, JPG — Max 10MB
+                PDF, PNG, JPG, WEBP — Max 10MB
               </p>
             </div>
           ) : isUploading ? (
@@ -226,8 +229,25 @@ export function UploadCard({
               </div>
 
               <div className="flex gap-2">
-                {document.previewUrl ? (
-                  <Button variant="outline" size="sm" type="button">
+                {onPreview || document.previewUrl ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={() => {
+                      if (onPreview) {
+                        onPreview();
+                        return;
+                      }
+                      if (document.previewUrl) {
+                        window.open(
+                          document.previewUrl,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+                    }}
+                  >
                     <Eye className="h-4 w-4" />
                     View File
                   </Button>

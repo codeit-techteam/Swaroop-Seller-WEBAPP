@@ -2,11 +2,16 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
 import {
-  fetchSellerDocuments,
   fetchSellerPayments,
   fetchSellerSettlements,
 } from "@/services/commerce";
+import {
+  fetchSellerDocuments,
+  replaceSellerDocument,
+  uploadSellerDocument,
+} from "@/services/seller-documents";
 import type {
+  DocumentCategory,
   SellerDocumentRecord,
   SellerPayment,
   SellerSettlement,
@@ -19,6 +24,7 @@ interface SellerFinanceState {
   search: string;
   status: string;
   documentsLoading: boolean;
+  documentsBusy: boolean;
   loadError: string | null;
   hydrateDocuments: () => Promise<void>;
   selectedSettlementId: string | null;
@@ -26,10 +32,14 @@ interface SellerFinanceState {
   setStatus: (status: string) => void;
   openSettlement: (id: string) => void;
   closeSettlement: () => void;
-  uploadDocument: (
-    doc: Omit<SellerDocumentRecord, "id" | "uploadedAt">,
-  ) => void;
-  replaceDocument: (id: string, fileName: string) => void;
+  uploadDocument: (input: {
+    category: DocumentCategory;
+    file: File;
+  }) => Promise<SellerDocumentRecord>;
+  replaceDocument: (input: {
+    id: string;
+    file: File;
+  }) => Promise<SellerDocumentRecord>;
   getFilteredSettlements: () => SellerSettlement[];
   getFilteredPayments: () => SellerPayment[];
   getFilteredDocuments: () => SellerDocumentRecord[];
@@ -44,6 +54,7 @@ export const useSellerFinanceStore = create<SellerFinanceState>()(
       search: "",
       status: "all",
       documentsLoading: true,
+      documentsBusy: false,
       loadError: null,
       hydrateDocuments: async () => {
         set({ documentsLoading: true, loadError: null });
@@ -66,7 +77,10 @@ export const useSellerFinanceStore = create<SellerFinanceState>()(
             payments: [],
             documents: [],
             documentsLoading: false,
-            loadError: error instanceof Error ? error.message : "Unable to load finance data.",
+            loadError:
+              error instanceof Error
+                ? error.message
+                : "Unable to load finance data.",
           });
         }
       },
@@ -75,32 +89,39 @@ export const useSellerFinanceStore = create<SellerFinanceState>()(
       setStatus: (status) => set({ status }),
       openSettlement: (id) => set({ selectedSettlementId: id }),
       closeSettlement: () => set({ selectedSettlementId: null }),
-      uploadDocument: (doc) =>
-        set((state) => ({
-          documents: [
-            {
-              ...doc,
-              id: `doc-${Date.now()}`,
-              uploadedAt: new Date().toISOString(),
-              version: 1,
-            },
-            ...state.documents,
-          ],
-        })),
-      replaceDocument: (id, fileName) =>
-        set((state) => ({
-          documents: state.documents.map((doc) =>
-            doc.id === id
-              ? {
-                  ...doc,
-                  fileName,
-                  uploadedAt: new Date().toISOString(),
-                  status: "pending_verification",
-                  version: (doc.version ?? 1) + 1,
-                }
-              : doc,
-          ),
-        })),
+      uploadDocument: async ({ category, file }) => {
+        set({ documentsBusy: true });
+        try {
+          const created = await uploadSellerDocument({ category, file });
+          set((state) => ({
+            documents: [
+              created,
+              ...state.documents.filter((doc) => doc.id !== created.id),
+            ],
+            documentsBusy: false,
+          }));
+          return created;
+        } catch (error) {
+          set({ documentsBusy: false });
+          throw error;
+        }
+      },
+      replaceDocument: async ({ id, file }) => {
+        set({ documentsBusy: true });
+        try {
+          const replaced = await replaceSellerDocument({ id, file });
+          set((state) => ({
+            documents: state.documents.map((doc) =>
+              doc.id === id ? replaced : doc,
+            ),
+            documentsBusy: false,
+          }));
+          return replaced;
+        } catch (error) {
+          set({ documentsBusy: false });
+          throw error;
+        }
+      },
       getFilteredSettlements: () => {
         const { settlements, search, status } = get();
         const query = search.trim().toLowerCase();

@@ -22,6 +22,7 @@ interface SellerRequestState {
   selectedId: string | null;
   drawerOpen: boolean;
   counterOpen: boolean;
+  actionPending: boolean;
   setSearch: (search: string) => void;
   setStatus: (status: string) => void;
   setPage: (page: number) => void;
@@ -29,10 +30,13 @@ interface SellerRequestState {
   closeDrawer: () => void;
   openCounter: () => void;
   closeCounter: () => void;
-  accept: (id: string) => void;
-  reject: (id: string) => void;
-  counter: (id: string, values: CounterOfferValues) => void;
-  getFiltered: (locationId?: string) => SellerPurchaseRequest[];
+  accept: (id: string) => Promise<void>;
+  reject: (
+    id: string,
+    payload: { rejectionReason: string; message?: string },
+  ) => Promise<void>;
+  counter: (id: string, values: CounterOfferValues) => Promise<void>;
+  getFiltered: () => SellerPurchaseRequest[];
   getById: (id: string) => SellerPurchaseRequest | undefined;
 }
 
@@ -46,17 +50,23 @@ export const useSellerRequestStore = create<SellerRequestState>()(
       pageSize: 10,
       loading: true,
       loadError: null,
+      actionPending: false,
       hydrate: async () => {
-        set({ loading: true, loadError: null });
+        const isInitial = get().requests.length === 0 && get().loading;
+        if (isInitial) set({ loading: true, loadError: null });
+        else set({ loadError: null });
         try {
-          const locationId = useLocationStore.getState().selectedLocationId ?? "";
+          const locationId =
+            useLocationStore.getState().selectedLocationId ?? "";
           const requests = await fetchSellerPurchaseRequests(locationId);
           set({ requests, loading: false, loadError: null });
         } catch (error) {
           set({
-            requests: [],
             loading: false,
-            loadError: error instanceof Error ? error.message : "Unable to load purchase requests.",
+            loadError:
+              error instanceof Error
+                ? error.message
+                : "Unable to load purchase requests.",
           });
         }
       },
@@ -70,55 +80,76 @@ export const useSellerRequestStore = create<SellerRequestState>()(
       closeDrawer: () => set({ drawerOpen: false, selectedId: null }),
       openCounter: () => set({ counterOpen: true }),
       closeCounter: () => set({ counterOpen: false }),
-      accept: (id) => {
-        void acceptSellerPurchaseRequest(id).then(() => get().hydrate());
-        set((state) => ({
-          requests: state.requests.map((request) =>
-            request.id === id ? { ...request, status: "accepted" } : request,
-          ),
-        }));
+      accept: async (id) => {
+        set({ actionPending: true });
+        try {
+          await acceptSellerPurchaseRequest(id);
+          set((state) => ({
+            requests: state.requests.map((request) =>
+              request.id === id
+                ? { ...request, status: "accepted" as const }
+                : request,
+            ),
+          }));
+          await get().hydrate();
+        } finally {
+          set({ actionPending: false });
+        }
       },
-      reject: (id) => {
-        void rejectSellerPurchaseRequest(id).then(() => get().hydrate());
-        set((state) => ({
-          requests: state.requests.map((request) =>
-            request.id === id ? { ...request, status: "rejected" } : request,
-          ),
-        }));
+      reject: async (id, payload) => {
+        set({ actionPending: true });
+        try {
+          await rejectSellerPurchaseRequest(id, payload);
+          set((state) => ({
+            requests: state.requests.map((request) =>
+              request.id === id
+                ? { ...request, status: "rejected" as const }
+                : request,
+            ),
+          }));
+          await get().hydrate();
+        } finally {
+          set({ actionPending: false });
+        }
       },
-      counter: (id, values) => {
-        void counterSellerPurchaseRequest(id, {
-          unitPrice: values.price,
-          quantity: values.quantity,
-          note: values.remark,
-        }).then(() => get().hydrate());
-        set((state) => ({
-          requests: state.requests.map((request) =>
-            request.id === id
-              ? {
-                  ...request,
-                  status: "counter_sent",
-                  counterPrice: values.price,
-                  counterQty: values.quantity,
-                  counterValidity: values.validity,
-                  counterRemark: values.remark,
-                }
-              : request,
-          ),
-          counterOpen: false,
-        }));
+      counter: async (id, values) => {
+        set({ actionPending: true });
+        try {
+          await counterSellerPurchaseRequest(id, {
+            unitPrice: values.price,
+            quantity: values.quantity,
+            note: values.remark,
+          });
+          set((state) => ({
+            requests: state.requests.map((request) =>
+              request.id === id
+                ? {
+                    ...request,
+                    status: "counter_sent" as const,
+                    counterPrice: values.price,
+                    counterQty: values.quantity,
+                    counterValidity: values.validity,
+                    counterRemark: values.remark,
+                  }
+                : request,
+            ),
+            counterOpen: false,
+          }));
+          await get().hydrate();
+        } finally {
+          set({ actionPending: false });
+        }
       },
-      getFiltered: (locationId) => {
+      getFiltered: () => {
         const { requests, search, status } = get();
         const query = search.trim().toLowerCase();
         return requests.filter((request) => {
-          if (locationId && request.locationId !== locationId) return false;
           if (status !== "all" && request.status !== status) return false;
           if (!query) return true;
           return (
             request.requestNumber.toLowerCase().includes(query) ||
             request.gradeName.toLowerCase().includes(query) ||
-            request.buyerId.toLowerCase().includes(query)
+            request.productId.toLowerCase().includes(query)
           );
         });
       },

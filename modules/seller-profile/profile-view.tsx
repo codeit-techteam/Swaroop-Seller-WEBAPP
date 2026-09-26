@@ -89,7 +89,9 @@ export function SellerProfileView() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setSelectedLocation(location.id)}
+                  onClick={() => {
+                    void setSelectedLocation(location.id);
+                  }}
                 >
                   Switch
                 </Button>

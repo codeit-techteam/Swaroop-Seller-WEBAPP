@@ -3,11 +3,13 @@
 import {
   Activity,
   AlertTriangle,
+  Boxes,
   Download,
   Eye,
   MoreHorizontal,
   Package,
   Plus,
+  RefreshCw,
   Search,
   Warehouse,
 } from "lucide-react";
@@ -36,11 +38,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ROUTES } from "@/lib/constants";
-import { availableToSell, formatMt } from "@/lib/seller/format";
+import { formatMt } from "@/lib/seller/format";
 import {
-  inventoryStatus,
+  inventoryItemStatus,
   inventoryStatusLabel,
-  warehouseForProduct,
+  toSellerProductCompat,
 } from "@/lib/seller/inventory";
 import {
   cn,
@@ -48,17 +50,17 @@ import {
   formatNumber,
   formatRelativeTime,
 } from "@/lib/utils";
-import { useLocationStore } from "@/store/locationStore";
-import { useSellerProductStore } from "@/store/sellerProductStore";
-import type { InventoryStockStatus } from "@/types/inventory";
-import type { SellerProduct } from "@/types/seller";
+import { useInventoryDashboardStore } from "@/store/inventoryDashboardStore";
+import type {
+  InventoryListItem,
+  InventoryStockStatus,
+} from "@/types/inventory";
 
 import { AdjustStockDrawer } from "./adjust-stock-drawer";
 import { InventoryDetailDrawer } from "./inventory-detail-drawer";
 import { StockBarLegend, StockCompositionBar } from "./stock-bar";
 
 type StatusFilter = "all" | InventoryStockStatus;
-type LocationScope = "current" | "all";
 type SortKey = "updated" | "sellable" | "onhand" | "grade";
 
 function InventoryKpi({
@@ -106,154 +108,94 @@ function InventoryKpi({
   );
 }
 
-export function InventoryView() {
-  const locationId = useLocationStore((s) => s.selectedLocationId);
-  const locations = useLocationStore((s) => s.locations);
-  const selectedLocation = useLocationStore((s) => s.getSelectedLocation());
-  const products = useSellerProductStore((s) => s.products);
-  const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
-  const loading = useSellerProductStore((s) => s.loading);
-  const loadError = useSellerProductStore((s) => s.loadError);
-  const adjustments = useSellerProductStore((s) => s.adjustments);
-  const adjustStock = useSellerProductStore((s) => s.adjustStock);
+function movementLabel(type: string): string {
+  const normalized = type.replace(/_/g, " ").toLowerCase();
+  return normalized.replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
-  const [search, setSearch] = useState("");
+export function InventoryView() {
+  const summary = useInventoryDashboardStore((s) => s.summary);
+  const items = useInventoryDashboardStore((s) => s.items);
+  const alerts = useInventoryDashboardStore((s) => s.alerts);
+  const warehouses = useInventoryDashboardStore((s) => s.warehouses);
+  const latestMovement = useInventoryDashboardStore((s) => s.latestMovement);
+  const total = useInventoryDashboardStore((s) => s.total);
+  const loading = useInventoryDashboardStore((s) => s.loading);
+  const loadError = useInventoryDashboardStore((s) => s.loadError);
+  const fetchDashboard = useInventoryDashboardStore((s) => s.fetchDashboard);
+  const adjustStock = useInventoryDashboardStore((s) => s.adjustStock);
+  const setSearch = useInventoryDashboardStore((s) => s.setSearch);
+  const setStockStatus = useInventoryDashboardStore((s) => s.setStockStatus);
+  const setWarehouseId = useInventoryDashboardStore((s) => s.setWarehouseId);
+  const storeSearch = useInventoryDashboardStore((s) => s.search);
+  const storeStatus = useInventoryDashboardStore((s) => s.stockStatus);
+  const storeWarehouseId = useInventoryDashboardStore((s) => s.warehouseId);
+
+  const [searchInput, setSearchInput] = useState(storeSearch);
   const [category, setCategory] = useState("all");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [scope, setScope] = useState<LocationScope>("current");
   const [sort, setSort] = useState<SortKey>("updated");
   const [detailId, setDetailId] = useState<string | null>(null);
   const [adjustId, setAdjustId] = useState<string | null>(null);
   const [adjustOpen, setAdjustOpen] = useState(false);
 
   useEffect(() => {
-    void fetchProducts();
-  }, [fetchProducts]);
+    void fetchDashboard();
+  }, [fetchDashboard]);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      if (searchInput === storeSearch) return;
+      setSearch(searchInput);
+      void fetchDashboard();
+    }, 350);
+    return () => window.clearTimeout(handle);
+  }, [fetchDashboard, searchInput, setSearch, storeSearch]);
 
   const categoryOptions = useMemo(
-    () => Array.from(new Set(products.map((product) => product.category).filter(Boolean))).sort(),
-    [products],
+    () =>
+      Array.from(
+        new Set(items.map((item) => item.category).filter(Boolean)),
+      ).sort(),
+    [items],
   );
 
-  const scoped = useMemo(() => {
-    return products.filter((product) =>
-      scope === "current" ? product.locationId === locationId : true,
-    );
-  }, [locationId, products, scope]);
-
   const rows = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return scoped
-      .filter((product) => category === "all" || product.category === category)
-      .filter((product) => {
-        if (status === "all") return true;
-        return inventoryStatus(product) === status;
-      })
-      .filter((product) => {
-        if (!query) return true;
-        const location = locations.find(
-          (item) => item.id === product.locationId,
-        );
-        const warehouse = warehouseForProduct(product, location);
-        return (
-          product.gradeName.toLowerCase().includes(query) ||
-          product.gradeCode.toLowerCase().includes(query) ||
-          product.category.toLowerCase().includes(query) ||
-          product.manufacturer.toLowerCase().includes(query) ||
-          warehouse.toLowerCase().includes(query)
-        );
-      })
+    return items
+      .filter((item) => category === "all" || item.category === category)
       .sort((a, b) => {
-        if (sort === "sellable") {
-          return (
-            availableToSell(
-              b.availableStock,
-              b.reservedStock,
-              b.committedStock,
-            ) -
-            availableToSell(a.availableStock, a.reservedStock, a.committedStock)
-          );
-        }
-        if (sort === "onhand") return b.availableStock - a.availableStock;
+        if (sort === "sellable") return b.sellableQuantity - a.sellableQuantity;
+        if (sort === "onhand") return b.onHandQuantity - a.onHandQuantity;
         if (sort === "grade") return a.gradeName.localeCompare(b.gradeName);
         return b.updatedAt.localeCompare(a.updatedAt);
       });
-  }, [category, locations, scoped, search, sort, status]);
+  }, [category, items, sort]);
 
-  const summary = useMemo(() => {
-    const onHand = scoped.reduce((sum, item) => sum + item.availableStock, 0);
-    const reserved = scoped.reduce((sum, item) => sum + item.reservedStock, 0);
-    const committed = scoped.reduce(
-      (sum, item) => sum + item.committedStock,
+  const inStockCount = useMemo(() => {
+    if (!summary) return 0;
+    return Math.max(
+      summary.skuCount - summary.lowStock - summary.outOfStock,
       0,
     );
-    const sellable = scoped.reduce(
-      (sum, item) =>
-        sum +
-        availableToSell(
-          item.availableStock,
-          item.reservedStock,
-          item.committedStock,
-        ),
-      0,
-    );
-    const low = scoped.filter((item) => inventoryStatus(item) === "LOW_STOCK");
-    const out = scoped.filter(
-      (item) => inventoryStatus(item) === "OUT_OF_STOCK",
-    );
-    return { onHand, reserved, committed, sellable, low, out };
-  }, [scoped]);
+  }, [summary]);
 
-  const warehouses = useMemo(() => {
-    const groups = new Map<
-      string,
-      {
-        name: string;
-        city: string;
-        onHand: number;
-        grades: number;
-        sellable: number;
-      }
-    >();
-    for (const product of scoped) {
-      const location = locations.find((item) => item.id === product.locationId);
-      const name = warehouseForProduct(product, location);
-      const current = groups.get(name) ?? {
-        name,
-        city: location?.city ?? "",
-        onHand: 0,
-        grades: 0,
-        sellable: 0,
-      };
-      current.onHand += product.availableStock;
-      current.grades += 1;
-      current.sellable += availableToSell(
-        product.availableStock,
-        product.reservedStock,
-        product.committedStock,
-      );
-      groups.set(name, current);
-    }
-    return Array.from(groups.values()).sort((a, b) => b.onHand - a.onHand);
-  }, [locations, scoped]);
-
-  const alerts = [...summary.out, ...summary.low];
   const primaryWarehouse = warehouses[0];
-  const lastMovement = adjustments.find((item) =>
-    scoped.some((product) => product.id === item.productId),
-  );
-  const lastMovedProduct = products.find(
-    (item) => item.id === lastMovement?.productId,
-  );
-  const detail = products.find((item) => item.id === detailId) ?? null;
-  const adjustProduct = products.find((item) => item.id === adjustId) ?? null;
-  const detailLocation = locations.find(
-    (item) => item.id === detail?.locationId,
-  );
+  const detail = items.find((item) => item.id === detailId) ?? null;
+  const adjustItem = items.find((item) => item.id === adjustId) ?? null;
+  const adjustProducts = items.map(toSellerProductCompat);
 
-  const openAdjust = (product?: SellerProduct) => {
-    setAdjustId(product?.id ?? null);
+  const openAdjust = (item?: InventoryListItem) => {
+    setAdjustId(item?.id ?? null);
     setAdjustOpen(true);
+  };
+
+  const applyStatusFilter = (next: StatusFilter) => {
+    setStockStatus(next);
+    void fetchDashboard();
+  };
+
+  const applyWarehouseFilter = (next: string) => {
+    setWarehouseId(next);
+    void fetchDashboard();
   };
 
   const exportCsv = () => {
@@ -262,36 +204,27 @@ export function InventoryView() {
       "Code",
       "Category",
       "Warehouse",
-      "Location",
+      "City",
       "On Hand (MT)",
-      "Reserved (MT)",
-      "Committed (MT)",
       "Sellable (MT)",
       "Status",
       "MOQ",
       "Updated",
     ];
-    const csvRows = rows.map((product) => {
-      const location = locations.find((item) => item.id === product.locationId);
-      return [
-        `"${product.gradeName}"`,
-        product.gradeCode,
-        `"${product.category}"`,
-        `"${warehouseForProduct(product, location)}"`,
-        `"${location?.name ?? ""}"`,
-        product.availableStock,
-        product.reservedStock,
-        product.committedStock,
-        availableToSell(
-          product.availableStock,
-          product.reservedStock,
-          product.committedStock,
-        ),
-        inventoryStatusLabel(inventoryStatus(product)),
-        product.moq,
-        product.updatedAt,
-      ].join(",");
-    });
+    const csvRows = rows.map((item) =>
+      [
+        `"${item.gradeName}"`,
+        item.gradeCode,
+        `"${item.category}"`,
+        `"${item.warehouseName}"`,
+        `"${item.warehouseCity}"`,
+        item.onHandQuantity,
+        item.sellableQuantity,
+        inventoryStatusLabel(inventoryItemStatus(item)),
+        item.moq,
+        item.updatedAt,
+      ].join(","),
+    );
     downloadFile(
       [headers.join(","), ...csvRows].join("\n"),
       `inventory-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -301,48 +234,62 @@ export function InventoryView() {
   };
 
   const statusTabs: { id: StatusFilter; label: string; count?: number }[] = [
-    { id: "all", label: "All", count: scoped.length },
+    { id: "all", label: "All", count: summary?.skuCount },
     {
       id: "IN_STOCK",
       label: "In Stock",
-      count: scoped.filter((item) => inventoryStatus(item) === "IN_STOCK")
-        .length,
+      count: Math.max(
+        (summary?.skuCount ?? 0) -
+          (summary?.lowStock ?? 0) -
+          (summary?.outOfStock ?? 0),
+        0,
+      ),
     },
-    { id: "LOW_STOCK", label: "Low", count: summary.low.length },
-    {
-      id: "OUT_OF_STOCK",
-      label: "Out",
-      count: summary.out.length,
-    },
+    { id: "LOW_STOCK", label: "Low", count: summary?.lowStock },
+    { id: "OUT_OF_STOCK", label: "Out", count: summary?.outOfStock },
   ];
 
-  if (loading) {
+  if (loading && !summary) {
     return <InventoryPageSkeleton />;
   }
 
-  if (loadError) {
+  if (loadError && !summary) {
     return (
       <PageContainer>
         <PageHeader title="Inventory" />
         <EmptyState
           title="Unable to load inventory"
           description={loadError}
-          action={
-            <Button onClick={() => void fetchProducts()}>Retry</Button>
-          }
+          action={<Button onClick={() => void fetchDashboard()}>Retry</Button>}
         />
       </PageContainer>
     );
   }
 
+  const unit = summary?.unit ?? "MT";
+  const formatQty = (value: number) =>
+    unit === "MT" ? formatMt(value) : `${formatNumber(value)} ${unit}`;
+
   return (
     <PageContainer className="space-y-6">
       <PageHeader
         title="Inventory"
-        description={`${selectedLocation?.name ?? "Selected location"} · Track on-hand, reserved and sellable stock by warehouse.`}
+        description="Track on-hand and sellable stock by warehouse from live backend data."
         actions={
           <>
-            <Button variant="outline" onClick={exportCsv}>
+            <Button
+              variant="outline"
+              onClick={() => void fetchDashboard()}
+              disabled={loading}
+            >
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={exportCsv}
+              disabled={!rows.length}
+            >
               <Download className="h-4 w-4" />
               Export
             </Button>
@@ -363,40 +310,40 @@ export function InventoryView() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <InventoryKpi
           label="On Hand"
-          value={formatMt(summary.onHand)}
-          hint={`${scoped.length} grades`}
+          value={formatQty(summary?.onHand ?? 0)}
+          hint={`${summary?.skuCount ?? 0} inventory rows`}
           icon={Package}
         />
         <InventoryKpi
           label="Sellable"
-          value={formatMt(summary.sellable)}
+          value={formatQty(summary?.sellable ?? 0)}
           hint="Available to offer"
           icon={Package}
           tone="info"
         />
         <InventoryKpi
-          label="Reserved"
-          value={formatMt(summary.reserved)}
-          hint="Held for offers / PRs"
-          icon={Warehouse}
+          label="Active Products"
+          value={String(summary?.activeProducts ?? 0)}
+          hint="Currently listed"
+          icon={Boxes}
         />
         <InventoryKpi
-          label="Committed"
-          value={formatMt(summary.committed)}
-          hint="Against confirmed orders"
+          label="Warehouses"
+          value={String(summary?.warehouses ?? 0)}
+          hint="Active locations"
           icon={Warehouse}
         />
         <InventoryKpi
           label="Low Stock"
-          value={String(summary.low.length)}
-          hint={summary.low.length ? "Needs replenishment" : "Healthy"}
+          value={String(summary?.lowStock ?? 0)}
+          hint={summary?.lowStock ? "Needs replenishment" : "Healthy"}
           icon={AlertTriangle}
           tone="warning"
         />
         <InventoryKpi
           label="Out of Stock"
-          value={String(summary.out.length)}
-          hint={summary.out.length ? "Cannot create offers" : "None"}
+          value={String(summary?.outOfStock ?? 0)}
+          hint={summary?.outOfStock ? "Cannot create offers" : "None"}
           icon={AlertTriangle}
           tone="danger"
         />
@@ -416,36 +363,27 @@ export function InventoryView() {
               size="sm"
               variant="outline"
               className="h-8 border-amber-200 bg-white"
-              onClick={() =>
-                setStatus(summary.out.length ? "OUT_OF_STOCK" : "LOW_STOCK")
-              }
+              onClick={() => applyStatusFilter("LOW_STOCK")}
             >
               Review
             </Button>
           </div>
           <div className="grid gap-2 md:grid-cols-2">
-            {alerts.slice(0, 4).map((product) => {
-              const itemStatus = inventoryStatus(product);
+            {alerts.slice(0, 4).map((item) => {
+              const itemStatus = inventoryItemStatus(item);
               return (
                 <button
-                  key={product.id}
+                  key={item.id}
                   type="button"
                   className="flex items-center justify-between rounded-lg border border-amber-100 bg-white px-3 py-2.5 text-left"
-                  onClick={() => openAdjust(product)}
+                  onClick={() => openAdjust(item)}
                 >
                   <div>
                     <p className="text-sm font-medium text-slate-900">
-                      {product.gradeName}
+                      {item.gradeName}
                     </p>
                     <p className="text-xs text-slate-500">
-                      Sellable{" "}
-                      {formatMt(
-                        availableToSell(
-                          product.availableStock,
-                          product.reservedStock,
-                          product.committedStock,
-                        ),
-                      )}
+                      Sellable {formatQty(item.sellableQuantity)}
                     </p>
                   </div>
                   <SellerStatusBadge status={itemStatus} />
@@ -454,7 +392,21 @@ export function InventoryView() {
             })}
           </div>
         </section>
-      ) : null}
+      ) : (
+        <section className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-emerald-700" />
+            <div>
+              <h2 className="text-sm font-semibold text-emerald-900">
+                Stock looks healthy
+              </h2>
+              <p className="text-xs text-emerald-800/80">
+                No products currently require replenishment.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-3 md:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -470,7 +422,7 @@ export function InventoryView() {
                 {primaryWarehouse?.city ||
                   (warehouses.length > 1
                     ? `${warehouses.length} warehouses in view`
-                    : "Assign stock to a location")}
+                    : "Assign stock to a warehouse")}
               </p>
             </div>
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F1FF] text-[#1B6EF3]">
@@ -481,13 +433,13 @@ export function InventoryView() {
             <div>
               <p className="text-[11px] text-slate-400">On hand</p>
               <p className="font-semibold">
-                {formatNumber(primaryWarehouse?.onHand ?? 0)} MT
+                {formatNumber(primaryWarehouse?.onHand ?? 0)} {unit}
               </p>
             </div>
             <div>
               <p className="text-[11px] text-slate-400">Sellable</p>
               <p className="font-semibold text-[#1B6EF3]">
-                {formatNumber(primaryWarehouse?.sellable ?? 0)} MT
+                {formatNumber(primaryWarehouse?.sellable ?? 0)} {unit}
               </p>
             </div>
             <div>
@@ -504,9 +456,9 @@ export function InventoryView() {
                 Stock health
               </p>
               <p className="mt-1 font-semibold text-slate-900">
-                {summary.low.length + summary.out.length === 0
+                {(summary?.lowStock ?? 0) + (summary?.outOfStock ?? 0) === 0
                   ? "Healthy"
-                  : `${summary.low.length + summary.out.length} alerts`}
+                  : `${(summary?.lowStock ?? 0) + (summary?.outOfStock ?? 0)} alerts`}
               </p>
             </div>
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
@@ -516,22 +468,19 @@ export function InventoryView() {
           <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
             <div>
               <p className="text-[11px] text-slate-400">In stock</p>
-              <p className="font-semibold text-emerald-700">
-                {
-                  scoped.filter((item) => inventoryStatus(item) === "IN_STOCK")
-                    .length
-                }
-              </p>
+              <p className="font-semibold text-emerald-700">{inStockCount}</p>
             </div>
             <div>
               <p className="text-[11px] text-slate-400">Low</p>
               <p className="font-semibold text-amber-700">
-                {summary.low.length}
+                {summary?.lowStock ?? 0}
               </p>
             </div>
             <div>
               <p className="text-[11px] text-slate-400">Out</p>
-              <p className="font-semibold text-red-600">{summary.out.length}</p>
+              <p className="font-semibold text-red-600">
+                {summary?.outOfStock ?? 0}
+              </p>
             </div>
           </div>
         </div>
@@ -543,11 +492,15 @@ export function InventoryView() {
                 Last movement
               </p>
               <p className="mt-1 font-semibold text-slate-900">
-                {lastMovedProduct?.gradeName ?? "No movements yet"}
+                {latestMovement?.productName ?? "No inventory movements yet."}
               </p>
               <p className="mt-0.5 text-xs text-slate-500">
-                {lastMovement
-                  ? `${lastMovement.reason} · ${formatRelativeTime(lastMovement.at)}`
+                {latestMovement
+                  ? `${movementLabel(latestMovement.type)}${
+                      latestMovement.warehouseName
+                        ? ` · ${latestMovement.warehouseName}`
+                        : ""
+                    } · ${formatRelativeTime(latestMovement.timestamp)}`
                   : "Adjust stock to start the ledger"}
               </p>
             </div>
@@ -555,15 +508,17 @@ export function InventoryView() {
               <Activity className="h-4 w-4" />
             </span>
           </div>
-          {lastMovement ? (
+          {latestMovement ? (
             <p
               className={cn(
                 "mt-4 text-sm font-semibold tabular-nums",
-                lastMovement.delta >= 0 ? "text-emerald-700" : "text-amber-700",
+                latestMovement.quantityDelta >= 0
+                  ? "text-emerald-700"
+                  : "text-amber-700",
               )}
             >
-              {lastMovement.delta >= 0 ? "+" : ""}
-              {formatMt(lastMovement.delta)}
+              {latestMovement.quantityDelta >= 0 ? "+" : ""}
+              {formatNumber(latestMovement.quantityDelta)} {latestMovement.unit}
             </p>
           ) : null}
         </div>
@@ -575,17 +530,17 @@ export function InventoryView() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setStatus(tab.id)}
+              onClick={() => applyStatusFilter(tab.id)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                status === tab.id
+                storeStatus === tab.id
                   ? "bg-[#E8F1FF] text-[#1B6EF3]"
                   : "text-slate-600 hover:text-slate-900",
               )}
             >
               {tab.label}
               <span className="ml-1.5 text-xs tabular-nums text-slate-400">
-                {tab.count}
+                {tab.count ?? 0}
               </span>
             </button>
           ))}
@@ -593,8 +548,8 @@ export function InventoryView() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search grade, SKU, warehouse"
             className="pl-9"
           />
@@ -612,16 +567,17 @@ export function InventoryView() {
             ))}
           </SelectContent>
         </Select>
-        <Select
-          value={scope}
-          onValueChange={(value) => setScope(value as LocationScope)}
-        >
-          <SelectTrigger className="w-full lg:w-44">
-            <SelectValue />
+        <Select value={storeWarehouseId} onValueChange={applyWarehouseFilter}>
+          <SelectTrigger className="w-full lg:w-48">
+            <SelectValue placeholder="Warehouse" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="current">This location</SelectItem>
             <SelectItem value="all">All warehouses</SelectItem>
+            {warehouses.map((warehouse) => (
+              <SelectItem key={warehouse.id} value={warehouse.id}>
+                {warehouse.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select
@@ -643,8 +599,8 @@ export function InventoryView() {
       {rows.length === 0 ? (
         <EmptyState
           icon={Package}
-          title="No inventory at this location"
-          description="Add a grade or switch warehouses to start tracking stock."
+          title="No inventory found"
+          description="Add a grade to create inventory, or clear filters to see all stock."
           action={
             <Button asChild>
               <Link href={ROUTES.PRODUCTS_NEW}>Add Grade</Link>
@@ -652,147 +608,229 @@ export function InventoryView() {
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <p className="text-sm font-semibold text-slate-800">
-              {formatNumber(rows.length)} grade{rows.length === 1 ? "" : "s"}
-            </p>
-            <StockBarLegend />
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Grade</th>
-                  <th className="px-4 py-3 font-medium">Warehouse</th>
-                  <th className="px-4 py-3 font-medium">Composition</th>
-                  <th className="px-4 py-3 font-medium">On Hand</th>
-                  <th className="px-4 py-3 font-medium">Sellable</th>
-                  <th className="px-4 py-3 font-medium">Reserved</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Updated</th>
-                  <th className="px-4 py-3 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((product) => {
-                  const location = locations.find(
-                    (item) => item.id === product.locationId,
-                  );
-                  const itemStatus = inventoryStatus(product);
-                  const sellable = availableToSell(
-                    product.availableStock,
-                    product.reservedStock,
-                    product.committedStock,
-                  );
-                  return (
-                    <tr
-                      key={product.id}
-                      className="border-t border-slate-100 hover:bg-slate-50/80"
-                    >
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          className="text-left font-medium text-slate-900 hover:text-[#1B6EF3]"
-                          onClick={() => setDetailId(product.id)}
-                        >
-                          {product.gradeName}
-                        </button>
-                        <p className="text-xs text-slate-500">
-                          {product.gradeCode} · {product.category}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-slate-800">
-                          {warehouseForProduct(product, location)}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {location?.name ?? "—"}
-                        </p>
-                      </td>
-                      <td className="min-w-[160px] px-4 py-3">
-                        <StockCompositionBar product={product} />
-                      </td>
-                      <td className="px-4 py-3 tabular-nums">
-                        {formatMt(product.availableStock)}
-                      </td>
-                      <td
-                        className={cn(
-                          "px-4 py-3 font-medium tabular-nums",
-                          itemStatus === "OUT_OF_STOCK"
-                            ? "text-red-600"
-                            : itemStatus === "LOW_STOCK"
-                              ? "text-amber-700"
-                              : "text-[#1B6EF3]",
-                        )}
+        <>
+          <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white md:block">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-800">
+                Showing {formatNumber(rows.length)} of {formatNumber(total)}{" "}
+                grade{total === 1 ? "" : "s"}
+              </p>
+              <StockBarLegend />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[960px] text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Product / Grade</th>
+                    <th className="px-4 py-3 font-medium">Warehouse</th>
+                    <th className="px-4 py-3 font-medium">Composition</th>
+                    <th className="px-4 py-3 font-medium">On Hand</th>
+                    <th className="px-4 py-3 font-medium">Sellable</th>
+                    <th className="px-4 py-3 font-medium">MOQ</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Updated</th>
+                    <th className="px-4 py-3 text-right font-medium">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((item) => {
+                    const itemStatus = inventoryItemStatus(item);
+                    return (
+                      <tr
+                        key={item.id}
+                        className="border-t border-slate-100 hover:bg-slate-50/80"
                       >
-                        {formatMt(sellable)}
-                      </td>
-                      <td className="px-4 py-3 tabular-nums text-slate-600">
-                        {formatMt(product.reservedStock)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <SellerStatusBadge status={itemStatus} />
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-500">
-                        {formatRelativeTime(product.updatedAt)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-right">
-                        <div className="inline-flex items-center justify-end gap-1.5">
-                          <Button
-                            size="sm"
-                            className="h-8 px-3 text-xs"
-                            onClick={() => openAdjust(product)}
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            className="text-left font-medium text-slate-900 hover:text-[#1B6EF3]"
+                            onClick={() => setDetailId(item.id)}
                           >
-                            Update
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 shrink-0"
-                                aria-label="More inventory actions"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44">
-                              <DropdownMenuItem
-                                onClick={() => setDetailId(product.id)}
-                              >
-                                <Eye className="h-4 w-4" />
-                                View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`${ROUTES.OFFERS_NEW}?productId=${product.id}`}
+                            {item.gradeName}
+                          </button>
+                          <p className="text-xs text-slate-500">
+                            {item.gradeCode} · {item.category}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-slate-800">{item.warehouseName}</p>
+                          <p className="text-xs text-slate-500">
+                            {item.warehouseCity || "—"}
+                          </p>
+                        </td>
+                        <td className="min-w-[160px] px-4 py-3">
+                          <StockCompositionBar item={item} />
+                        </td>
+                        <td className="px-4 py-3 tabular-nums">
+                          {formatQty(item.onHandQuantity)}
+                        </td>
+                        <td
+                          className={cn(
+                            "px-4 py-3 font-medium tabular-nums",
+                            itemStatus === "OUT_OF_STOCK"
+                              ? "text-red-600"
+                              : itemStatus === "LOW_STOCK"
+                                ? "text-amber-700"
+                                : "text-[#1B6EF3]",
+                          )}
+                        >
+                          {formatQty(item.sellableQuantity)}
+                        </td>
+                        <td className="px-4 py-3 tabular-nums text-slate-600">
+                          {formatQty(item.moq)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <SellerStatusBadge status={itemStatus} />
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-500">
+                          {formatRelativeTime(item.updatedAt)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              className="h-8 px-3 text-xs"
+                              onClick={() => openAdjust(item)}
+                            >
+                              Update
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 shrink-0"
+                                  aria-label="More inventory actions"
                                 >
-                                  Create Offer
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link href={`${ROUTES.PRODUCTS}/${product.id}`}>
-                                  View Grade
-                                </Link>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuItem
+                                  onClick={() => setDetailId(item.id)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`${ROUTES.OFFERS_NEW}?productId=${item.productId}`}
+                                  >
+                                    Create Offer
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`${ROUTES.PRODUCTS}/${item.productId}`}
+                                  >
+                                    View Grade
+                                  </Link>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          <div className="space-y-3 md:hidden">
+            {rows.map((item) => {
+              const itemStatus = inventoryItemStatus(item);
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-slate-200 bg-white p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <button
+                        type="button"
+                        className="text-left font-medium text-slate-900"
+                        onClick={() => setDetailId(item.id)}
+                      >
+                        {item.gradeName}
+                      </button>
+                      <p className="text-xs text-slate-500">
+                        {item.warehouseName}
+                        {item.warehouseCity ? ` · ${item.warehouseCity}` : ""}
+                      </p>
+                    </div>
+                    <SellerStatusBadge status={itemStatus} />
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <p className="text-[11px] text-slate-400">On hand</p>
+                      <p className="font-semibold">
+                        {formatQty(item.onHandQuantity)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400">Sellable</p>
+                      <p className="font-semibold text-[#1B6EF3]">
+                        {formatQty(item.sellableQuantity)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400">MOQ</p>
+                      <p className="font-semibold">{formatQty(item.moq)}</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="mt-3 w-full"
+                    onClick={() => openAdjust(item)}
+                  >
+                    Update stock
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <InventoryDetailDrawer
-        product={detail}
-        location={detailLocation}
-        movements={adjustments.filter((item) => item.productId === detailId)}
+        product={detail ? toSellerProductCompat(detail) : null}
+        location={
+          detail
+            ? {
+                id: detail.warehouseId,
+                name: detail.warehouseName,
+                city: detail.warehouseCity,
+                state: "",
+                warehouse: detail.warehouseName,
+                status: "active",
+                availableStockMt: detail.onHandQuantity,
+                activeOffers: 0,
+                activeOrders: 0,
+                decisionMaker: "",
+                decisionMakerRole: "",
+              }
+            : undefined
+        }
+        movements={
+          latestMovement &&
+          detail &&
+          latestMovement.productId === detail.productId
+            ? [
+                {
+                  id: latestMovement.id,
+                  productId: latestMovement.productId,
+                  delta: latestMovement.quantityDelta,
+                  reason:
+                    latestMovement.notes ?? movementLabel(latestMovement.type),
+                  at: latestMovement.timestamp,
+                },
+              ]
+            : []
+        }
         onOpenChange={(open) => {
           if (!open) setDetailId(null);
         }}
@@ -806,14 +844,28 @@ export function InventoryView() {
       <AdjustStockDrawer
         key={`${adjustOpen}-${adjustId ?? "blank"}`}
         open={adjustOpen}
-        product={adjustProduct}
-        products={scoped}
+        product={adjustItem ? toSellerProductCompat(adjustItem) : null}
+        products={adjustProducts}
         onOpenChange={(open) => {
           setAdjustOpen(open);
           if (!open) setAdjustId(null);
         }}
-        onSave={(productId, delta, reason) => {
-          adjustStock(productId, delta, reason);
+        onSave={async (productId, delta, reason) => {
+          const target =
+            items.find((item) => item.productId === productId) ??
+            items.find((item) => item.id === productId);
+          if (!target?.inventoryId) {
+            toast.error("No inventory linked for this grade.");
+            return;
+          }
+          const result = await adjustStock(target.inventoryId, delta, reason);
+          if (!result.ok) {
+            toast.error(result.message ?? "Unable to adjust stock.");
+            return;
+          }
+          toast.success(
+            `${target.gradeName} ${delta >= 0 ? "increased" : "reduced"} by ${formatQty(Math.abs(delta))}`,
+          );
         }}
       />
     </PageContainer>

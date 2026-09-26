@@ -29,10 +29,22 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  useAcceptPriceRevision,
+  useCounterPriceRevision,
+  useRejectPriceRevision,
+  useSellerPriceRevision,
+  useSellerPriceRevisions,
+  useSellerPriceRevisionSummary,
+} from "@/hooks/use-seller-price-revisions";
 import { csvEscape } from "@/lib/seller-ops";
 import { downloadFile } from "@/lib/utils";
-import { useSellerOpsStore } from "@/store/sellerOpsStore";
-import type { PriceRevision, PriceRevisionStatus } from "@/types/seller-ops";
+import { priceRevisionApiError } from "@/services/price-revisions";
+import type {
+  SellerPriceRevision,
+  SellerPriceRevisionStatus,
+} from "@/types/seller-price-revision";
+import { priceRevisionStatusConfig } from "@/types/seller-price-revision";
 
 import { CounterOfferModal } from "./counter-offer-modal";
 import { PriceRevisionDrawer } from "./drawer";
@@ -40,37 +52,35 @@ import { PriceRevisionKpis } from "./kpis";
 import { PriceRevisionSkeleton } from "./skeleton";
 import { PriceRevisionTable } from "./table";
 
-const TABS: { key: "ALL" | PriceRevisionStatus; label: string }[] = [
+const TABS: { key: "ALL" | SellerPriceRevisionStatus; label: string }[] = [
   { key: "ALL", label: "All" },
-  { key: "PENDING", label: "Pending" },
-  { key: "AWAITING_RESPONSE", label: "Awaiting Response" },
-  { key: "ACCEPTED", label: "Accepted" },
-  { key: "COUNTER_OFFER", label: "Counter Offer" },
-  { key: "REJECTED", label: "Rejected" },
+  { key: "PENDING", label: priceRevisionStatusConfig.PENDING.label },
+  {
+    key: "AWAITING_RESPONSE",
+    label: priceRevisionStatusConfig.AWAITING_RESPONSE.label,
+  },
+  { key: "ACCEPTED", label: priceRevisionStatusConfig.ACCEPTED.label },
+  {
+    key: "COUNTER_OFFER",
+    label: priceRevisionStatusConfig.COUNTER_OFFER.label,
+  },
+  { key: "REJECTED", label: priceRevisionStatusConfig.REJECTED.label },
 ];
 
 type SortKey = "newest" | "oldest" | "highest" | "lowest";
 
 export function SellerPriceRevisionView() {
   const searchParams = useSearchParams();
-  const loading = useSellerOpsStore((s) => s.loading);
-  const error = useSellerOpsStore((s) => s.error);
-  const busy = useSellerOpsStore((s) => s.busy);
-  const revisions = useSellerOpsStore((s) => s.priceRevisions);
-  const bootstrap = useSellerOpsStore((s) => s.bootstrap);
-  const retry = useSellerOpsStore((s) => s.retry);
-  const markRevisionViewed = useSellerOpsStore((s) => s.markRevisionViewed);
-  const acceptPriceRevision = useSellerOpsStore((s) => s.acceptPriceRevision);
-  const rejectPriceRevision = useSellerOpsStore((s) => s.rejectPriceRevision);
-  const submitCounterOffer = useSellerOpsStore((s) => s.submitCounterOffer);
 
-  const [tab, setTab] = useState<"ALL" | PriceRevisionStatus>("ALL");
+  const [tab, setTab] = useState<"ALL" | SellerPriceRevisionStatus>("ALL");
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [status, setStatus] = useState("all");
-  const [grade, setGrade] = useState("all");
+  const [gradeId, setGradeId] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
+  const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null | undefined>(
     undefined,
   );
@@ -84,65 +94,77 @@ export function SellerPriceRevisionView() {
   const [counterTerms, setCounterTerms] = useState("");
 
   useEffect(() => {
-    void bootstrap();
-  }, [bootstrap]);
+    const timer = window.setTimeout(() => setSearchDebounced(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const effectiveStatus =
+    tab !== "ALL" ? tab : status !== "all" ? status : undefined;
+
+  const listParams = useMemo(
+    () => ({
+      page,
+      limit: 20,
+      status: effectiveStatus,
+      gradeId: gradeId !== "all" ? gradeId : undefined,
+      from: dateFrom || undefined,
+      to: dateTo || undefined,
+      sort,
+      search: searchDebounced || undefined,
+    }),
+    [page, effectiveStatus, gradeId, dateFrom, dateTo, sort, searchDebounced],
+  );
+
+  const listQuery = useSellerPriceRevisions(listParams);
+  const summaryQuery = useSellerPriceRevisionSummary();
+  const acceptMutation = useAcceptPriceRevision();
+  const rejectMutation = useRejectPriceRevision();
+  const counterMutation = useCounterPriceRevision();
 
   const queryId = searchParams.get("id");
   const activeId = selectedId === undefined ? queryId : selectedId;
-  const selected = revisions.find((item) => item.id === activeId) ?? null;
-  const grades = useMemo(
-    () => Array.from(new Set(revisions.map((item) => item.gradeName))),
-    [revisions],
+  const detailQuery = useSellerPriceRevision(
+    activeId ?? null,
+    Boolean(activeId),
   );
 
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return revisions
-      .filter((item) => (tab === "ALL" ? true : item.status === tab))
-      .filter((item) => (status === "all" ? true : item.status === status))
-      .filter((item) => (grade === "all" ? true : item.gradeName === grade))
-      .filter((item) => {
-        if (!dateFrom && !dateTo) return true;
-        const day = item.requestedOn.slice(0, 10);
-        if (dateFrom && day < dateFrom) return false;
-        if (dateTo && day > dateTo) return false;
-        return true;
-      })
-      .filter((item) => {
-        if (!query) return true;
-        return [
-          item.id,
-          item.productName,
-          item.gradeName,
-          item.buyerName,
-          item.orderId ?? "",
-          item.purchaseRequestId,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(query);
-      })
-      .sort((a, b) => {
-        if (sort === "oldest") return a.requestedOn.localeCompare(b.requestedOn);
-        if (sort === "highest") return b.totalValue - a.totalValue;
-        if (sort === "lowest") return a.totalValue - b.totalValue;
-        return b.requestedOn.localeCompare(a.requestedOn);
-      });
-  }, [dateFrom, dateTo, grade, revisions, search, sort, status, tab]);
+  const revisions = useMemo(
+    () => listQuery.data?.items ?? [],
+    [listQuery.data?.items],
+  );
+  const meta = listQuery.data?.meta;
+  const selected =
+    detailQuery.data ?? revisions.find((item) => item.id === activeId) ?? null;
 
-  const openRow = (row: PriceRevision) => {
+  const grades = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of revisions) {
+      if (row.grade?.id) {
+        map.set(row.grade.id, row.grade.displayName || row.grade.name);
+      }
+    }
+    return Array.from(map.entries());
+  }, [revisions]);
+
+  const busy =
+    acceptMutation.isPending ||
+    rejectMutation.isPending ||
+    counterMutation.isPending;
+
+  const openRow = (row: SellerPriceRevision) => {
     setSelectedId(row.id);
-    markRevisionViewed(row.id);
   };
 
   const resetFilters = () => {
     setTab("ALL");
     setSearch("");
+    setSearchDebounced("");
     setStatus("all");
-    setGrade("all");
+    setGradeId("all");
     setDateFrom("");
     setDateTo("");
     setSort("newest");
+    setPage(1);
     toast.success("Filters reset");
   };
 
@@ -154,22 +176,28 @@ export function SellerPriceRevisionView() {
       "Buyer",
       "Original Price",
       "Requested Price",
+      "Difference %",
       "Quantity",
       "Total Value",
+      "Requested On",
+      "Deadline",
       "Status",
     ];
     const lines = [
       header.join(","),
-      ...filtered.map((row) =>
+      ...revisions.map((row) =>
         [
-          csvEscape(row.id),
-          csvEscape(row.productName),
-          csvEscape(row.gradeName),
-          csvEscape(row.buyerName),
+          csvEscape(row.requestNumber),
+          csvEscape(row.product?.name ?? ""),
+          csvEscape(row.grade?.displayName ?? row.grade?.name ?? ""),
+          csvEscape("Anonymous Buyer"),
           row.originalPrice,
           row.requestedPrice,
-          row.quantityMt,
+          row.differencePercent,
+          `${row.quantity} ${row.unit}`,
           row.totalValue,
+          row.requestedOn,
+          row.responseDeadline ?? "",
           row.status,
         ].join(","),
       ),
@@ -178,7 +206,7 @@ export function SellerPriceRevisionView() {
     toast.success("Export downloaded");
   };
 
-  if (loading) {
+  if (listQuery.isLoading && !listQuery.data) {
     return (
       <PageContainer>
         <PriceRevisionSkeleton />
@@ -186,13 +214,13 @@ export function SellerPriceRevisionView() {
     );
   }
 
-  if (error) {
+  if (listQuery.isError && !listQuery.data) {
     return (
       <PageContainer>
         <ErrorState
           title="Unable to load price revisions."
-          description="Please try again."
-          onRetry={() => void retry()}
+          description={priceRevisionApiError(listQuery.error)}
+          onRetry={() => void listQuery.refetch()}
         />
       </PageContainer>
     );
@@ -217,14 +245,20 @@ export function SellerPriceRevisionView() {
         }
       />
 
-      <PriceRevisionKpis rows={revisions} />
+      <PriceRevisionKpis
+        summary={summaryQuery.data}
+        loading={summaryQuery.isLoading}
+      />
 
       <div className="mt-5 flex flex-wrap gap-2">
         {TABS.map((item) => (
           <button
             key={item.key}
             type="button"
-            onClick={() => setTab(item.key)}
+            onClick={() => {
+              setTab(item.key);
+              setPage(1);
+            }}
             className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
               tab === item.key
                 ? "border-[#1B6EF3] bg-[#E8F1FF] text-[#1B6EF3]"
@@ -239,11 +273,20 @@ export function SellerPriceRevisionView() {
       <div className="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-2 lg:grid-cols-6">
         <Input
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search request, product, grade, buyer or order"
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
+          placeholder="Search request, product, grade or order"
           className="lg:col-span-2"
         />
-        <Select value={status} onValueChange={setStatus}>
+        <Select
+          value={status}
+          onValueChange={(value) => {
+            setStatus(value);
+            setPage(1);
+          }}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -256,22 +299,48 @@ export function SellerPriceRevisionView() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={grade} onValueChange={setGrade}>
+        <Select
+          value={gradeId}
+          onValueChange={(value) => {
+            setGradeId(value);
+            setPage(1);
+          }}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Product / Grade" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All grades</SelectItem>
-            {grades.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
+            {grades.map(([id, name]) => (
+              <SelectItem key={id} value={id}>
+                {name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-        <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-        <Select value={sort} onValueChange={(value) => setSort(value as SortKey)}>
+        <Input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => {
+            setDateFrom(e.target.value);
+            setPage(1);
+          }}
+        />
+        <Input
+          type="date"
+          value={dateTo}
+          onChange={(e) => {
+            setDateTo(e.target.value);
+            setPage(1);
+          }}
+        />
+        <Select
+          value={sort}
+          onValueChange={(value) => {
+            setSort(value as SortKey);
+            setPage(1);
+          }}
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -282,29 +351,59 @@ export function SellerPriceRevisionView() {
             <SelectItem value="lowest">Lowest Value</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="ghost" className="lg:col-span-6 w-fit" onClick={resetFilters}>
+        <Button
+          variant="ghost"
+          className="lg:col-span-6 w-fit"
+          onClick={resetFilters}
+        >
           <RotateCcw className="h-4 w-4" />
           Reset Filters
         </Button>
       </div>
 
       <div className="mt-4">
-        {filtered.length === 0 ? (
+        {revisions.length === 0 ? (
           <EmptyState
             icon={IndianRupee}
-            title="No price revision requests"
+            title="No price revision requests found."
             description="There are no revision requests matching the current filters."
           />
         ) : (
           <TooltipProvider delayDuration={200}>
             <PriceRevisionTable
-              rows={filtered}
+              rows={revisions}
               onView={openRow}
               onRespond={openRow}
             />
           </TooltipProvider>
         )}
       </div>
+
+      {meta && meta.totalPages > 1 ? (
+        <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
+          <p>
+            Page {meta.page} of {meta.totalPages} · {meta.total} total
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1 || listQuery.isFetching}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= meta.totalPages || listQuery.isFetching}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <PriceRevisionDrawer
         revision={selected}
@@ -315,7 +414,9 @@ export function SellerPriceRevisionView() {
         onAccept={() => setAcceptOpen(true)}
         onCounter={() => {
           setCounterPrice(
-            selected ? String(selected.counterPrice ?? selected.requestedPrice) : "",
+            selected
+              ? String(selected.counterPrice ?? selected.requestedPrice)
+              : "",
           );
           setCounterReason("");
           setCounterOpen(true);
@@ -341,9 +442,13 @@ export function SellerPriceRevisionView() {
               disabled={busy}
               onClick={async () => {
                 if (!selected) return;
-                await acceptPriceRevision(selected.id);
-                setAcceptOpen(false);
-                toast.success("Price revision accepted.");
+                try {
+                  await acceptMutation.mutateAsync({ id: selected.id });
+                  setAcceptOpen(false);
+                  toast.success("Price revision accepted.");
+                } catch (error) {
+                  toast.error(priceRevisionApiError(error));
+                }
               }}
             >
               {busy ? "Accepting..." : "Accept Price"}
@@ -377,10 +482,17 @@ export function SellerPriceRevisionView() {
               disabled={busy || !rejectReason.trim()}
               onClick={async () => {
                 if (!selected) return;
-                await rejectPriceRevision(selected.id, rejectReason.trim());
-                setRejectOpen(false);
-                setRejectReason("");
-                toast.success("Price revision rejected.");
+                try {
+                  await rejectMutation.mutateAsync({
+                    id: selected.id,
+                    reason: rejectReason.trim(),
+                  });
+                  setRejectOpen(false);
+                  setRejectReason("");
+                  toast.success("Price revision rejected.");
+                } catch (error) {
+                  toast.error(priceRevisionApiError(error));
+                }
               }}
             >
               {busy ? "Rejecting..." : "Reject"}
@@ -403,14 +515,19 @@ export function SellerPriceRevisionView() {
         onOpenChange={setCounterOpen}
         onSubmit={async () => {
           if (!selected) return;
-          await submitCounterOffer(selected.id, {
-            counterPrice: Number(counterPrice),
-            reason: counterReason,
-            validity: counterValidity,
-            additionalTerms: counterTerms,
-          });
-          setCounterOpen(false);
-          toast.success("Counter offer submitted.");
+          try {
+            await counterMutation.mutateAsync({
+              id: selected.id,
+              counterPrice: Number(counterPrice),
+              message: [counterReason, counterTerms, counterValidity]
+                .filter(Boolean)
+                .join(" | "),
+            });
+            setCounterOpen(false);
+            toast.success("Counter offer submitted.");
+          } catch (error) {
+            toast.error(priceRevisionApiError(error));
+          }
         }}
       />
     </PageContainer>

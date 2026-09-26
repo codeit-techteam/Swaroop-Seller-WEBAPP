@@ -11,8 +11,8 @@ import { z } from "zod";
 import { PageContainer } from "@/components/common/page-container";
 import { PageHeader } from "@/components/common/page-header";
 import {
-  ProductDocumentsPanel,
   type PendingDoc,
+  ProductDocumentsPanel,
 } from "@/components/grades/product-documents-panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,15 +33,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
-import {
-  packagingTypes,
-  paymentTermsSummary,
-  polymerTypes,
-} from "@/lib/mock/products";
+import { packagingTypes, polymerTypes } from "@/lib/mock/products";
 import { slabsOverlap } from "@/lib/seller/format";
-import { createSellerListing, fetchSellerGrades, type SellerGradeOption } from "@/services/catalog";
+import {
+  createSellerListing,
+  fetchSellerGrades,
+  type SellerGradeOption,
+} from "@/services/catalog";
 import { uploadProductDocument } from "@/services/product-documents";
-import { useLocationStore } from "@/store/locationStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 import { useSellerStore } from "@/store/sellerStore";
 import type { BulkPriceSlab } from "@/types/seller";
@@ -72,8 +71,7 @@ type Values = z.infer<typeof schema>;
 
 export function AddGradeView() {
   const router = useRouter();
-  const locationId = useLocationStore((s) => s.selectedLocationId);
-  const addProduct = useSellerProductStore((s) => s.addProduct);
+  const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const addActivity = useSellerStore((s) => s.addActivity);
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
   const [grades, setGrades] = useState<SellerGradeOption[]>([]);
@@ -90,7 +88,9 @@ export function AddGradeView() {
       .catch((error: unknown) => {
         setGrades([]);
         setGradesError(
-          error instanceof Error ? error.message : "Unable to load Grade Master.",
+          error instanceof Error
+            ? error.message
+            : "Unable to load Grade Master.",
         );
       });
   }, []);
@@ -132,10 +132,6 @@ export function AddGradeView() {
       return;
     }
 
-    const paymentPricing = {
-      sellingPrice: values.sellingPrice,
-    };
-
     let createdProductId: string | null = null;
     try {
       const created = await createSellerListing({
@@ -148,10 +144,27 @@ export function AddGradeView() {
         packaging: values.packagingType,
         unit: values.unit,
         countryOfOrigin: values.origin,
+        application: values.application,
+        polymerType: values.polymerType,
+        warehouseName: values.warehouse,
+        availableStock: values.availableStock,
+        reservedStock: values.reservedStock,
+        moq: values.moq,
+        sellingPrice: values.sellingPrice,
+        priceTiers: slabs.map((s) => ({
+          minQty: s.minQty,
+          maxQty: s.maxQty,
+          price: s.price,
+          label: s.discountLabel,
+        })),
+        notes: values.notes,
+        publishToMarketplace: !asDraft,
+        gstPercent: values.gstPercent,
       });
       createdProductId = created?.id ?? null;
 
       if (createdProductId && pendingDocs.length > 0) {
+        let uploaded = 0;
         for (const pending of pendingDocs) {
           try {
             await uploadProductDocument(createdProductId, {
@@ -160,47 +173,26 @@ export function AddGradeView() {
               description: pending.description,
               file: pending.file,
             });
+            uploaded += 1;
           } catch {
-            toast.error(`Failed to upload ${pending.documentType}`);
+            toast.error(`Failed to upload ${pending.documentType} to R2`);
           }
         }
         setPendingDocs([]);
+        if (uploaded > 0) {
+          toast.success(`${uploaded} document(s) stored in Cloudflare R2`);
+        }
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to save listing on backend.",
+        error instanceof Error
+          ? error.message
+          : "Unable to save listing on backend.",
       );
       return;
     }
 
-    addProduct(
-      {
-        category: selectedGrade.category?.name ?? selectedGrade.name,
-        gradeName: values.gradeName,
-        manufacturer: values.manufacturer,
-        gradeCode: values.gradeCode,
-        polymerType: values.polymerType,
-        application: values.application,
-        mfi: values.mfi,
-        density: values.density ?? "",
-        packagingType: values.packagingType,
-        unit: values.unit,
-        availableStock: values.availableStock,
-        moq: values.moq,
-        origin: values.origin,
-        currency: values.currency,
-        gstPercent: values.gstPercent,
-        warehouse: values.warehouse,
-        reservedStock: values.reservedStock,
-        notes: values.notes ?? "",
-        locationId,
-        basePrice: values.sellingPrice,
-        paymentPricing,
-        paymentTerms: paymentTermsSummary(paymentPricing),
-        bulkPricing: slabs,
-      },
-      asDraft,
-    );
+    await fetchProducts();
     addActivity({
       type: "offer",
       title: asDraft ? "Grade saved as draft" : "Grade added",
@@ -214,7 +206,7 @@ export function AddGradeView() {
     <PageContainer className="max-w-4xl">
       <PageHeader
         title="Add Product / Grade"
-        description="Structured grade information with a single selling price. Product images are not used on this platform."
+        description="Creates a marketplace listing with stock and bulk pricing. TDS/MSDS are optional — customers see verified details without seller identity."
       />
       <Form {...form}>
         <form
@@ -233,9 +225,15 @@ export function AddGradeView() {
                       field.onChange(value);
                       const selected = grades.find((item) => item.id === value);
                       if (selected) {
-                        form.setValue("gradeName", selected.displayName ?? selected.name);
+                        form.setValue(
+                          "gradeName",
+                          selected.displayName ?? selected.name,
+                        );
                         form.setValue("gradeCode", selected.code);
-                        form.setValue("polymerType", selected.category?.code ?? selected.code);
+                        form.setValue(
+                          "polymerType",
+                          selected.category?.code ?? selected.code,
+                        );
                       }
                     }}
                     value={field.value}
@@ -249,7 +247,9 @@ export function AddGradeView() {
                       {grades.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.displayName ?? item.name}
-                          {item.category?.name ? ` · ${item.category.name}` : ""}
+                          {item.category?.name
+                            ? ` · ${item.category.name}`
+                            : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -547,8 +547,8 @@ export function AddGradeView() {
                   Bulk Pricing Tiers
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Quantity bands with a unit price. Leave max empty for open-ended
-                  tiers.
+                  Quantity bands with a unit price. Leave max empty for
+                  open-ended tiers.
                 </p>
               </div>
               <Button

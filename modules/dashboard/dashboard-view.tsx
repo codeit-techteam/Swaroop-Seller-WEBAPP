@@ -17,6 +17,7 @@ import { PageContainer } from "@/components/common/page-container";
 import { DashboardPageSkeleton } from "@/components/skeleton";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
+import { useSellerSettlementSummary } from "@/hooks/use-seller-settlements";
 import { ROUTES } from "@/lib/constants";
 import {
   formatInrShort,
@@ -28,7 +29,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useLocationStore } from "@/store/locationStore";
-import { useSellerFinanceStore } from "@/store/sellerFinanceStore";
 import { useSellerNotificationStore } from "@/store/sellerNotificationStore";
 import { useSellerOfferStore } from "@/store/sellerOfferStore";
 import { useSellerOrderStore } from "@/store/sellerOrderStore";
@@ -47,35 +47,36 @@ export function DashboardView() {
   const productsLoading = useSellerProductStore((s) => s.loading);
   const offers = useSellerOfferStore((s) => s.offers);
   const requests = useSellerRequestStore((s) => s.requests);
+  const hydrateRequests = useSellerRequestStore((s) => s.hydrate);
   const orders = useSellerOrderStore((s) => s.orders);
   const dispatches = useSellerOrderStore((s) => s.dispatches);
-  const settlements = useSellerFinanceStore((s) => s.settlements);
+  const hydrateOrders = useSellerOrderStore((s) => s.hydrate);
+  const settlementSummary = useSellerSettlementSummary();
   const unread = useSellerNotificationStore((s) => s.getUnreadCount());
 
   useEffect(() => {
     void fetchProducts();
-  }, [fetchProducts]);
+    void hydrateRequests();
+    void hydrateOrders({ page: 1, limit: 20 });
+  }, [fetchProducts, hydrateOrders, hydrateRequests, locationId]);
 
   const ready = !productsLoading;
 
-  const scopedProducts = useMemo(
-    () => products.filter((item) => item.locationId === locationId),
-    [locationId, products],
-  );
+  // Full seller catalog for the My Products KPI (not warehouse-scoped).
+  const myProductGrades = products.length;
   const scopedOffers = useMemo(
     () => offers.filter((item) => item.locationId === locationId),
     [locationId, offers],
   );
-  const scopedRequests = useMemo(
-    () => requests.filter((item) => item.locationId === locationId),
-    [locationId, requests],
-  );
-  const scopedOrders = useMemo(
-    () => orders.filter((item) => item.locationId === locationId),
-    [locationId, orders],
-  );
+  // Purchase requests are org-scoped (matched seller), not warehouse-location scoped.
+  const scopedRequests = requests;
+  // Orders (PurchaseOrders) are seller-org scoped from backend JWT — not location stamped.
+  const scopedOrders = orders;
   const scopedDispatch = useMemo(
-    () => dispatches.filter((item) => item.locationId === locationId),
+    () =>
+      dispatches.filter(
+        (item) => !locationId || item.locationId === locationId,
+      ),
     [dispatches, locationId],
   );
 
@@ -91,9 +92,8 @@ export function DashboardView() {
   const pendingDispatch = scopedDispatch.filter(
     (item) => item.status !== "dispatched",
   ).length;
-  const receivable = settlements
-    .filter((item) => item.status !== "settled")
-    .reduce((sum, item) => sum + item.amount, 0);
+  const receivable = settlementSummary.data?.outstandingSettlementAmount ?? 0;
+  const settledAmount = settlementSummary.data?.settledAmount ?? 0;
 
   const name = user?.name ?? seller.contactPerson;
 
@@ -129,7 +129,7 @@ export function DashboardView() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <KpiCard
           label="My Products"
-          value={`${scopedProducts.length} Grades`}
+          value={`${myProductGrades} Grades`}
           icon={Package}
         />
         <KpiCard
@@ -237,9 +237,7 @@ export function DashboardView() {
                   <p className="text-xs text-slate-500">
                     {formatMt(request.quantityMt)} · {request.gradeName}
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {request.buyerLabel} · {request.buyerId}
-                  </p>
+                  <p className="mt-1 text-xs text-slate-400">Anonymous Buyer</p>
                 </div>
                 <SellerStatusBadge status={request.status} />
               </div>
@@ -364,13 +362,7 @@ export function DashboardView() {
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <dt className="text-xs uppercase text-slate-500">Settled</dt>
-              <dd className="font-semibold">
-                {formatInrShort(
-                  settlements
-                    .filter((item) => item.status === "settled")
-                    .reduce((sum, item) => sum + item.amount, 0),
-                )}
-              </dd>
+              <dd className="font-semibold">{formatInrShort(settledAmount)}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase text-slate-500">Outstanding</dt>

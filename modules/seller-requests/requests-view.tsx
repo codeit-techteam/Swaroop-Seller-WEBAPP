@@ -31,9 +31,12 @@ import {
 import { ROUTES } from "@/lib/constants";
 import { formatMt, formatPricePerKg } from "@/lib/seller/format";
 import { formatDateTime } from "@/lib/utils";
-import { useLocationStore } from "@/store/locationStore";
+import { useAuthStore } from "@/store/authStore";
 import { useSellerRequestStore } from "@/store/sellerRequestStore";
 import { useSellerStore } from "@/store/sellerStore";
+
+/** Poll inbox so newly matched PRs appear during the 15-minute response window. */
+const INBOX_POLL_MS = 15_000;
 
 const REQUEST_STATUS_OPTIONS = [
   { value: "all", label: "All" },
@@ -45,10 +48,36 @@ const REQUEST_STATUS_OPTIONS = [
   { value: "expired", label: "Expired" },
 ] as const;
 
+const REJECT_REASONS = [
+  "Inventory Unavailable",
+  "Price Not Acceptable",
+  "MOQ Too Low",
+  "Warehouse Issue",
+  "Unable to fulfil within requested window",
+  "Other",
+] as const;
+
+function formatRemaining(seconds: number | null | undefined): string | null {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return null;
+  const total = Math.floor(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function canRespond(status: string, allowedActions?: string[]) {
+  if (allowedActions?.length) {
+    return allowedActions.some((action) =>
+      ["ACCEPT", "REJECT", "COUNTER", "COUNTER_OFFER"].includes(action),
+    );
+  }
+  return status === "new" || status === "under_review";
+}
+
 export function SellerRequestsView() {
-  const locationId = useLocationStore((s) => s.selectedLocationId);
   const requests = useSellerRequestStore((s) => s.requests);
   const loading = useSellerRequestStore((s) => s.loading);
+  const loadError = useSellerRequestStore((s) => s.loadError);
   const hydrate = useSellerRequestStore((s) => s.hydrate);
   const search = useSellerRequestStore((s) => s.search);
   const setSearch = useSellerRequestStore((s) => s.setSearch);
@@ -61,35 +90,62 @@ export function SellerRequestsView() {
   const accept = useSellerRequestStore((s) => s.accept);
   const reject = useSellerRequestStore((s) => s.reject);
   const counter = useSellerRequestStore((s) => s.counter);
+  const actionPending = useSellerRequestStore((s) => s.actionPending);
   const addActivity = useSellerStore((s) => s.addActivity);
   const [counterOpen, setCounterOpen] = useState(false);
-  const [counterSending, setCounterSending] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState<
+    (typeof REJECT_REASONS)[number]
+  >("Inventory Unavailable");
+  const [rejectRemark, setRejectRemark] = useState("");
   const [price, setPrice] = useState("0");
   const [qty, setQty] = useState("0");
   const [validity, setValidity] = useState("24 hours");
   const [remark, setRemark] = useState("");
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
+  const authHydrated = useAuthStore((s) => s.hasHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    // Wait for auth rehydration so the first poll always carries a Bearer token.
+    // Access JWTs expire in 15m; apiClient refreshes on 401 via refresh token.
+    if (!authHydrated || !isAuthenticated) return;
+    void hydrate();
+    const poll = setInterval(() => {
+      void hydrate();
+    }, INBOX_POLL_MS);
+    return () => clearInterval(poll);
+  }, [hydrate, authHydrated, isAuthenticated]);
 
-  const rows = useMemo(
-    () =>
-      requests.filter((item) => {
-        if (item.locationId !== locationId) return false;
-        if (status !== "all" && item.status !== status) return false;
-        const query = search.trim().toLowerCase();
-        if (!query) return true;
-        return (
-          item.requestNumber.toLowerCase().includes(query) ||
-          item.gradeName.toLowerCase().includes(query)
-        );
-      }),
-    [locationId, requests, search, status],
-  );
+  useEffect(() => {
+    const tick = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  const rows = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return requests.filter((item) => {
+      if (status !== "all" && item.status !== status) return false;
+      if (!query) return true;
+      return (
+        item.requestNumber.toLowerCase().includes(query) ||
+        item.gradeName.toLowerCase().includes(query)
+      );
+    });
+  }, [requests, search, status]);
+
   const selected = requests.find((item) => item.id === selectedId);
 
-  if (loading) {
+  const remainingFor = (item: (typeof requests)[number]) => {
+    if (item.responseDeadline) {
+      const ms = new Date(item.responseDeadline).getTime() - nowTick;
+      return Math.max(0, Math.floor(ms / 1000));
+    }
+    return item.remainingSeconds ?? null;
+  };
+
+  if (loading && requests.length === 0) {
     return <RequestsPageSkeleton />;
   }
 
@@ -97,8 +153,20 @@ export function SellerRequestsView() {
     <PageContainer>
       <PageHeader
         title="Purchase Requests"
-        description="Incoming buyer requests. Identity stays limited until the deal progresses."
+        description="Incoming buyer requests matched to your grades. Respond within 15 minutes. Identity stays limited until the deal progresses."
       />
+      {loadError ? (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {loadError}{" "}
+          <button
+            type="button"
+            className="font-medium underline"
+            onClick={() => void hydrate()}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
       <div className="mb-4 flex flex-col gap-3 md:flex-row">
         <Input
           value={search}
@@ -122,7 +190,7 @@ export function SellerRequestsView() {
         <EmptyState
           icon={ClipboardList}
           title="No purchase requests"
-          description="Live offers will start attracting buyer requests."
+          description="When a buyer requests a grade you sell, it appears here within the 15-minute sourcing window."
           action={
             <Button asChild>
               <Link href={ROUTES.OFFERS}>Browse My Offers</Link>
@@ -148,39 +216,49 @@ export function SellerRequestsView() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((item) => (
-                <tr key={item.id} className="border-t hover:bg-slate-50/80">
-                  <td className="px-4 py-3 font-medium">
-                    {item.requestNumber}
-                  </td>
-                  <td className="px-4 py-3">{item.gradeName}</td>
-                  <td className="px-4 py-3">{formatMt(item.quantityMt)}</td>
-                  <td className="px-4 py-3">
-                    <div>{item.buyerLabel}</div>
-                    <div className="text-xs text-slate-400">{item.buyerId}</div>
-                  </td>
-                  <td className="px-4 py-3">{item.deliveryLocation}</td>
-                  <td className="px-4 py-3">
-                    {formatPricePerKg(item.requestedPrice)}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-xs">
-                    {formatDateTime(item.receivedAt)}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3">
-                    <SellerStatusBadge status={item.status} />
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8"
-                      onClick={() => openDrawer(item.id)}
-                    >
-                      View
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+              {rows.map((item) => {
+                const remaining = remainingFor(item);
+                const clock = formatRemaining(remaining);
+                return (
+                  <tr key={item.id} className="border-t hover:bg-slate-50/80">
+                    <td className="px-4 py-3 font-medium">
+                      <div>{item.requestNumber}</div>
+                      {clock &&
+                      (item.status === "new" ||
+                        item.status === "under_review") ? (
+                        <div className="text-xs text-amber-600">
+                          Respond in {clock}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3">{item.gradeName}</td>
+                    <td className="px-4 py-3">{formatMt(item.quantityMt)}</td>
+                    <td className="px-4 py-3">
+                      <div>Anonymous Buyer</div>
+                    </td>
+                    <td className="px-4 py-3">{item.deliveryLocation}</td>
+                    <td className="px-4 py-3">
+                      {formatPricePerKg(item.requestedPrice)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-xs">
+                      {formatDateTime(item.receivedAt)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <SellerStatusBadge status={item.status} />
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8"
+                        onClick={() => openDrawer(item.id)}
+                      >
+                        View
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -191,42 +269,57 @@ export function SellerRequestsView() {
         onOpenChange={(open) => !open && closeDrawer()}
         title={selected?.requestNumber ?? "Request"}
         footer={
-          selected &&
-          (selected.status === "new" || selected.status === "under_review") ? (
+          selected && canRespond(selected.status, selected.allowedActions) ? (
             <div className="flex flex-nowrap gap-2">
               <Button
                 className="flex-1 whitespace-nowrap"
+                disabled={actionPending}
                 onClick={() => {
-                  accept(selected.id);
-                  addActivity({
-                    type: "request",
-                    title: "Purchase request accepted",
-                    description: selected.requestNumber,
-                  });
-                  toast.success("Purchase request accepted");
-                  closeDrawer();
+                  void (async () => {
+                    try {
+                      await accept(selected.id);
+                      addActivity({
+                        type: "request",
+                        title: "Purchase request accepted",
+                        description: selected.requestNumber,
+                      });
+                      toast.success("Purchase request accepted");
+                      closeDrawer();
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : "Unable to accept request",
+                      );
+                    }
+                  })();
                 }}
               >
+                {actionPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 Accept
               </Button>
               <Button
                 className="flex-1 whitespace-nowrap"
                 variant="outline"
+                disabled={actionPending}
                 onClick={() => {
                   setPrice(String(selected.requestedPrice));
                   setQty(String(selected.quantityMt));
                   setCounterOpen(true);
                 }}
               >
-                Counter Offer
+                Negotiate
               </Button>
               <Button
                 className="flex-1 whitespace-nowrap"
                 variant="destructive"
+                disabled={actionPending}
                 onClick={() => {
-                  reject(selected.id);
-                  toast.success("Request rejected");
-                  closeDrawer();
+                  setRejectReason("Inventory Unavailable");
+                  setRejectRemark("");
+                  setRejectOpen(true);
                 }}
               >
                 Reject
@@ -246,20 +339,107 @@ export function SellerRequestsView() {
             <Row label="Delivery" value={selected.deliveryLocation} />
             <Row label="Delivery date" value={selected.requestedDeliveryDate} />
             <Row label="Payment terms" value={selected.paymentTerms} />
+            <Row label="Buyer" value="Anonymous Buyer" />
             <Row
-              label="Buyer"
-              value={`${selected.buyerLabel} (${selected.buyerId})`}
+              label="Response window"
+              value={
+                formatRemaining(remainingFor(selected)) ??
+                (selected.responseDeadline
+                  ? formatDateTime(selected.responseDeadline)
+                  : "—")
+              }
             />
-            <Row label="Notes" value={selected.notes} />
+            <Row label="Notes" value={selected.notes || "—"} />
             <Row label="Status" value={selected.status} />
           </dl>
         ) : null}
       </DetailDrawer>
 
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject purchase request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Reason</Label>
+              <Select
+                value={rejectReason}
+                onValueChange={(value) =>
+                  setRejectReason(value as (typeof REJECT_REASONS)[number])
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REJECT_REASONS.map((reason) => (
+                    <SelectItem key={reason} value={reason}>
+                      {reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Remark (optional)</Label>
+              <Input
+                className="mt-1"
+                value={rejectRemark}
+                onChange={(e) => setRejectRemark(e.target.value)}
+                placeholder="Additional context for the buyer"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={actionPending}
+              onClick={() => setRejectOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={actionPending || !selected}
+              onClick={() => {
+                if (!selected || actionPending) return;
+                void (async () => {
+                  try {
+                    await reject(selected.id, {
+                      rejectionReason: rejectReason,
+                      message: rejectRemark.trim() || undefined,
+                    });
+                    toast.success("Request rejected");
+                    setRejectOpen(false);
+                    closeDrawer();
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to reject request",
+                    );
+                  }
+                })();
+              }}
+            >
+              {actionPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rejecting…
+                </>
+              ) : (
+                "Confirm reject"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={counterOpen} onOpenChange={setCounterOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Counter offer</DialogTitle>
+            <DialogTitle>Negotiate / Counter offer</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -297,26 +477,31 @@ export function SellerRequestsView() {
           </div>
           <DialogFooter>
             <Button
-              disabled={counterSending || !selected}
+              disabled={actionPending || !selected}
               onClick={() => {
-                if (!selected || counterSending) return;
-                setCounterSending(true);
-                try {
-                  counter(selected.id, {
-                    price: Number(price),
-                    quantity: Number(qty),
-                    validity,
-                    remark,
-                  });
-                  toast.success("Counter offer sent");
-                  setCounterOpen(false);
-                  closeDrawer();
-                } finally {
-                  setCounterSending(false);
-                }
+                if (!selected || actionPending) return;
+                void (async () => {
+                  try {
+                    await counter(selected.id, {
+                      price: Number(price),
+                      quantity: Number(qty),
+                      validity,
+                      remark,
+                    });
+                    toast.success("Counter offer sent");
+                    setCounterOpen(false);
+                    closeDrawer();
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to send counter offer",
+                    );
+                  }
+                })();
               }}
             >
-              {counterSending ? (
+              {actionPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Sending…

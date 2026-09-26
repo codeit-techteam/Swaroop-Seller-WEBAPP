@@ -7,7 +7,7 @@ import { DetailDrawer } from "@/components/drawers/detail-drawer";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
-import { availableToSell, formatMt } from "@/lib/seller/format";
+import { formatMt } from "@/lib/seller/format";
 import { inventoryStatus, warehouseForProduct } from "@/lib/seller/inventory";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import type {
@@ -32,13 +32,7 @@ export function InventoryDetailDrawer({
   onAdjust: () => void;
 }) {
   const status = product ? inventoryStatus(product) : "IN_STOCK";
-  const sellable = product
-    ? availableToSell(
-        product.availableStock,
-        product.reservedStock,
-        product.committedStock,
-      )
-    : 0;
+  const sellable = product ? Math.max(product.availableStock, 0) : 0;
 
   return (
     <DetailDrawer
@@ -94,8 +88,8 @@ export function InventoryDetailDrawer({
                 value: formatMt(sellable),
                 accent: true,
               },
-              { label: "Reserved", value: formatMt(product.reservedStock) },
-              { label: "Committed", value: formatMt(product.committedStock) },
+              { label: "MOQ", value: formatMt(product.moq) },
+              { label: "Unit", value: product.unit },
             ].map((item) => (
               <div
                 key={item.label}

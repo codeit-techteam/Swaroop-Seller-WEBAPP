@@ -49,6 +49,8 @@ export interface DocumentItem {
   description: string;
   required: boolean;
   status: DocumentStatus;
+  /** Database document id after the file is confirmed in R2. */
+  storageDocumentId?: string;
   fileName?: string;
   fileSize?: number;
   uploadProgress?: number;

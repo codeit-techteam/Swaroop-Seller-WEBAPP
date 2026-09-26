@@ -2,28 +2,52 @@
 
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { cn } from "@/lib/utils";
-import type { VehicleSlot } from "@/types/seller-ops";
+import type { SellerVehicleSlot } from "@/types/vehicle-slots";
+
+function addDaysIso(baseIso: string, days: number): string {
+  const [y, m, d] = baseIso.split("-").map(Number);
+  const date = new Date(Date.UTC(y!, (m ?? 1) - 1, d ?? 1));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfWeekIso(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(Date.UTC(y!, (m ?? 1) - 1, d ?? 1));
+  const day = date.getUTCDay(); // 0 Sun
+  const diff = day === 0 ? -6 : 1 - day; // Monday start
+  date.setUTCDate(date.getUTCDate() + diff);
+  return date.toISOString().slice(0, 10);
+}
 
 export function VehicleSlotCalendar({
   slots,
   selectedDate,
   onSelectDate,
+  anchorDate,
 }: {
-  slots: VehicleSlot[];
+  slots: SellerVehicleSlot[];
   selectedDate: string;
   onSelectDate: (date: string) => void;
+  /** ISO date used as calendar window center/start. */
+  anchorDate: string;
 }) {
-  const days = Array.from({ length: 14 }, (_, index) => {
-    const date = new Date(Date.UTC(2026, 8, 7 + index));
-    return date.toISOString().slice(0, 10);
-  });
+  const start = startOfWeekIso(anchorDate);
+  const days = Array.from({ length: 14 }, (_, index) =>
+    addDaysIso(start, index),
+  );
 
   return (
     <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-4 lg:grid-cols-7">
       {days.map((day) => {
-        const count = slots.filter(
-          (slot) => slot.date === day && slot.status !== "CANCELLED",
-        ).length;
+        const daySlots = slots.filter(
+          (slot) =>
+            slot.slotDate === day &&
+            slot.status !== "CANCELLED" &&
+            slot.status !== "MISSED" &&
+            slot.status !== "NO_SHOW",
+        );
+        const count = daySlots.length;
         const selected = selectedDate === day;
         return (
           <button
@@ -38,7 +62,7 @@ export function VehicleSlotCalendar({
             )}
           >
             <p className="text-xs text-slate-500">
-              {new Date(`${day}T00:00:00`).toLocaleDateString("en-IN", {
+              {new Date(`${day}T12:00:00`).toLocaleDateString("en-IN", {
                 weekday: "short",
                 day: "numeric",
                 month: "short",
@@ -46,7 +70,7 @@ export function VehicleSlotCalendar({
             </p>
             <p className="mt-2 text-lg font-semibold text-slate-900">{count}</p>
             <p className="text-xs text-slate-500">slots</p>
-            {count >= 3 ? (
+            {count >= 6 ? (
               <div className="mt-2">
                 <SellerStatusBadge status="FULL" />
               </div>

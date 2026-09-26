@@ -11,18 +11,27 @@ import {
 } from "@/components/ui/tooltip";
 import { formatMt } from "@/lib/seller/format";
 import { formatDate } from "@/lib/utils";
-import type { VehicleSlot } from "@/types/seller-ops";
+import type { SellerVehicleSlot } from "@/types/vehicle-slots";
+
+function canCancel(status: string) {
+  return (
+    status !== "CANCELLED" &&
+    status !== "COMPLETED" &&
+    status !== "LOADING" &&
+    status !== "CHECKED_IN" &&
+    status !== "MISSED" &&
+    status !== "NO_SHOW"
+  );
+}
 
 export function VehicleSlotTable({
   rows,
   onView,
-  onReschedule,
   onCancel,
 }: {
-  rows: VehicleSlot[];
-  onView: (row: VehicleSlot) => void;
-  onReschedule: (row: VehicleSlot) => void;
-  onCancel: (row: VehicleSlot) => void;
+  rows: SellerVehicleSlot[];
+  onView: (row: SellerVehicleSlot) => void;
+  onCancel: (row: SellerVehicleSlot) => void;
 }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -46,20 +55,35 @@ export function VehicleSlotTable({
         </thead>
         <tbody>
           {rows.map((row) => {
-            const active = row.status !== "CANCELLED" && row.status !== "COMPLETED";
+            const active = canCancel(row.status);
             return (
-              <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50/80">
-                <td className="px-4 py-3 font-medium">{row.id}</td>
-                <td className="px-4 py-3">{row.orderId}</td>
-                <td className="px-4 py-3">{row.warehouseName}</td>
-                <td className="px-4 py-3 font-mono text-xs">{row.vehicleNumber}</td>
-                <td className="px-4 py-3">{row.vehicleType}</td>
-                <td className="px-4 py-3">{row.carrier}</td>
-                <td className="px-4 py-3">{row.driverName}</td>
-                <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.date)}</td>
-                <td className="px-4 py-3 whitespace-nowrap">{row.timeSlot}</td>
-                <td className="px-4 py-3">{row.loadingBay}</td>
-                <td className="px-4 py-3">{formatMt(row.quantityMt)}</td>
+              <tr
+                key={row.id}
+                className="border-t border-slate-100 hover:bg-slate-50/80"
+              >
+                <td className="px-4 py-3 font-medium">
+                  {row.slotNumber || row.id.slice(0, 8)}
+                </td>
+                <td className="px-4 py-3">
+                  {row.purchaseOrderReference || row.dispatchNumber || "—"}
+                </td>
+                <td className="px-4 py-3">{row.warehouseName || "—"}</td>
+                <td className="px-4 py-3 font-mono text-xs">
+                  {row.vehicleNumber || "—"}
+                </td>
+                <td className="px-4 py-3">{row.vehicleType || "—"}</td>
+                <td className="px-4 py-3">{row.carrier || "—"}</td>
+                <td className="px-4 py-3">{row.driverName || "—"}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {row.slotDate ? formatDate(row.slotDate) : "—"}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {row.timeSlot || "—"}
+                </td>
+                <td className="px-4 py-3">{row.loadingBay || "—"}</td>
+                <td className="px-4 py-3">
+                  {formatMt(Number(row.quantityMt ?? 0))}
+                </td>
                 <td className="px-4 py-3">
                   <SellerStatusBadge status={row.status} />
                 </td>
@@ -70,7 +94,7 @@ export function VehicleSlotTable({
                         <Button
                           size="icon"
                           variant="ghost"
-                          aria-label={`View ${row.id}`}
+                          aria-label={`View ${row.slotNumber ?? row.id}`}
                           onClick={() => onView(row)}
                         >
                           <Eye className="h-4 w-4" />
@@ -79,35 +103,24 @@ export function VehicleSlotTable({
                       <TooltipContent>View</TooltipContent>
                     </Tooltip>
                     {active ? (
-                      <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              aria-label={`Reschedule ${row.id}`}
-                              onClick={() => onReschedule(row)}
-                            >
-                              <CalendarClock className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Reschedule</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              aria-label={`Cancel ${row.id}`}
-                              onClick={() => onCancel(row)}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Cancel</TooltipContent>
-                        </Tooltip>
-                      </>
-                    ) : null}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Cancel ${row.slotNumber ?? row.id}`}
+                            onClick={() => onCancel(row)}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Cancel</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span className="inline-flex h-9 w-9 items-center justify-center text-slate-300">
+                        <CalendarClock className="h-4 w-4" />
+                      </span>
+                    )}
                   </div>
                 </td>
               </tr>

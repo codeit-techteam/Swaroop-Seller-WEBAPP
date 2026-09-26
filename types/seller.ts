@@ -36,6 +36,7 @@ export type SellerPaymentStatus = "processing" | "received" | "failed";
 export type DocumentCategory =
   | "GST"
   | "PAN"
+  | "Aadhaar"
   | "Bank Proof"
   | "Company Registration"
   | "Address Proof"
@@ -43,7 +44,11 @@ export type DocumentCategory =
   | "Other";
 
 export type SellerDocumentStatus =
-  "verified" | "pending_verification" | "expiring_soon" | "expired";
+  | "verified"
+  | "pending_verification"
+  | "expiring_soon"
+  | "expired"
+  | "rejected";
 
 export type NotificationCategory =
   "orders" | "offers" | "payments" | "documents" | "requests";
@@ -150,6 +155,12 @@ export interface SellerProduct {
   paymentPricing?: PaymentTermPricing;
   bulkPricing?: BulkPriceSlab[];
   warehouse?: string;
+  /** Backend inventory row id — required for stock adjustments */
+  inventoryId?: string;
+  /** Backend marketplace offer id */
+  offerId?: string;
+  /** Grade master id */
+  gradeId?: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -159,6 +170,8 @@ export interface SellerOffer {
   sellerId: string;
   locationId: string;
   productId: string;
+  /** Backend OFF-YYYYMM-###### */
+  referenceNumber?: string;
   category: string;
   gradeName: string;
   manufacturer: string;
@@ -174,8 +187,25 @@ export interface SellerOffer {
   gstPercent: number;
   bulkPricing: BulkPriceSlab[];
   status: OfferStatus;
+  version?: number;
+  purchaseRequestCount?: number;
+  warehouseName?: string;
   updatedAt: string;
   createdAt: string;
+}
+
+export interface SellerOfferSummary {
+  active: number;
+  draft: number;
+  paused: number;
+  expired: number;
+  pendingReview: number;
+  closed: number;
+  rejected: number;
+  expiringSoon: number;
+  soldOut: number;
+  pendingPurchaseRequests: number;
+  expiringSoonWindowHours?: number;
 }
 
 export interface SellerPurchaseRequest {
@@ -195,6 +225,9 @@ export interface SellerPurchaseRequest {
   buyerLabel: string;
   locationId: string;
   receivedAt: string;
+  responseDeadline?: string | null;
+  remainingSeconds?: number | null;
+  allowedActions?: string[];
   counterPrice?: number;
   counterQty?: number;
   counterValidity?: string;
@@ -222,18 +255,66 @@ export interface SellerOrder {
   category: string;
   gradeName: string;
   quantityMt: number;
+  unit: string;
   pricePerKg: number;
   orderValue: number;
+  currency: string;
   locationId: string;
   locationName: string;
   deliveryLocation: string;
   buyerRef: string;
   paymentTerms: string;
+  paymentStatus: string | null;
   status: SellerOrderStatus;
+  backendStatus?: string;
   orderDate: string;
+  expectedDispatchDate: string | null;
+  expectedDispatchLabel: string;
   documents: OrderDocument[];
   timeline: TimelineStep[];
+  dispatchStatus?: string | null;
+  shipmentStatus?: string | null;
+  deliveryStatus?: string | null;
+  proformaStatus?: string | null;
 }
+
+export interface SellerOrderSummary {
+  total: number;
+  confirmed: number;
+  processing: number;
+  readyForDispatch: number;
+  dispatched: number;
+  delivered: number;
+  cancelled: number;
+}
+
+export interface SellerOrderTimelineEvent {
+  at: string;
+  type: string;
+  label: string;
+  meta?: Record<string, unknown>;
+}
+
+export type FetchSellerOrdersParams = {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export type SellerOrdersPage = {
+  items: SellerOrder[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
 
 export interface SellerDispatch {
   id: string;
@@ -311,6 +392,11 @@ export interface SellerDocumentRecord {
   expiresAt?: string;
   fileName: string;
   version?: number;
+  mimeType?: string;
+  documentNumber?: string;
+  rejectionReason?: string;
+  purpose?: string;
+  slot?: string;
 }
 
 export interface SellerNotification {

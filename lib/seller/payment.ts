@@ -16,15 +16,24 @@ const CREDIT_PAYMENT_IDS = new Set([
 
 export function isPlatformCreditPayment(value?: string | null): boolean {
   if (!value) return false;
-  return CREDIT_PAYMENT_IDS.has(value) || value.toLowerCase().includes("credit");
+  return (
+    CREDIT_PAYMENT_IDS.has(value) || value.toLowerCase().includes("credit")
+  );
 }
 
 export function sellerPaymentMethodLabel(value?: string | null): string {
   if (!value) return "—";
   if (isPlatformCreditPayment(value)) return PETROTRADE_CREDIT_LABEL;
-  if (value === "advance" || value === "advance_payment") return "Advance";
-  if (value === "on_loading") return "On Loading";
-  if (value === "on_delivery") return "On Delivery";
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  if (normalized === "advance" || normalized === "advance_payment") {
+    return "Advance";
+  }
+  if (normalized === "on_loading") return "On Loading";
+  if (normalized === "on_delivery") return "On Delivery";
+  if (normalized === "before_dispatch") return "Before Dispatch";
   return value;
 }
 

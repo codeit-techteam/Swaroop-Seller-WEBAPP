@@ -1,4 +1,4 @@
-import type { InventoryItem, InventorySummary } from "@/types/inventory";
+import type { InventoryItem, LegacyInventorySummary } from "@/types/inventory";
 
 export const inventoryMock: InventoryItem[] = [
   {
@@ -671,7 +671,7 @@ export const inventoryMock: InventoryItem[] = [
   },
 ];
 
-export const inventorySummaryMock: InventorySummary = {
+export const inventorySummaryMock: LegacyInventorySummary = {
   totalInventory: 12450,
   available: 8120,
   reserved: 1743,

@@ -2,12 +2,19 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useOnboardingDocuments } from "@/hooks/useOnboardingDocuments";
 import { ROUTES } from "@/lib/constants";
 import { maskAccountNumber } from "@/lib/mock/locations";
+import { submitSellerOnboarding } from "@/services/onboarding";
+import {
+  isOnboardingDocumentReady,
+  onboardingApiError,
+} from "@/services/onboarding-documents";
 import { useAuthStore } from "@/store/authStore";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { useSellerStore } from "@/store/sellerStore";
@@ -27,16 +34,20 @@ export default function OnboardingReviewPage() {
   const submitOnboarding = useOnboardingStore((s) => s.submitOnboarding);
   const completeOnboarding = useAuthStore((s) => s.completeOnboarding);
   const updateSeller = useSellerStore((s) => s.updateSeller);
+  const { syncing } = useOnboardingDocuments();
+  const [submitting, setSubmitting] = useState(false);
 
-  const uploadedDocuments = documents.filter((doc) => doc.status !== "empty");
+  const uploadedDocuments = documents.filter((doc) =>
+    isOnboardingDocumentReady(doc),
+  );
 
-  const submit = () => {
+  const submit = async () => {
     if (!review.termsAccepted) {
       toast.error("Please confirm the information is correct");
       return;
     }
     const missing = documents.filter(
-      (doc) => doc.required && doc.status === "empty",
+      (doc) => doc.required && !isOnboardingDocumentReady(doc),
     );
     if (missing.length > 0) {
       toast.error(
@@ -44,24 +55,38 @@ export default function OnboardingReviewPage() {
       );
       return;
     }
-    submitOnboarding();
-    const companyName = company.companyName || "Reliance Poly Industries";
-    updateSeller({
-      companyName,
-      legalName: company.legalName || companyName,
-      gst: company.gstNumber,
-      pan: company.panNumber,
-      contactPerson: company.contactName,
-      mobile: company.phone,
-      email: company.email,
-      registeredAddress:
-        location.registeredAddress || company.registeredAddress,
-      sellerType: (business.sellerType as "distributor") || "distributor",
-      paymentTerms: business.paymentTerms,
-    });
-    completeOnboarding();
-    toast.success("Onboarding submitted");
-    router.push(ROUTES.DASHBOARD);
+
+    setSubmitting(true);
+    try {
+      await submitSellerOnboarding(useOnboardingStore.getState());
+      submitOnboarding();
+      const companyName = company.companyName || "Seller Organization";
+      updateSeller({
+        companyName,
+        legalName: company.legalName || companyName,
+        gst: company.gstNumber,
+        pan: company.panNumber,
+        contactPerson: company.contactName,
+        mobile: company.phone,
+        email: company.email,
+        registeredAddress:
+          location.registeredAddress || company.registeredAddress,
+        sellerType: (business.sellerType as "distributor") || "distributor",
+        paymentTerms: business.paymentTerms,
+      });
+      completeOnboarding();
+      toast.success("Onboarding submitted for verification");
+      router.push(ROUTES.DASHBOARD);
+    } catch (error) {
+      toast.error(
+        onboardingApiError(
+          error,
+          "Could not submit onboarding. Confirm all documents are stored in R2.",
+        ),
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -69,8 +94,14 @@ export default function OnboardingReviewPage() {
       <div>
         <h1 className="text-xl font-semibold">Review & Submit</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Confirm your seller profile before entering the portal.
+          Confirm your seller profile before entering the portal. Required
+          documents must already be stored in Cloudflare R2.
         </p>
+        {syncing ? (
+          <p className="mt-2 text-xs text-slate-400">
+            Syncing stored documents…
+          </p>
+        ) : null}
       </div>
       <section className="grid gap-4 md:grid-cols-2">
         <ReviewCard
@@ -96,18 +127,25 @@ export default function OnboardingReviewPage() {
         >
           <div className="mt-3 space-y-2">
             {uploadedDocuments.length === 0 ? (
-              <p className="text-sm text-slate-500">No documents uploaded</p>
+              <p className="text-sm text-slate-500">No documents stored yet</p>
             ) : (
               uploadedDocuments.map((document) => (
                 <div
                   key={document.id}
                   className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5"
                 >
-                  <p className="text-sm font-medium text-slate-800">
-                    {document.name}
-                  </p>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">
+                      {document.name}
+                    </p>
+                    {document.fileName ? (
+                      <p className="text-xs text-slate-500">
+                        {document.fileName}
+                      </p>
+                    ) : null}
+                  </div>
                   <span className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-                    Uploaded
+                    Stored
                   </span>
                 </div>
               ))
@@ -164,7 +202,9 @@ export default function OnboardingReviewPage() {
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Back
         </Button>
-        <Button onClick={submit}>Submit For Verification</Button>
+        <Button onClick={() => void submit()} disabled={submitting || syncing}>
+          {submitting ? "Submitting…" : "Submit For Verification"}
+        </Button>
       </div>
     </div>
   );

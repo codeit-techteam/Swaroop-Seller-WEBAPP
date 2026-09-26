@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, HelpCircle, Menu } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import Link from "next/link";
 
 import { LocationSelector } from "@/components/header/location-selector";
@@ -55,11 +55,6 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
             <span className="sr-only">
               Notifications{unreadCount > 0 ? `, ${unreadCount} unread` : ""}
             </span>
-          </Link>
-        </Button>
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={ROUTES.SUPPORT} aria-label="Help and support">
-            <HelpCircle className="h-5 w-5 text-slate-600" />
           </Link>
         </Button>
         <ProfileMenu />

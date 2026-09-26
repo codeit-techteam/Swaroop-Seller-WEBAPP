@@ -67,7 +67,6 @@ export function SellerWorkbenchView() {
 
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState<ProcurementStage | "ALL">("ALL");
-  const [buyer, setBuyer] = useState("all");
   const [grade, setGrade] = useState("all");
   const [priority, setPriority] = useState("all");
   const [payment, setPayment] = useState("all");
@@ -93,10 +92,6 @@ export function SellerWorkbenchView() {
       item.id === selected?.priceRevisionId ||
       item.purchaseRequestId === selected?.purchaseRequestId,
   );
-  const buyers = useMemo(
-    () => Array.from(new Set(records.map((item) => item.buyerName))),
-    [records],
-  );
   const grades = useMemo(
     () => Array.from(new Set(records.map((item) => item.gradeName))),
     [records],
@@ -106,7 +101,6 @@ export function SellerWorkbenchView() {
     const query = search.trim().toLowerCase();
     return records.filter((item) => {
       if (stage !== "ALL" && item.currentStage !== stage) return false;
-      if (buyer !== "all" && item.buyerName !== buyer) return false;
       if (grade !== "all" && item.gradeName !== grade) return false;
       if (priority !== "all" && item.priority !== priority) return false;
       if (payment !== "all" && item.paymentStatus !== payment) return false;
@@ -114,11 +108,11 @@ export function SellerWorkbenchView() {
       if (date && item.lastUpdated.slice(0, 10) !== date) return false;
       if (alert !== "ALL" && !item.alerts.includes(alert)) return false;
       if (!query) return true;
+      // Blind search: never match on buyer identity fields.
       return [
         item.purchaseRequestId,
         item.orderId ?? "",
         item.order.poNumber ?? "",
-        item.buyerName,
         item.productName,
         item.gradeName,
       ]
@@ -126,12 +120,11 @@ export function SellerWorkbenchView() {
         .toLowerCase()
         .includes(query);
     });
-  }, [alert, buyer, date, dispatch, grade, payment, priority, records, search, stage]);
+  }, [alert, date, dispatch, grade, payment, priority, records, search, stage]);
 
   const reset = () => {
     setSearch("");
     setStage("ALL");
-    setBuyer("all");
     setGrade("all");
     setPriority("all");
     setPayment("all");
@@ -157,7 +150,7 @@ export function SellerWorkbenchView() {
       ...filtered.map((row) =>
         [
           csvEscape(row.purchaseRequestId),
-          csvEscape(row.buyerName),
+          csvEscape("Anonymous Buyer"),
           csvEscape(row.productName),
           csvEscape(row.gradeName),
           row.currentStage,
@@ -223,7 +216,11 @@ export function SellerWorkbenchView() {
 
       <ProcurementKpis rows={records} />
       <div className="mt-5">
-        <ProcurementPipeline rows={records} active={stage} onSelect={setStage} />
+        <ProcurementPipeline
+          rows={records}
+          active={stage}
+          onSelect={setStage}
+        />
       </div>
       <div className="mt-5">
         <ActionRequired
@@ -239,7 +236,7 @@ export function SellerWorkbenchView() {
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search PR / PO / Order / Buyer / Product / Grade"
+          placeholder="Search PR / PO / Order / Product / Grade"
           className="lg:col-span-2"
         />
         <Select
@@ -267,19 +264,6 @@ export function SellerWorkbenchView() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={buyer} onValueChange={setBuyer}>
-          <SelectTrigger>
-            <SelectValue placeholder="Buyer" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All buyers</SelectItem>
-            {buyers.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select value={grade} onValueChange={setGrade}>
           <SelectTrigger>
             <SelectValue placeholder="Grade" />
@@ -299,13 +283,13 @@ export function SellerWorkbenchView() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All priorities</SelectItem>
-            {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as ProcurementPriority[]).map(
-              (item) => (
-                <SelectItem key={item} value={item}>
-                  {item}
-                </SelectItem>
-              ),
-            )}
+            {(
+              ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as ProcurementPriority[]
+            ).map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={payment} onValueChange={setPayment}>
@@ -314,11 +298,13 @@ export function SellerWorkbenchView() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All payment statuses</SelectItem>
-            {["PAYMENT_PENDING", "PARTIALLY_PAID", "PAID", "OVERDUE"].map((item) => (
-              <SelectItem key={item} value={item}>
-                {item.replaceAll("_", " ")}
-              </SelectItem>
-            ))}
+            {["PAYMENT_PENDING", "PARTIALLY_PAID", "PAID", "OVERDUE"].map(
+              (item) => (
+                <SelectItem key={item} value={item}>
+                  {item.replaceAll("_", " ")}
+                </SelectItem>
+              ),
+            )}
           </SelectContent>
         </Select>
         <Select value={dispatch} onValueChange={setDispatch}>
@@ -340,7 +326,11 @@ export function SellerWorkbenchView() {
             ))}
           </SelectContent>
         </Select>
-        <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+        <Input
+          type="date"
+          value={date}
+          onChange={(event) => setDate(event.target.value)}
+        />
         <Button variant="ghost" className="w-fit" onClick={reset}>
           <RotateCcw className="h-4 w-4" />
           Reset
@@ -356,7 +346,10 @@ export function SellerWorkbenchView() {
           />
         ) : (
           <TooltipProvider delayDuration={200}>
-            <ProcurementTable rows={filtered} onView={(row) => setSelectedId(row.id)} />
+            <ProcurementTable
+              rows={filtered}
+              onView={(row) => setSelectedId(row.id)}
+            />
           </TooltipProvider>
         )}
       </div>
@@ -389,7 +382,9 @@ export function SellerWorkbenchView() {
         onCounter={() => {
           setCounterPrice(
             linkedRevision
-              ? String(linkedRevision.counterPrice ?? linkedRevision.requestedPrice)
+              ? String(
+                  linkedRevision.counterPrice ?? linkedRevision.requestedPrice,
+                )
               : "",
           );
           setCounterOpen(true);
@@ -407,11 +402,16 @@ export function SellerWorkbenchView() {
         }}
       />
 
-      <Dialog open={Boolean(rejectOpen)} onOpenChange={() => setRejectOpen(null)}>
+      <Dialog
+        open={Boolean(rejectOpen)}
+        onOpenChange={() => setRejectOpen(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {rejectOpen === "pr" ? "Reject purchase request" : "Reject price revision"}
+              {rejectOpen === "pr"
+                ? "Reject purchase request"
+                : "Reject price revision"}
             </DialogTitle>
           </DialogHeader>
           <Textarea

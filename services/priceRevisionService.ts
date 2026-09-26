@@ -1,12 +1,19 @@
 import { delay } from "@/lib/repositories/delay";
-import type { PriceRevision } from "@/types/seller-ops";
 
-export async function getPriceRevisions(
-  revisions: PriceRevision[],
-): Promise<PriceRevision[]> {
-  return delay(revisions, 220);
-}
-
+/**
+ * Legacy mock delay used by sellerOpsStore workbench mutations.
+ * Production Price Revision screen uses `@/services/price-revisions`.
+ */
 export async function updatePriceRevision<T>(value: T): Promise<T> {
   return delay(value, 280);
 }
+
+export {
+  acceptSellerPriceRevision,
+  counterSellerPriceRevision,
+  fetchSellerPriceRevision,
+  fetchSellerPriceRevisionsPage,
+  fetchSellerPriceRevisionSummary,
+  priceRevisionApiError,
+  rejectSellerPriceRevision,
+} from "./price-revisions";

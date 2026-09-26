@@ -49,7 +49,7 @@ export function ProcurementTable({
               }`}
             >
               <td className="px-4 py-3 font-medium">{row.purchaseRequestId}</td>
-              <td className="px-4 py-3">{row.buyerName}</td>
+              <td className="px-4 py-3">{row.buyerDisplayName}</td>
               <td className="px-4 py-3">{row.productName}</td>
               <td className="px-4 py-3">{row.gradeName}</td>
               <td className="px-4 py-3">{formatMt(row.quantityMt)}</td>

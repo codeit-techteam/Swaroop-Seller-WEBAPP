@@ -5,18 +5,7 @@ type Envelope<T> = {
   data: T;
 };
 
-export type ProductDocumentType =
-  | "TDS"
-  | "MDS"
-  | "MSDS"
-  | "SDS"
-  | "COA"
-  | "TECHNICAL_SPECIFICATION"
-  | "PRODUCT_SPECIFICATION"
-  | "QUALITY_CERTIFICATE"
-  | "TEST_CERTIFICATE"
-  | "COMPLIANCE_CERTIFICATE"
-  | "OTHER";
+export type ProductDocumentType = "TDS" | "MSDS";
 
 export type SellerProductDocument = {
   id: string;
@@ -39,16 +28,7 @@ export const PRODUCT_DOCUMENT_TYPE_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "TDS", label: "TDS — Technical Data Sheet" },
-  { value: "MDS", label: "MDS — Material Data Sheet" },
   { value: "MSDS", label: "MSDS — Material Safety Data Sheet" },
-  { value: "SDS", label: "SDS — Safety Data Sheet" },
-  { value: "COA", label: "COA — Certificate of Analysis" },
-  { value: "TECHNICAL_SPECIFICATION", label: "Technical Specification" },
-  { value: "PRODUCT_SPECIFICATION", label: "Product Specification" },
-  { value: "QUALITY_CERTIFICATE", label: "Quality Certificate" },
-  { value: "TEST_CERTIFICATE", label: "Test Certificate" },
-  { value: "COMPLIANCE_CERTIFICATE", label: "Compliance Certificate" },
-  { value: "OTHER", label: "Other" },
 ];
 
 export async function listProductDocuments(
@@ -127,7 +107,9 @@ export async function archiveProductDocument(
   productId: string,
   documentId: string,
 ): Promise<void> {
-  await apiClient.delete(`/seller/products/${productId}/documents/${documentId}`);
+  await apiClient.delete(
+    `/seller/products/${productId}/documents/${documentId}`,
+  );
 }
 
 export async function downloadProductDocument(

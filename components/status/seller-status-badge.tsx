@@ -6,6 +6,10 @@ const styles: Record<string, string> = {
   success: "bg-emerald-50 text-emerald-700",
   verified: "bg-emerald-50 text-emerald-700",
   received: "bg-emerald-50 text-emerald-700",
+  READY: "bg-blue-50 text-[#1B6EF3]",
+  RELEASED: "bg-emerald-50 text-emerald-700",
+  FAILED: "bg-red-50 text-red-700",
+  ON_HOLD: "bg-red-50 text-red-700",
   settled: "bg-emerald-50 text-emerald-700",
   SETTLED: "bg-emerald-50 text-emerald-700",
   delivered: "bg-emerald-50 text-emerald-700",
@@ -21,6 +25,12 @@ const styles: Record<string, string> = {
   UNDER_REVIEW: "bg-violet-50 text-violet-700",
   processing: "bg-amber-50 text-amber-700",
   PROCESSING: "bg-amber-50 text-amber-700",
+  AWAITING_VEHICLE: "bg-amber-50 text-amber-700",
+  VEHICLE_ASSIGNED: "bg-blue-50 text-[#1B6EF3]",
+  AWAITING_EWAY_BILL: "bg-violet-50 text-violet-700",
+  PLANNED: "bg-slate-100 text-slate-600",
+  DRAFT: "bg-slate-100 text-slate-500",
+  LOADED: "bg-amber-50 text-amber-700",
   scheduled: "bg-amber-50 text-amber-700",
   loading: "bg-amber-50 text-amber-700",
   LOADING: "bg-amber-50 text-amber-700",
@@ -49,6 +59,7 @@ const styles: Record<string, string> = {
   COUNTER_OFFER: "bg-violet-50 text-violet-700",
   COUNTERED: "bg-violet-50 text-violet-700",
   AWAITING_RESPONSE: "bg-amber-50 text-amber-700",
+  EXPIRED: "bg-slate-100 text-slate-600",
   BOOKED: "bg-blue-50 text-[#1B6EF3]",
   AVAILABLE: "bg-emerald-50 text-emerald-700",
   FULL: "bg-red-50 text-red-700",
@@ -74,6 +85,11 @@ const styles: Record<string, string> = {
   SHIPMENT: "bg-blue-50 text-[#1B6EF3]",
   SETTLEMENT: "bg-emerald-50 text-emerald-700",
   ARRIVED: "bg-amber-50 text-amber-700",
+  REQUESTED: "bg-amber-50 text-amber-700",
+  ASSIGNED: "bg-blue-50 text-[#1B6EF3]",
+  CHECKED_IN: "bg-amber-50 text-amber-700",
+  MISSED: "bg-red-50 text-red-700",
+  NO_SHOW: "bg-red-50 text-red-700",
   inactive: "bg-slate-100 text-slate-500",
   INACTIVE: "bg-slate-100 text-slate-500",
   none: "bg-slate-100 text-slate-500",
@@ -83,14 +99,19 @@ const styles: Record<string, string> = {
 };
 
 function labelize(value: string) {
-  if (value === "counter_sent" || value === "COUNTER_OFFER") return "Counter Offer";
+  if (value === "counter_sent" || value === "COUNTER_OFFER")
+    return "Counter Offer";
   if (value === "new") return "new";
+  if (value === "pending_verification") return "Pending Verification";
   if (value === "under_review") return "under review";
   if (value === "IN_STOCK") return "In Stock";
   if (value === "LOW_STOCK") return "Low Stock";
   if (value === "OUT_OF_STOCK") return "Out of Stock";
   if (value === "PR") return "PR";
   if (value === "PO") return "PO";
+  if (value === "RELEASED") return "Settled";
+  if (value === "ON_HOLD") return "On Hold";
+  if (value === "READY") return "Ready";
   return value.replace(/_/g, " ");
 }
 

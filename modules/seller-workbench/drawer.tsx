@@ -15,8 +15,12 @@ import type { ProcurementRecord } from "@/types/seller-ops";
 function Field({ label, value }: { label: string; value?: string }) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-slate-900">{value || "—"}</p>
+      <p className="text-[11px] uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm font-medium text-slate-900">
+        {value || "—"}
+      </p>
     </div>
   );
 }
@@ -53,7 +57,7 @@ export function ProcurementDrawer({
       open={Boolean(record)}
       onOpenChange={onOpenChange}
       title={record?.purchaseRequestId ?? "Procurement"}
-      description={record?.buyerName}
+      description={record?.buyerDisplayName ?? "Anonymous Buyer"}
       className="sm:max-w-2xl"
     >
       {record ? (
@@ -65,12 +69,18 @@ export function ProcurementDrawer({
               Procurement summary
             </h3>
             <div className="grid grid-cols-2 gap-3 rounded-lg border p-3">
-              <Field label="Buyer" value={record.buyerName} />
+              <Field label="Buyer" value="Anonymous Buyer" />
               <Field label="Product" value={record.productName} />
               <Field label="Grade" value={record.gradeName} />
               <Field label="Quantity" value={formatMt(record.quantityMt)} />
-              <Field label="Delivery Location" value={record.deliveryLocation} />
-              <Field label="Order Value" value={formatOpsValue(record.orderValue)} />
+              <Field
+                label="Delivery Location"
+                value={record.deliveryLocation}
+              />
+              <Field
+                label="Order Value"
+                value={formatOpsValue(record.orderValue)}
+              />
               <Field label="Payment Terms" value={record.paymentTerms} />
               <Field
                 label="Expected Delivery"
@@ -96,7 +106,11 @@ export function ProcurementDrawer({
                   <div>
                     <p className="font-medium text-slate-800">{step.label}</p>
                     <p className="text-xs text-slate-400">
-                      {[step.at ? formatDate(step.at) : null, step.actor, step.action]
+                      {[
+                        step.at ? formatDate(step.at) : null,
+                        step.actor,
+                        step.action,
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
@@ -135,7 +149,10 @@ export function ProcurementDrawer({
                     : undefined
                 }
               />
-              <Field label="Payment Terms" value={record.commercial.paymentTerms} />
+              <Field
+                label="Payment Terms"
+                value={record.commercial.paymentTerms}
+              />
               <Field
                 label="Delivery Terms"
                 value={record.commercial.deliveryTerms}
@@ -151,9 +168,15 @@ export function ProcurementDrawer({
               <Field label="PO Number" value={record.order.poNumber} />
               <Field label="Order Number" value={record.order.orderNumber} />
               <Field label="Order Status" value={record.order.orderStatus} />
-              <Field label="Quantity" value={formatMt(record.order.quantityMt)} />
+              <Field
+                label="Quantity"
+                value={formatMt(record.order.quantityMt)}
+              />
               <Field label="Warehouse" value={record.order.warehouseName} />
-              <Field label="Dispatch Status" value={record.order.dispatchStatus} />
+              <Field
+                label="Dispatch Status"
+                value={record.order.dispatchStatus}
+              />
             </div>
           </section>
 
@@ -172,7 +195,10 @@ export function ProcurementDrawer({
                 label="Amount Pending"
                 value={formatOpsValue(record.payment.amountPending)}
               />
-              <Field label="Due Date" value={formatDate(record.payment.dueDate)} />
+              <Field
+                label="Due Date"
+                value={formatDate(record.payment.dueDate)}
+              />
             </div>
           </section>
 
@@ -197,7 +223,10 @@ export function ProcurementDrawer({
                 label="Vehicle Number"
                 value={record.fulfillment.vehicleNumber}
               />
-              <Field label="Shipment ID" value={record.fulfillment.shipmentId} />
+              <Field
+                label="Shipment ID"
+                value={record.fulfillment.shipmentId}
+              />
               <Field
                 label="Tracking Status"
                 value={record.fulfillment.trackingStatus}
@@ -290,7 +319,11 @@ export function ProcurementDrawer({
                 <Button variant="outline" disabled={busy} onClick={onCounter}>
                   Counter Offer
                 </Button>
-                <Button variant="outline" disabled={busy} onClick={onRejectPrice}>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={onRejectPrice}
+                >
                   Reject
                 </Button>
               </>

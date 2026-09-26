@@ -17,13 +17,14 @@ export function SellerGlobalSearch() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [resolved, setResolved] = useState<{
     query: string;
     hits: SellerSearchHit[];
   }>({ query: "", hits: [] });
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounced = useDebounce(query, 180);
+  const debounced = useDebounce(query, 220);
   const hits =
     query.trim().length < 2 || resolved.query !== debounced
       ? []
@@ -31,13 +32,23 @@ export function SellerGlobalSearch() {
 
   useEffect(() => {
     let cancelled = false;
-    if (debounced.trim().length < 2) return;
-    searchSellerRecords(debounced).then((results) => {
-      if (cancelled) return;
-      setResolved({ query: debounced, hits: results });
-      setActiveIndex(0);
-      setOpen(true);
-    });
+    if (debounced.trim().length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear loading when query too short
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    searchSellerRecords(debounced)
+      .then((results) => {
+        if (cancelled) return;
+        setResolved({ query: debounced, hits: results });
+        setActiveIndex(0);
+        setOpen(true);
+      })
+      .finally(() => {
+        if (!cancelled) setSearching(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -76,7 +87,7 @@ export function SellerGlobalSearch() {
           setOpen(true);
         }}
         onFocus={() => {
-          if (hits.length > 0) setOpen(true);
+          if (hits.length > 0 || query.trim().length >= 2) setOpen(true);
         }}
         onKeyDown={(event) => {
           if (event.key === "ArrowDown") {
@@ -98,9 +109,9 @@ export function SellerGlobalSearch() {
             setOpen(false);
           }
         }}
-        placeholder="Search grades, offers, orders..."
+        placeholder="Search products, orders, dispatch, documents…"
         className="h-10 border-slate-200 bg-slate-50 pl-9 text-sm shadow-none focus-visible:ring-[#1B6EF3]"
-        aria-label="Global search"
+        aria-label="Universal search"
         aria-autocomplete="list"
         aria-expanded={open}
         role="combobox"
@@ -108,39 +119,55 @@ export function SellerGlobalSearch() {
       {open && query.trim().length >= 2 ? (
         <div
           role="listbox"
-          className="absolute z-50 mt-1 max-h-80 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-elevated"
+          className="absolute z-50 mt-1 max-h-96 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-elevated"
         >
-          {hits.length === 0 ? (
+          {searching && hits.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-slate-500">
-              No matching grades, offers, orders, shipments or settlements.
+              Searching across Seller ERP…
+            </p>
+          ) : hits.length === 0 ? (
+            <p className="px-3 py-6 text-center text-sm text-slate-500">
+              No matches in products, inventory, offers, orders, logistics,
+              finance, workbench or documents.
             </p>
           ) : (
-            hits.slice(0, 12).map((hit, index) => (
+            <>
+              {hits.slice(0, 16).map((hit, index) => (
+                <button
+                  key={`${hit.category}-${hit.id}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === activeIndex}
+                  className={cn(
+                    "flex w-full items-start justify-between gap-3 px-3 py-2 text-left",
+                    index === activeIndex
+                      ? "bg-[#E8F1FF]"
+                      : "hover:bg-slate-50",
+                  )}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => goTo(hit)}
+                >
+                  <span>
+                    <span className="block text-sm font-medium text-slate-800">
+                      {hit.title}
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      {hit.subtitle}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    {hit.category}
+                  </span>
+                </button>
+              ))}
               <button
-                key={`${hit.category}-${hit.id}`}
                 type="button"
-                role="option"
-                aria-selected={index === activeIndex}
-                className={cn(
-                  "flex w-full items-start justify-between gap-3 px-3 py-2 text-left",
-                  index === activeIndex ? "bg-[#E8F1FF]" : "hover:bg-slate-50",
-                )}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => goTo(hit)}
+                className="w-full border-t border-slate-100 px-3 py-2 text-left text-xs font-medium text-[#1B6EF3] hover:bg-slate-50"
+                onClick={submitSearchPage}
               >
-                <span>
-                  <span className="block text-sm font-medium text-slate-800">
-                    {hit.title}
-                  </span>
-                  <span className="block text-xs text-slate-500">
-                    {hit.subtitle}
-                  </span>
-                </span>
-                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                  {hit.category}
-                </span>
+                View all results for “{query.trim()}”
               </button>
-            ))
+            </>
           )}
         </div>
       ) : null}

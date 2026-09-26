@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/constants";
 import { formatInrShort, formatMt } from "@/lib/seller/format";
 import { formatDate } from "@/lib/utils";
-import { useLocationStore } from "@/store/locationStore";
 import { useSellerOrderStore } from "@/store/sellerOrderStore";
 import type { SellerOrderStatus } from "@/types/seller";
 
@@ -30,35 +29,32 @@ const TABS: { id: "all" | SellerOrderStatus; label: string }[] = [
 ];
 
 export function SellerOrdersView() {
-  const locationId = useLocationStore((s) => s.selectedLocationId);
   const orders = useSellerOrderStore((s) => s.orders);
   const loading = useSellerOrderStore((s) => s.loading);
+  const loadError = useSellerOrderStore((s) => s.loadError);
   const hydrate = useSellerOrderStore((s) => s.hydrate);
+  const page = useSellerOrderStore((s) => s.page);
+  const totalPages = useSellerOrderStore((s) => s.totalPages);
+  const total = useSellerOrderStore((s) => s.total);
+  const setPage = useSellerOrderStore((s) => s.setPage);
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("all");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 8;
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
-  const rows = useMemo(() => {
-    return orders.filter((order) => {
-      if (order.locationId !== locationId) return false;
-      if (tab !== "all" && order.status !== tab) return false;
-      const query = search.trim().toLowerCase();
-      if (!query) return true;
-      return (
-        order.orderId.toLowerCase().includes(query) ||
-        order.gradeName.toLowerCase().includes(query)
-      );
+  useEffect(() => {
+    void hydrate({
+      status: tab,
+      search: debouncedSearch,
+      page,
     });
-  }, [locationId, orders, search, tab]);
-  const paged = rows.slice((page - 1) * pageSize, page * pageSize);
-  const pages = Math.max(1, Math.ceil(rows.length / pageSize));
+  }, [debouncedSearch, hydrate, page, tab]);
 
-  if (loading) {
+  if (loading && orders.length === 0) {
     return <OrdersPageSkeleton />;
   }
 
@@ -92,10 +88,24 @@ export function SellerOrdersView() {
         }}
         placeholder="Search order or grade"
       />
-      {rows.length === 0 ? (
+      {loadError ? (
+        <EmptyState
+          title="Unable to load orders"
+          description="Please try again. Your session may have expired."
+          action={
+            <Button
+              onClick={() =>
+                void hydrate({ status: tab, search: debouncedSearch, page: 1 })
+              }
+            >
+              Retry
+            </Button>
+          }
+        />
+      ) : orders.length === 0 ? (
         <EmptyState
           title="No orders have been placed yet."
-          description="Your confirmed orders will appear here."
+          description="Your confirmed orders will appear here after a purchase request is accepted and a purchase order is created."
           action={
             <Button asChild>
               <Link href={ROUTES.OFFERS}>Browse My Offers</Link>
@@ -108,7 +118,6 @@ export function SellerOrdersView() {
             <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-4 py-3">Order ID</th>
-                <th className="px-4 py-3">Buyer</th>
                 <th className="px-4 py-3">Grade</th>
                 <th className="px-4 py-3">Qty</th>
                 <th className="px-4 py-3">Value</th>
@@ -118,7 +127,7 @@ export function SellerOrdersView() {
               </tr>
             </thead>
             <tbody>
-              {paged.map((order) => (
+              {orders.map((order) => (
                 <tr key={order.id} className="border-t">
                   <td className="px-4 py-3">
                     <Link
@@ -128,9 +137,11 @@ export function SellerOrdersView() {
                       {order.orderId}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">{order.buyerRef}</td>
                   <td className="px-4 py-3">{order.gradeName}</td>
-                  <td className="px-4 py-3">{formatMt(order.quantityMt)}</td>
+                  <td className="px-4 py-3">
+                    {formatMt(order.quantityMt)}
+                    {order.unit && order.unit !== "MT" ? ` ${order.unit}` : ""}
+                  </td>
                   <td className="px-4 py-3">
                     {formatInrShort(order.orderValue)}
                   </td>
@@ -138,41 +149,72 @@ export function SellerOrdersView() {
                   <td className="px-4 py-3">
                     <SellerStatusBadge status={order.status} />
                   </td>
-                  <td className="px-4 py-3">{formatDate(order.orderDate)}</td>
+                  <td className="px-4 py-3">
+                    {order.expectedDispatchDate
+                      ? formatDate(order.expectedDispatchDate)
+                      : order.expectedDispatchLabel || "Not scheduled"}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-      <div className="mt-4 flex justify-end gap-2">
-        <Button
-          variant="outline"
-          disabled={page === 1}
-          onClick={() => setPage(page - 1)}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          disabled={page >= pages}
-          onClick={() => setPage(page + 1)}
-        >
-          Next
-        </Button>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <p className="text-sm text-slate-500">
+          {total > 0 ? `${total} order${total === 1 ? "" : "s"}` : null}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            disabled={page <= 1 || loading}
+            onClick={() => setPage(Math.max(1, page - 1))}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            disabled={page >= totalPages || loading || total === 0}
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </PageContainer>
   );
 }
 
 export function SellerOrderDetailView({ id }: { id: string }) {
-  const order = useSellerOrderStore((s) => s.getOrderById(id));
-  const advanceOrder = useSellerOrderStore((s) => s.advanceOrder);
+  const order = useSellerOrderStore((s) => s.selectedOrder);
+  const detailLoading = useSellerOrderStore((s) => s.detailLoading);
+  const detailError = useSellerOrderStore((s) => s.detailError);
+  const hydrateDetail = useSellerOrderStore((s) => s.hydrateDetail);
+
+  useEffect(() => {
+    void hydrateDetail(id);
+  }, [hydrateDetail, id]);
+
+  if (detailLoading && !order) {
+    return <OrdersPageSkeleton />;
+  }
+
+  if (detailError) {
+    return (
+      <PageContainer>
+        <PageHeader title="Order" description={detailError} />
+        <Button onClick={() => void hydrateDetail(id)}>Retry</Button>
+      </PageContainer>
+    );
+  }
 
   if (!order) {
     return (
       <PageContainer>
         <PageHeader title="Order not found" />
+        <Button asChild variant="outline">
+          <Link href={ROUTES.ORDERS}>Back to orders</Link>
+        </Button>
       </PageContainer>
     );
   }
@@ -181,48 +223,62 @@ export function SellerOrderDetailView({ id }: { id: string }) {
     <PageContainer className="space-y-6">
       <PageHeader
         title={order.orderId}
-        description={`${order.gradeName} · ${order.buyerRef}`}
+        description={order.gradeName}
         actions={<SellerStatusBadge status={order.status} />}
       />
       <div className="grid gap-4 md:grid-cols-3">
         <Info label="Quantity" value={formatMt(order.quantityMt)} />
-        <Info label="Price" value={`₹${order.pricePerKg}/kg`} />
+        <Info
+          label="Unit price"
+          value={order.pricePerKg > 0 ? `₹${order.pricePerKg}/kg` : "—"}
+        />
         <Info label="Order value" value={formatInrShort(order.orderValue)} />
-        <Info label="Buyer reference" value={order.buyerRef} />
-        <Info label="Seller location" value={order.locationName} />
         <Info label="Delivery location" value={order.deliveryLocation} />
         <Info label="Payment terms" value={order.paymentTerms} />
+        <Info label="Payment status" value={order.paymentStatus ?? "—"} />
+        <Info
+          label="Expected dispatch"
+          value={
+            order.expectedDispatchDate
+              ? formatDate(order.expectedDispatchDate)
+              : order.expectedDispatchLabel || "Not scheduled"
+          }
+        />
+        <Info label="Proforma" value={order.proformaStatus ?? "—"} />
+        <Info label="Dispatch" value={order.dispatchStatus ?? "—"} />
+        <Info label="Shipment" value={order.shipmentStatus ?? "—"} />
+        <Info label="Delivery" value={order.deliveryStatus ?? "—"} />
       </div>
       <section className="rounded-xl border bg-white p-5">
         <h2 className="mb-3 font-semibold">Timeline</h2>
         <Timeline steps={order.timeline} />
-        {order.status !== "delivered" && order.status !== "cancelled" ? (
-          <Button
-            className="mt-4"
-            onClick={() => {
-              advanceOrder(order.id);
-              toast.success("Order updated");
-            }}
-          >
-            Advance status
-          </Button>
-        ) : null}
+        <p className="mt-3 text-xs text-slate-500">
+          Status updates come from purchase order, payment, and logistics
+          workflows. Manual status changes are not allowed.
+        </p>
       </section>
       <section className="rounded-xl border bg-white p-5">
         <h2 className="mb-3 font-semibold">Documents</h2>
-        <div className="space-y-2">
-          {order.documents.map((doc) => (
-            <button
-              key={doc.id}
-              type="button"
-              className="block text-sm text-[#1B6EF3]"
-              onClick={() => toast.success(`Downloading ${doc.name}`)}
-            >
-              {doc.type}: {doc.name}
-            </button>
-          ))}
-        </div>
+        {order.documents.length === 0 ? (
+          <p className="text-sm text-slate-500">No documents attached yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {order.documents.map((doc) => (
+              <button
+                key={doc.id}
+                type="button"
+                className="block text-sm text-[#1B6EF3]"
+                onClick={() => toast.success(`Downloading ${doc.name}`)}
+              >
+                {doc.type}: {doc.name}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
+      <Button asChild variant="outline">
+        <Link href={ROUTES.ORDERS}>Back to orders</Link>
+      </Button>
     </PageContainer>
   );
 }

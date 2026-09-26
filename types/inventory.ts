@@ -18,6 +18,7 @@ export interface InventoryDocument {
   uploadedAt: string;
 }
 
+/** Legacy inventory table row (unused by live Inventory page). */
 export interface InventoryItem {
   id: string;
   productId: string;
@@ -42,7 +43,20 @@ export interface InventoryItem {
   complianceNotes: string[];
 }
 
+/** Production inventory dashboard summary from GET /seller/inventory/summary */
 export interface InventorySummary {
+  onHand: number;
+  sellable: number;
+  activeProducts: number;
+  lowStock: number;
+  outOfStock: number;
+  warehouses: number;
+  skuCount: number;
+  unit: string;
+}
+
+/** @deprecated Legacy mock summary shape */
+export interface LegacyInventorySummary {
   totalInventory: number;
   available: number;
   reserved: number;
@@ -50,6 +64,70 @@ export interface InventorySummary {
   lowStock: number;
   outOfStock: number;
   unit: string;
+}
+
+export interface InventoryListItem {
+  id: string;
+  inventoryId: string;
+  productId: string;
+  gradeId?: string;
+  gradeName: string;
+  gradeCode: string;
+  category: string;
+  warehouseId: string;
+  warehouseName: string;
+  warehouseCity: string;
+  onHandQuantity: number;
+  sellableQuantity: number;
+  /** Alias of sellableQuantity (backend availableQty) */
+  availableStock: number;
+  reservedStock: number;
+  committedStock: number;
+  unit: "MT" | "kg";
+  moq: number;
+  lowStockThreshold: number | null;
+  stockStatus: InventoryStockStatus;
+  offerId?: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface InventoryWarehouse {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+  state: string;
+  onHand: number;
+  sellable: number;
+  grades: number;
+}
+
+export interface LatestStockMovement {
+  id: string;
+  inventoryId: string;
+  productId: string;
+  productName: string;
+  productCode: string;
+  warehouseName: string | null;
+  warehouseCity: string | null;
+  type: string;
+  quantity: number;
+  quantityDelta: number;
+  unit: string;
+  notes: string | null;
+  timestamp: string;
+}
+
+export interface InventoryListParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  warehouseId?: string;
+  stockStatus?: InventoryStockStatus | "";
+  status?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export interface InventoryFilters {

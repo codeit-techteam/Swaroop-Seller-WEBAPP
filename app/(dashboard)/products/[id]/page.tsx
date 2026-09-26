@@ -1,5 +1,5 @@
-import { ProductDetailView } from "@/modules/grades/product-detail-view";
+import { EditGradeView } from "@/modules/grades/edit-grade-view";
 
-export default function ProductDetailPage() {
-  return <ProductDetailView />;
+export default function ProductEditPage() {
+  return <EditGradeView />;
 }

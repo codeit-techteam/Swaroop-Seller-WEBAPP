@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { isNavHrefActive, MOBILE_NAV_ITEMS } from "@/config";
 import { useDisclosure, useIsMobile } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
+import { useLocationStore } from "@/store/locationStore";
 
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
@@ -22,6 +24,17 @@ export function AppShell({ children, className }: AppShellProps) {
   const isMobile = useIsMobile();
   const mobileNav = useDisclosure();
   const pathname = usePathname();
+  const authReady = useAuthStore((s) => s.hasHydrated && s.isAuthenticated);
+  const hydrateLocations = useLocationStore((s) => s.hydrate);
+  const locationsHydrated = useLocationStore((s) => s.hydrated);
+  const locationsLoading = useLocationStore((s) => s.loading);
+
+  useEffect(() => {
+    if (!authReady) return;
+    if (!locationsHydrated && !locationsLoading) {
+      void hydrateLocations();
+    }
+  }, [authReady, hydrateLocations, locationsHydrated, locationsLoading]);
 
   return (
     <AuthGuard>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import toast from "react-hot-toast";
 
 import { PageContainer } from "@/components/common/page-container";
@@ -15,7 +16,23 @@ export function OfferDetailView() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const offer = useSellerOfferStore((s) => s.getById(params.id));
+  const hydrate = useSellerOfferStore((s) => s.hydrate);
+  const loading = useSellerOfferStore((s) => s.loading);
   const setOfferStatus = useSellerOfferStore((s) => s.setOfferStatus);
+
+  useEffect(() => {
+    if (!offer) {
+      void hydrate();
+    }
+  }, [offer, hydrate]);
+
+  if (loading && !offer) {
+    return (
+      <PageContainer>
+        <PageHeader title="Loading offer…" />
+      </PageContainer>
+    );
+  }
 
   if (!offer) {
     return (
@@ -59,14 +76,21 @@ export function OfferDetailView() {
         <Button
           variant="outline"
           onClick={() => {
-            setOfferStatus(
+            void setOfferStatus(
               offer.id,
               offer.status === "active" ? "paused" : "active",
-            );
-            toast.success("Offer updated");
+            )
+              .then(() => toast.success("Offer updated"))
+              .catch((error: unknown) =>
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Unable to update offer",
+                ),
+              );
           }}
         >
-          {offer.status === "active" ? "Deactivate" : "Activate"}
+          {offer.status === "active" ? "Pause" : "Activate"}
         </Button>
         <Button variant="outline" onClick={() => router.push(ROUTES.OFFERS)}>
           Back to offers

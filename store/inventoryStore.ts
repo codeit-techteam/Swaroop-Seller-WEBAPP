@@ -6,7 +6,7 @@ import type {
   InventoryFilters,
   InventoryItem,
   InventorySort,
-  InventorySummary,
+  LegacyInventorySummary,
 } from "@/types/inventory";
 import type { SellerProduct } from "@/types/seller";
 
@@ -20,7 +20,7 @@ interface InventoryState {
   page: number;
   pageSize: number;
   sort: InventorySort;
-  summary: InventorySummary;
+  summary: LegacyInventorySummary;
   isLoading: boolean;
   setSearch: (search: string) => void;
   setFilter: <K extends keyof InventoryFilters>(
@@ -40,10 +40,10 @@ interface InventoryState {
   fetchInventory: () => Promise<void>;
   getFilteredProducts: () => InventoryItem[];
   getPaginatedProducts: () => InventoryItem[];
-  getComputedSummary: () => InventorySummary;
+  getComputedSummary: () => LegacyInventorySummary;
 }
 
-const emptySummary: InventorySummary = {
+const emptySummary: LegacyInventorySummary = {
   totalInventory: 0,
   available: 0,
   reserved: 0,
@@ -56,7 +56,11 @@ const emptySummary: InventorySummary = {
 function mapSellerProductToInventory(product: SellerProduct): InventoryItem {
   const availableMt = product.availableStock;
   const status: InventoryItem["status"] =
-    availableMt <= 0 ? "OUT_OF_STOCK" : availableMt < 20 ? "LOW_STOCK" : "IN_STOCK";
+    availableMt <= 0
+      ? "OUT_OF_STOCK"
+      : availableMt < 20
+        ? "LOW_STOCK"
+        : "IN_STOCK";
   return {
     id: product.id,
     productId: product.id,
@@ -162,7 +166,9 @@ export const useInventoryStore = create<InventoryState>()(
       fetchInventory: async () => {
         set({ isLoading: true });
         try {
-          const products = (await fetchSellerProducts()).map(mapSellerProductToInventory);
+          const products = (await fetchSellerProducts()).map(
+            mapSellerProductToInventory,
+          );
           set({ products, isLoading: false });
           set({ summary: get().getComputedSummary() });
         } catch {

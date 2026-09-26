@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -36,18 +36,29 @@ import { useSellerProductStore } from "@/store/sellerProductStore";
 import { useSellerStore } from "@/store/sellerStore";
 import type { BulkPriceSlab } from "@/types/seller";
 
-const schema = z.object({
-  productId: z.string().min(1, "Choose a grade"),
-  price: z.coerce.number().positive("Enter a price"),
-  unit: z.string().min(1),
-  validityHours: z.coerce.number().min(1),
-  availableQty: z.coerce.number().min(1),
-  moq: z.coerce.number().min(1),
-  deliveryLocation: z.string().min(1),
-  paymentTerms: z.string().min(1),
-  remarks: z.string().optional(),
-  gstPercent: z.coerce.number().min(0),
-});
+const PAYMENT_OPTIONS = [
+  { value: "ADVANCE", label: "Advance" },
+  { value: "ON_LOADING", label: "On Loading" },
+  { value: "ON_DELIVERY", label: "On Delivery" },
+] as const;
+
+const schema = z
+  .object({
+    productId: z.string().min(1, "Choose a grade"),
+    price: z.coerce.number().positive("Enter a price"),
+    unit: z.string().min(1),
+    validityHours: z.coerce.number().min(1, "Validity must be at least 1 hour"),
+    availableQty: z.coerce.number().positive("Available quantity must be > 0"),
+    moq: z.coerce.number().positive("MOQ must be > 0"),
+    deliveryLocation: z.string().min(1, "Delivery location is required"),
+    paymentTerms: z.enum(["ADVANCE", "ON_LOADING", "ON_DELIVERY"]),
+    remarks: z.string().optional(),
+    gstPercent: z.coerce.number().min(0),
+  })
+  .refine((values) => values.moq <= values.availableQty, {
+    message: "MOQ cannot exceed available quantity",
+    path: ["moq"],
+  });
 
 type Values = z.infer<typeof schema>;
 
@@ -58,53 +69,76 @@ export function CreateOfferView() {
   const location = useLocationStore((s) => s.getSelectedLocation());
   const locationId = useLocationStore((s) => s.selectedLocationId);
   const products = useSellerProductStore((s) => s.products);
+  const productsLoading = useSellerProductStore((s) => s.loading);
+  const productsError = useSellerProductStore((s) => s.loadError);
+  const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const createOffer = useSellerOfferStore((s) => s.createOffer);
   const addActivity = useSellerStore((s) => s.addActivity);
-  const grades = products.filter((item) => item.locationId === locationId);
+  const grades = products.filter(
+    (item) => !locationId || !item.locationId || item.locationId === locationId,
+  );
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
   const overlap = useMemo(() => slabsOverlap(slabs), [slabs]);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       productId: preselected,
       price: 0,
-      unit: "kg",
+      unit: "MT",
       validityHours: 24,
       availableQty: 100,
       moq: 20,
-      deliveryLocation: location?.name ?? "Chennai",
-      paymentTerms: "Advance",
+      deliveryLocation: location?.name ?? location?.city ?? "",
+      paymentTerms: "ADVANCE",
       remarks: "",
       gstPercent: 18,
     },
   });
 
-  const save = (values: Values, asDraft: boolean) => {
+  useEffect(() => {
+    if (preselected) {
+      form.setValue("productId", preselected);
+    }
+  }, [preselected, form]);
+
+  const save = async (values: Values, asDraft: boolean) => {
     if (overlap) {
       toast.error("Bulk price ranges cannot overlap");
       return;
     }
-    const offer = createOffer(
-      {
-        ...values,
-        remarks: values.remarks ?? "",
-        bulkPricing: slabs,
-      },
-      locationId,
-      asDraft,
-    );
-    if (!offer) {
-      toast.error("Select a valid grade");
-      return;
+    try {
+      const offer = await createOffer(
+        {
+          ...values,
+          remarks: values.remarks ?? "",
+          bulkPricing: slabs,
+        },
+        locationId,
+        asDraft,
+      );
+      if (!offer) {
+        toast.error("Select a valid grade");
+        return;
+      }
+      addActivity({
+        type: "offer",
+        title: asDraft ? "Offer saved as draft" : "Offer created",
+        description: offer.gradeName,
+      });
+      toast.success(asDraft ? "Draft saved" : "Offer created successfully");
+      router.push(ROUTES.OFFERS);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to create offer. Please try again.",
+      );
     }
-    addActivity({
-      type: "offer",
-      title: asDraft ? "Offer saved as draft" : "Offer created",
-      description: offer.gradeName,
-    });
-    toast.success(asDraft ? "Draft saved" : "Offer created successfully");
-    router.push(ROUTES.OFFERS);
   };
 
   return (
@@ -115,7 +149,7 @@ export function CreateOfferView() {
       />
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit((values) => save(values, false))}
+          onSubmit={form.handleSubmit((values) => void save(values, false))}
           className="space-y-5 rounded-xl border border-slate-200 bg-white p-6"
         >
           <FormField
@@ -124,10 +158,18 @@ export function CreateOfferView() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Choose a Grade</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={productsLoading || grades.length === 0}
+                >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select grade" />
+                      <SelectValue
+                        placeholder={
+                          productsLoading ? "Loading grades…" : "Select grade"
+                        }
+                      />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -138,6 +180,23 @@ export function CreateOfferView() {
                     ))}
                   </SelectContent>
                 </Select>
+                {productsError ? (
+                  <p className="text-sm text-red-600">
+                    {productsError}{" "}
+                    <button
+                      type="button"
+                      className="underline"
+                      onClick={() => void fetchProducts()}
+                    >
+                      Retry
+                    </button>
+                  </p>
+                ) : null}
+                {!productsLoading && !productsError && grades.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    No grades available for this location. Add a product first.
+                  </p>
+                ) : null}
                 <FormMessage />
               </FormItem>
             )}
@@ -215,9 +274,20 @@ export function CreateOfferView() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Payment Terms</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment terms" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {PAYMENT_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -362,15 +432,27 @@ export function CreateOfferView() {
             <Button
               type="button"
               variant="secondary"
-              disabled={form.formState.isSubmitting}
-              onClick={form.handleSubmit((values) => save(values, true))}
+              disabled={
+                form.formState.isSubmitting ||
+                productsLoading ||
+                grades.length === 0
+              }
+              onClick={form.handleSubmit((values) => void save(values, true))}
             >
               {form.formState.isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Save Draft
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              disabled={
+                form.formState.isSubmitting ||
+                productsLoading ||
+                grades.length === 0 ||
+                overlap
+              }
+            >
               {form.formState.isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

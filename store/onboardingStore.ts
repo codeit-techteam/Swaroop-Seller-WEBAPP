@@ -131,23 +131,24 @@ export const useOnboardingStore = create<OnboardingStore>()(
     }),
     {
       name: "petrotrade-onboarding",
-      version: 5,
+      version: 6,
       migrate: (persistedState) => {
         const previous = (persistedState ?? {}) as Partial<OnboardingState>;
         return {
           ...initialOnboardingState,
           ...previous,
           documents: initialOnboardingState.documents.map((doc) => {
-            const existing = previous.documents?.find((item) => item.id === doc.id);
-            return existing
-              ? {
-                  ...doc,
-                  ...existing,
-                  name: doc.name,
-                  description: doc.description,
-                  required: doc.required,
-                }
-              : { ...doc };
+            const existing = previous.documents?.find(
+              (item) => item.id === doc.id,
+            );
+            if (!existing?.storageDocumentId) return { ...doc };
+            return {
+              ...doc,
+              ...existing,
+              name: doc.name,
+              description: doc.description,
+              required: doc.required,
+            };
           }),
         };
       },

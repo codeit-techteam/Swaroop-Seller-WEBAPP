@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { availableToSell, formatMt } from "@/lib/seller/format";
+import { formatMt } from "@/lib/seller/format";
 import {
   STOCK_ADJUSTMENT_REASONS,
   type StockAdjustmentReason,
@@ -35,7 +35,11 @@ export function AdjustStockDrawer({
   product: SellerProduct | null;
   products: SellerProduct[];
   onOpenChange: (open: boolean) => void;
-  onSave: (productId: string, delta: number, reason: string) => void;
+  onSave: (
+    productId: string,
+    delta: number,
+    reason: string,
+  ) => void | Promise<void>;
 }) {
   const [selectedId, setSelectedId] = useState(
     product?.id ?? products[0]?.id ?? "",
@@ -44,6 +48,7 @@ export function AdjustStockDrawer({
   const [qty, setQty] = useState("20");
   const [reason, setReason] =
     useState<StockAdjustmentReason>("New Procurement");
+  const [saving, setSaving] = useState(false);
 
   const selected =
     products.find((item) => item.id === selectedId) ?? product ?? null;
@@ -56,11 +61,7 @@ export function AdjustStockDrawer({
     const nextAvailable = Math.max(0, selected.availableStock + delta);
     return {
       available: nextAvailable,
-      sellable: availableToSell(
-        nextAvailable,
-        selected.reservedStock,
-        selected.committedStock,
-      ),
+      sellable: nextAvailable,
     };
   }, [delta, selected]);
 
@@ -77,17 +78,27 @@ export function AdjustStockDrawer({
       footer={
         <Button
           className="w-full bg-[#0B1F3A] hover:bg-[#122846]"
-          disabled={!selected || qtyValue <= 0}
+          disabled={!selected || qtyValue <= 0 || saving}
           onClick={() => {
-            if (!selected || qtyValue <= 0) return;
-            onSave(selected.id, delta, reason);
-            toast.success(
-              `${selected.gradeName} ${mode === "add" ? "increased" : "reduced"} by ${formatMt(qtyValue)}`,
-            );
-            onOpenChange(false);
+            if (!selected || qtyValue <= 0 || saving) return;
+            void (async () => {
+              setSaving(true);
+              try {
+                await onSave(selected.id, delta, reason);
+                onOpenChange(false);
+              } catch (error) {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Unable to adjust stock.",
+                );
+              } finally {
+                setSaving(false);
+              }
+            })();
           }}
         >
-          Save adjustment
+          {saving ? "Saving…" : "Save adjustment"}
         </Button>
       }
     >
@@ -112,7 +123,7 @@ export function AdjustStockDrawer({
           <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
             <div>
               <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                On hand
+                On hand / Sellable
               </p>
               <p className="font-semibold">
                 {formatMt(selected.availableStock)}
@@ -120,33 +131,9 @@ export function AdjustStockDrawer({
             </div>
             <div>
               <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                Sellable
+                Warehouse
               </p>
-              <p className="font-semibold text-[#1B6EF3]">
-                {formatMt(
-                  availableToSell(
-                    selected.availableStock,
-                    selected.reservedStock,
-                    selected.committedStock,
-                  ),
-                )}
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                Reserved
-              </p>
-              <p className="font-semibold">
-                {formatMt(selected.reservedStock)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                Committed
-              </p>
-              <p className="font-semibold">
-                {formatMt(selected.committedStock)}
-              </p>
+              <p className="font-semibold">{selected.warehouse || "—"}</p>
             </div>
           </div>
         ) : null}
@@ -209,22 +196,16 @@ export function AdjustStockDrawer({
               After save
             </p>
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-slate-500">On hand</span>
+              <span className="text-slate-500">Sellable</span>
               <span className="font-semibold">
                 {formatMt(selected.availableStock)} →{" "}
-                {formatMt(preview.available)}
-              </span>
-            </div>
-            <div className="mt-1 flex items-center justify-between">
-              <span className="text-slate-500">Sellable</span>
-              <span className="font-semibold text-[#1B6EF3]">
                 {formatMt(preview.sellable)}
               </span>
             </div>
             {overAllocated ? (
               <p className="mt-2 text-xs text-amber-700">
-                Reduction exceeds on-hand quantity. Stock will be floored at 0
-                MT.
+                Reduction exceeds available quantity. Backend will reject
+                negative stock.
               </p>
             ) : null}
           </div>

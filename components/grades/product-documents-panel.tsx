@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Download,
-  FileText,
-  Loader2,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { Download, FileText, Loader2, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
@@ -62,8 +56,7 @@ export function ProductDocumentsPanel({
   const [docs, setDocs] = useState<SellerProductDocument[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [documentType, setDocumentType] =
-    useState<ProductDocumentType>("TDS");
+  const [documentType, setDocumentType] = useState<ProductDocumentType>("TDS");
   const [title, setTitle] = useState("Technical Data Sheet");
   const [description, setDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -83,6 +76,7 @@ export function ProductDocumentsPanel({
   }, [productId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load docs on mount/id change
     void refresh();
   }, [refresh]);
 
@@ -91,6 +85,7 @@ export function ProductDocumentsPanel({
       (item) => item.value === documentType,
     );
     if (opt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- derive title from type
       setTitle(opt.label.split("—")[1]?.trim() || opt.label);
     }
   }, [documentType]);
@@ -158,9 +153,7 @@ export function ProductDocumentsPanel({
       toast.success(`${documentType} uploaded successfully`);
       await refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Upload failed",
-      );
+      toast.error(error instanceof Error ? error.message : "Upload failed");
     } finally {
       setUploading(false);
     }
@@ -191,12 +184,11 @@ export function ProductDocumentsPanel({
     <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
       <div>
         <h3 className="text-sm font-semibold text-slate-900">
-          Product Documents
+          Product Documents (optional)
         </h3>
         <p className="mt-0.5 text-xs text-slate-500">
-          Upload TDS, MDS, COA and other technical documents. Files are stored
-          in the central backend — customers see verified documents only,
-          without seller identity.
+          Upload TDS and/or MSDS if available. Both are optional — you can save
+          the grade without documents and add them later.
         </p>
       </div>
 

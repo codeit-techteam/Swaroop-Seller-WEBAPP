@@ -50,8 +50,10 @@ import type { SellerOffer } from "@/types/seller";
 export function SellerOffersView() {
   const location = useLocationStore((s) => s.getSelectedLocation());
   const locationId = useLocationStore((s) => s.selectedLocationId);
+  const hydrateLocations = useLocationStore((s) => s.hydrate);
   const offers = useSellerOfferStore((s) => s.offers);
   const loading = useSellerOfferStore((s) => s.loading);
+  const loadError = useSellerOfferStore((s) => s.loadError);
   const hydrate = useSellerOfferStore((s) => s.hydrate);
   const search = useSellerOfferStore((s) => s.search);
   const setSearch = useSellerOfferStore((s) => s.setSearch);
@@ -68,52 +70,75 @@ export function SellerOffersView() {
   const addActivity = useSellerStore((s) => s.addActivity);
   const [remarkId, setRemarkId] = useState<string | null>(null);
   const [remark, setRemark] = useState("");
+  const [mutating, setMutating] = useState(false);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    void (async () => {
+      await hydrateLocations();
+      await hydrate();
+    })();
+  }, [hydrate, hydrateLocations]);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      void hydrate({ search });
+    }, 350);
+    return () => window.clearTimeout(handle);
+  }, [search, hydrate]);
 
   const scoped = useMemo(
     () =>
       offers.filter(
         (offer) =>
-          offer.locationId === locationId &&
-          (!search ||
-            offer.gradeName.toLowerCase().includes(search.toLowerCase()) ||
-            offer.category.toLowerCase().includes(search.toLowerCase())),
+          !locationId || !offer.locationId || offer.locationId === locationId,
       ),
-    [locationId, offers, search],
+    [locationId, offers],
   );
   const summary = getSummary(locationId);
   const lastUpdated = scoped[0]?.updatedAt;
 
-  const runConfirm = () => {
-    if (confirm.type === "activate" && confirm.offerId) {
-      setOfferStatus(confirm.offerId, "active");
-      toast.success("Offer activated successfully.");
+  const runConfirm = async () => {
+    setMutating(true);
+    try {
+      if (confirm.type === "activate" && confirm.offerId) {
+        await setOfferStatus(confirm.offerId, "active");
+        toast.success("Offer activated successfully.");
+      }
+      if (confirm.type === "deactivate" && confirm.offerId) {
+        await setOfferStatus(confirm.offerId, "paused");
+        toast.success("Offer paused successfully.");
+      }
+      if (confirm.type === "activate_all") {
+        const count = await activateAll(locationId);
+        toast.success(
+          count ? `${count} offers activated` : "No offers were activated",
+        );
+      }
+      if (confirm.type === "deactivate_all") {
+        const count = await deactivateAll(locationId);
+        toast.success(
+          count ? `${count} offers paused` : "No offers were paused",
+        );
+        addActivity({
+          type: "offer",
+          title: "Offers paused",
+          description: `${location?.name ?? "Location"} offers paused`,
+        });
+      }
+      if (confirm.type === "delete" && confirm.offerId) {
+        await deleteOffer(confirm.offerId);
+        toast.success("Offer cancelled");
+      }
+      closeConfirm();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to update offer. Please try again.",
+      );
+    } finally {
+      setMutating(false);
     }
-    if (confirm.type === "deactivate" && confirm.offerId) {
-      setOfferStatus(confirm.offerId, "paused");
-      toast.success("Offer deactivated");
-    }
-    if (confirm.type === "activate_all") {
-      const count = activateAll(locationId);
-      toast.success(`${count} offers activated`);
-    }
-    if (confirm.type === "deactivate_all") {
-      const count = deactivateAll(locationId);
-      toast.success(`${count} offers deactivated`);
-      addActivity({
-        type: "offer",
-        title: "Offers deactivated",
-        description: `${location?.name ?? "Location"} offers paused`,
-      });
-    }
-    if (confirm.type === "delete" && confirm.offerId) {
-      deleteOffer(confirm.offerId);
-      toast.success("Offer deleted");
-    }
-    closeConfirm();
   };
 
   if (loading) {
@@ -128,20 +153,21 @@ export function SellerOffersView() {
             Current location
           </p>
           <h1 className="text-2xl font-semibold">
-            {location?.name}{" "}
-            <span className="text-sm font-medium uppercase text-emerald-600">
-              {location?.status}
-            </span>
+            {location?.name ?? "No location configured"}{" "}
+            {location ? (
+              <span className="text-sm font-medium uppercase text-emerald-600">
+                {location.status}
+              </span>
+            ) : null}
           </h1>
           <p className="text-sm text-slate-500">
-            Last updated:{" "}
-            {lastUpdated ? formatDateTime(lastUpdated) : "24/08/2026, 09:04 AM"}
+            Last updated: {lastUpdated ? formatDateTime(lastUpdated) : "—"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
-            disabled={summary.draft + summary.paused === 0}
+            disabled={summary.draft + summary.paused === 0 || mutating}
             onClick={() => openConfirm("activate_all")}
           >
             <Play className="h-4 w-4" />
@@ -149,7 +175,7 @@ export function SellerOffersView() {
           </Button>
           <Button
             variant="outline"
-            disabled={summary.active === 0}
+            disabled={summary.active === 0 || mutating}
             onClick={() => openConfirm("deactivate_all")}
           >
             <Pause className="h-4 w-4" />
@@ -171,27 +197,48 @@ export function SellerOffersView() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Summary label="Active" value={summary.active} />
-        <Summary label="Draft" value={summary.draft} />
-        <Summary label="Expiring soon" value={summary.expiring} />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Summary label="Active Offers" value={summary.active} />
+        <Summary
+          label="Pending Purchase Requests"
+          value={summary.pendingPurchaseRequests}
+        />
+        <Summary label="Expiring Soon" value={summary.expiring} />
+        <Summary label="Sold Out" value={summary.soldOut} />
       </div>
 
       <Input
         value={search}
         onChange={(event) => setSearch(event.target.value)}
-        placeholder="Search offers by grade"
+        placeholder="Search offers by grade, product, or offer number"
       />
 
-      {scoped.length === 0 ? (
+      {loadError ? (
         <EmptyState
           icon={Tag}
-          title="No active offers"
-          description="Create an offer to start receiving purchase requests."
+          title="Unable to load offers"
+          description={loadError}
+          action={<Button onClick={() => void hydrate()}>Try again</Button>}
+        />
+      ) : scoped.length === 0 ? (
+        <EmptyState
+          icon={Tag}
+          title={search ? "No offers match your search" : "No offers yet"}
+          description={
+            search
+              ? "Clear search or adjust filters to see more offers."
+              : "Create your first offer to start receiving purchase requests."
+          }
           action={
-            <Button asChild>
-              <Link href={ROUTES.OFFERS_NEW}>Create Offer</Link>
-            </Button>
+            search ? (
+              <Button variant="outline" onClick={() => setSearch("")}>
+                Clear search
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href={ROUTES.OFFERS_NEW}>Create Offer</Link>
+              </Button>
+            )
           }
         />
       ) : (
@@ -203,12 +250,19 @@ export function SellerOffersView() {
               onActivate={() => openConfirm("activate", offer.id)}
               onDeactivate={() => openConfirm("deactivate", offer.id)}
               onAddBulkPrice={() => {
-                addBulkPrice(offer.id, {
+                void addBulkPrice(offer.id, {
                   minQty: 100,
                   maxQty: null,
                   price: Math.max(offer.price - 3, 1),
-                });
-                toast.success("Bulk price added");
+                })
+                  .then(() => toast.success("Bulk price added"))
+                  .catch((error: unknown) =>
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to add bulk price",
+                    ),
+                  );
               }}
               onAddRemark={() => {
                 setRemarkId(offer.id);
@@ -228,24 +282,30 @@ export function SellerOffersView() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {confirm.type === "deactivate_all"
-                ? `Deactivate all ${summary.active} active offers?`
+                ? `Pause all ${summary.active} active offers?`
                 : confirm.type === "activate_all"
                   ? "Activate all draft and paused offers?"
                   : confirm.type === "delete"
-                    ? "Delete this offer?"
+                    ? "Cancel this offer?"
                     : confirm.type === "deactivate"
-                      ? "Deactivate this offer?"
+                      ? "Pause this offer?"
                       : "Activate this offer?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This updates your live marketplace offers for the current
-              location.
+              {confirm.type === "deactivate" ||
+              confirm.type === "deactivate_all"
+                ? "Pausing removes the offer from active customer marketplace availability."
+                : "This updates your live marketplace offers for the current location."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={mutating}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={runConfirm}
+              disabled={mutating}
+              onClick={(event) => {
+                event.preventDefault();
+                void runConfirm();
+              }}
               className={
                 confirm.type === "delete"
                   ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -253,10 +313,10 @@ export function SellerOffersView() {
               }
             >
               {confirm.type === "delete"
-                ? "Delete offer"
+                ? "Cancel offer"
                 : confirm.type === "deactivate" ||
                     confirm.type === "deactivate_all"
-                  ? "Deactivate"
+                  ? "Pause"
                   : "Activate"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -279,8 +339,17 @@ export function SellerOffersView() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (remarkId) addRemark(remarkId, remark);
-                toast.success("Remark added");
+                if (remarkId) {
+                  void addRemark(remarkId, remark)
+                    .then(() => toast.success("Remark saved"))
+                    .catch((error: unknown) =>
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : "Unable to save remark",
+                      ),
+                    );
+                }
                 setRemarkId(null);
               }}
             >
@@ -314,7 +383,7 @@ function OfferCard({
     <article className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-5 transition-shadow hover:shadow-sm">
       <div className="flex-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {offer.category}
+          {offer.referenceNumber ?? offer.category}
         </p>
         <h2 className="mt-1 text-lg font-semibold">{offer.gradeName}</h2>
         <p className="mt-2 text-2xl font-semibold text-[#1B6EF3]">
@@ -323,9 +392,13 @@ function OfferCard({
         <dl className="mt-3 space-y-1 text-sm text-slate-600">
           <div>Available: {formatMt(offer.availableQty)}</div>
           <div>MOQ: {formatMt(offer.moq)}</div>
+          {offer.warehouseName ? (
+            <div>Warehouse: {offer.warehouseName}</div>
+          ) : null}
           <div>
             Validity: {hoursLeft(offer.validUntil) || offer.validityHours} hours
           </div>
+          <div>PRs: {offer.purchaseRequestCount ?? 0}</div>
         </dl>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <SellerStatusBadge status={offer.status} />
@@ -363,7 +436,7 @@ function OfferCard({
             onClick={onDeactivate}
           >
             <Pause className="h-3.5 w-3.5" />
-            Deactivate
+            Pause
           </Button>
         ) : (
           <Button size="sm" className="h-9 min-w-0 flex-1" onClick={onActivate}>
@@ -403,7 +476,7 @@ function OfferCard({
               className="text-red-600 focus:bg-red-50 focus:text-red-700"
             >
               <Trash2 className="h-4 w-4" />
-              Delete
+              Cancel
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

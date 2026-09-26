@@ -10,22 +10,33 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatPricePerKg } from "@/lib/seller/format";
-import {
-  formatDeltaPercent,
-  formatOpsValue,
-  priceDelta,
-} from "@/lib/seller-ops";
+import { formatDeltaPercent, formatOpsValue } from "@/lib/seller-ops";
 import { formatDate } from "@/lib/utils";
-import type { PriceRevision } from "@/types/seller-ops";
+import type { SellerPriceRevision } from "@/types/seller-price-revision";
+
+function BlindBuyerCell({
+  displayName,
+}: {
+  displayName: string;
+  reference?: string;
+}) {
+  return (
+    <div className="leading-tight">
+      <p className="font-medium text-slate-900">
+        {displayName || "Anonymous Buyer"}
+      </p>
+    </div>
+  );
+}
 
 export function PriceRevisionTable({
   rows,
   onView,
   onRespond,
 }: {
-  rows: PriceRevision[];
-  onView: (row: PriceRevision) => void;
-  onRespond: (row: PriceRevision) => void;
+  rows: SellerPriceRevision[];
+  onView: (row: SellerPriceRevision) => void;
+  onRespond: (row: SellerPriceRevision) => void;
 }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -49,17 +60,30 @@ export function PriceRevisionTable({
         </thead>
         <tbody>
           {rows.map((row) => {
-            const delta = priceDelta(row.originalPrice, row.requestedPrice);
             const actionable =
-              row.status === "PENDING" ||
-              row.status === "AWAITING_RESPONSE" ||
-              row.status === "COUNTER_OFFER";
+              !row.deadlineExpired &&
+              row.allowedActions.length > 0 &&
+              (row.status === "PENDING" ||
+                row.status === "AWAITING_RESPONSE" ||
+                row.status === "COUNTER_OFFER");
             return (
-              <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50/80">
-                <td className="px-4 py-3 font-medium text-slate-900">{row.id}</td>
-                <td className="px-4 py-3">{row.productName}</td>
-                <td className="px-4 py-3">{row.gradeName}</td>
-                <td className="px-4 py-3">{row.buyerName}</td>
+              <tr
+                key={row.id}
+                className="border-t border-slate-100 hover:bg-slate-50/80"
+              >
+                <td className="px-4 py-3 font-medium text-slate-900">
+                  {row.requestNumber}
+                </td>
+                <td className="px-4 py-3">{row.product?.name ?? "—"}</td>
+                <td className="px-4 py-3">
+                  {row.grade?.displayName ?? row.grade?.name ?? "—"}
+                </td>
+                <td className="px-4 py-3">
+                  <BlindBuyerCell
+                    displayName={row.buyer.displayName}
+                    reference={row.buyer.reference}
+                  />
+                </td>
                 <td className="px-4 py-3 tabular-nums">
                   {formatPricePerKg(row.originalPrice)}
                 </td>
@@ -68,12 +92,16 @@ export function PriceRevisionTable({
                 </td>
                 <td
                   className={`px-4 py-3 tabular-nums ${
-                    delta.percent < 0 ? "text-red-600" : "text-emerald-600"
+                    row.differencePercent < 0
+                      ? "text-red-600"
+                      : "text-emerald-600"
                   }`}
                 >
-                  {formatDeltaPercent(delta.percent)}
+                  {formatDeltaPercent(row.differencePercent)}
                 </td>
-                <td className="px-4 py-3 tabular-nums">{row.quantityMt} MT</td>
+                <td className="px-4 py-3 tabular-nums">
+                  {row.quantity} {row.unit}
+                </td>
                 <td className="px-4 py-3 tabular-nums">
                   {formatOpsValue(row.totalValue)}
                 </td>
@@ -81,7 +109,9 @@ export function PriceRevisionTable({
                   {formatDate(row.requestedOn)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  {formatDate(row.deadline)}
+                  {row.responseDeadline
+                    ? formatDate(row.responseDeadline)
+                    : "—"}
                 </td>
                 <td className="px-4 py-3">
                   <SellerStatusBadge status={row.status} />
@@ -93,7 +123,7 @@ export function PriceRevisionTable({
                         <Button
                           size="icon"
                           variant="ghost"
-                          aria-label={`View ${row.id}`}
+                          aria-label={`View ${row.requestNumber}`}
                           onClick={() => onView(row)}
                         >
                           <Eye className="h-4 w-4" />
@@ -107,7 +137,7 @@ export function PriceRevisionTable({
                           <Button
                             size="icon"
                             variant="ghost"
-                            aria-label={`Respond to ${row.id}`}
+                            aria-label={`Respond to ${row.requestNumber}`}
                             onClick={() => onRespond(row)}
                           >
                             <MessageSquare className="h-4 w-4" />

@@ -43,19 +43,22 @@ import {
 } from "@/lib/seller/format";
 import { getSellingPrice } from "@/lib/seller/payment";
 import { formatDateTime } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 import { useLocationStore } from "@/store/locationStore";
 import { useSellerOfferStore } from "@/store/sellerOfferStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 
 export function SellerProductsView() {
   const locationId = useLocationStore((s) => s.selectedLocationId);
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const loading = useSellerProductStore((s) => s.loading);
   const loadError = useSellerProductStore((s) => s.loadError);
 
   useEffect(() => {
+    if (!hasHydrated) return;
     void fetchProducts();
-  }, [fetchProducts]);
+  }, [fetchProducts, hasHydrated]);
   const locations = useLocationStore((s) => s.locations);
   const products = useSellerProductStore((s) => s.products);
   const offers = useSellerOfferStore((s) => s.offers);
@@ -74,7 +77,9 @@ export function SellerProductsView() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const categoryOptions = useMemo(
     () =>
-      Array.from(new Set(products.map((product) => product.category).filter(Boolean))).sort(),
+      Array.from(
+        new Set(products.map((product) => product.category).filter(Boolean)),
+      ).sort(),
     [products],
   );
 
@@ -134,9 +139,7 @@ export function SellerProductsView() {
         <EmptyState
           title="Unable to load catalog"
           description={loadError}
-          action={
-            <Button onClick={() => void fetchProducts()}>Retry</Button>
-          }
+          action={<Button onClick={() => void fetchProducts()}>Retry</Button>}
         />
       ) : null}
       <div className="mb-4 flex flex-col gap-3 md:flex-row">
@@ -307,9 +310,21 @@ export function SellerProductsView() {
             className="w-full"
             onClick={() => {
               if (!selected) return;
-              adjustStock(selected.id, Number(delta) || 0, reason);
-              toast.success("Stock updated");
-              closeStockDrawer();
+              void (async () => {
+                const result = await adjustStock(
+                  selected.id,
+                  Number(delta) || 0,
+                  reason,
+                );
+                if (!result.ok) {
+                  toast.error(result.message ?? "Stock update failed");
+                  return;
+                }
+                toast.success("Stock updated");
+                setDelta("0");
+                closeStockDrawer();
+                void fetchProducts();
+              })();
             }}
           >
             Save adjustment
@@ -381,7 +396,9 @@ export function SellerProductsView() {
               <dd className="font-medium">{detail.application}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase text-slate-500">Selling Price</dt>
+              <dt className="text-xs uppercase text-slate-500">
+                Selling Price
+              </dt>
               <dd className="font-medium">
                 {getSellingPrice(detail)
                   ? `₹${getSellingPrice(detail)}/MT`
@@ -391,7 +408,8 @@ export function SellerProductsView() {
             <div>
               <dt className="text-xs uppercase text-slate-500">Payment</dt>
               <dd className="font-medium">
-                Platform-managed. Credit eligibility is determined by PetroTrade.
+                Platform-managed. Credit eligibility is determined by
+                PetroTrade.
               </dd>
             </div>
             <div>

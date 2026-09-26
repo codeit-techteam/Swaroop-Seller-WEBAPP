@@ -1,17 +1,25 @@
+import { isAxiosError } from "axios";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { isAxiosError } from "axios";
 
 import { defaultProductForm } from "@/lib/mock/products";
-import { stockAdjustmentsMock } from "@/lib/mock/stock-adjustments";
-import { fetchSellerProducts } from "@/services/catalog";
+import { adjustSellerInventory, fetchSellerProducts } from "@/services/catalog";
 import { useAuthStore } from "@/store/authStore";
+import { useLocationStore } from "@/store/locationStore";
 import type {
   ProductFormValues,
   SellerProduct,
   StockAdjustment,
 } from "@/types/seller";
 
+function withActiveLocation(products: SellerProduct[]): SellerProduct[] {
+  const locationId = useLocationStore.getState().selectedLocationId;
+  return products.map((product) =>
+    !product.locationId || product.locationId === "loc-default"
+      ? { ...product, locationId }
+      : product,
+  );
+}
 function isMissingSellerProfile(error: unknown): boolean {
   if (!isAxiosError(error)) return false;
   if (error.response?.status !== 404) return false;
@@ -19,6 +27,16 @@ function isMissingSellerProfile(error: unknown): boolean {
   return (
     typeof message === "string" &&
     message.toLowerCase().includes("seller profile")
+  );
+}
+
+function isAuthRequired(error: unknown): boolean {
+  if (!isAxiosError(error)) return false;
+  if (error.response?.status === 401) return true;
+  const message = error.response?.data?.message;
+  return (
+    typeof message === "string" &&
+    message.toLowerCase().includes("authentication required")
   );
 }
 
@@ -30,6 +48,13 @@ function catalogErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Unable to load seller catalog.";
 }
+
+async function restoreSellerSessionAndRetry(): Promise<SellerProduct[] | null> {
+  const restored = await useAuthStore.getState().ensureDemoSellerSession();
+  if (!restored.ok) return null;
+  return fetchSellerProducts();
+}
+
 interface SellerProductState {
   products: SellerProduct[];
   adjustments: StockAdjustment[];
@@ -49,7 +74,11 @@ interface SellerProductState {
   setPage: (page: number) => void;
   addProduct: (values: ProductFormValues, asDraft?: boolean) => SellerProduct;
   updateProduct: (id: string, data: Partial<SellerProduct>) => void;
-  adjustStock: (id: string, delta: number, reason: string) => void;
+  adjustStock: (
+    id: string,
+    delta: number,
+    reason: string,
+  ) => Promise<{ ok: boolean; message?: string }>;
   openStockDrawer: (id: string) => void;
   closeStockDrawer: () => void;
   getFiltered: (locationId?: string) => SellerProduct[];
@@ -60,7 +89,7 @@ export const useSellerProductStore = create<SellerProductState>()(
   devtools(
     (set, get) => ({
       products: [],
-      adjustments: stockAdjustmentsMock,
+      adjustments: [],
       search: "",
       category: "all",
       offerStatus: "all",
@@ -77,26 +106,27 @@ export const useSellerProductStore = create<SellerProductState>()(
       fetchProducts: async () => {
         set({ loading: true, loadError: null });
         try {
-          let products = await fetchSellerProducts();
+          const products = withActiveLocation(await fetchSellerProducts());
           set({ products, loading: false, loadError: null });
         } catch (error) {
-          if (isMissingSellerProfile(error)) {
-            const restored = await useAuthStore
-              .getState()
-              .ensureDemoSellerSession();
-            if (restored.ok) {
-              try {
-                const products = await fetchSellerProducts();
-                set({ products, loading: false, loadError: null });
-                return;
-              } catch (retryError) {
+          if (isAuthRequired(error) || isMissingSellerProfile(error)) {
+            try {
+              const restored = await restoreSellerSessionAndRetry();
+              if (restored) {
                 set({
-                  products: [],
+                  products: withActiveLocation(restored),
                   loading: false,
-                  loadError: catalogErrorMessage(retryError),
+                  loadError: null,
                 });
                 return;
               }
+            } catch (retryError) {
+              set({
+                products: [],
+                loading: false,
+                loadError: catalogErrorMessage(retryError),
+              });
+              return;
             }
           }
           set({
@@ -128,28 +158,56 @@ export const useSellerProductStore = create<SellerProductState>()(
               : product,
           ),
         })),
-      adjustStock: (id, delta, reason) =>
-        set((state) => ({
-          products: state.products.map((product) =>
-            product.id === id
-              ? {
-                  ...product,
-                  availableStock: Math.max(0, product.availableStock + delta),
-                  updatedAt: new Date().toISOString(),
-                }
-              : product,
-          ),
-          adjustments: [
-            {
-              id: `adj-${Date.now()}`,
-              productId: id,
-              delta,
-              reason,
-              at: new Date().toISOString(),
-            },
-            ...state.adjustments,
-          ],
-        })),
+      adjustStock: async (id, delta, reason) => {
+        const product = get().products.find((item) => item.id === id);
+        if (!product) {
+          return { ok: false, message: "Product not found" };
+        }
+        if (!product.inventoryId) {
+          return {
+            ok: false,
+            message:
+              "No inventory linked. Open Edit and set Available Stock to sync inventory.",
+          };
+        }
+        try {
+          await adjustSellerInventory({
+            inventoryId: product.inventoryId,
+            quantityDelta: delta,
+            notes: reason,
+          });
+          set((state) => ({
+            products: state.products.map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    availableStock: Math.max(0, item.availableStock + delta),
+                    updatedAt: new Date().toISOString(),
+                  }
+                : item,
+            ),
+            adjustments: [
+              {
+                id: `adj-${Date.now()}`,
+                productId: id,
+                delta,
+                reason,
+                at: new Date().toISOString(),
+              },
+              ...state.adjustments,
+            ],
+          }));
+          return { ok: true };
+        } catch (error) {
+          return {
+            ok: false,
+            message:
+              error instanceof Error
+                ? error.message
+                : "Unable to adjust stock on backend.",
+          };
+        }
+      },
       openStockDrawer: (id) =>
         set({ selectedProductId: id, stockDrawerOpen: true }),
       closeStockDrawer: () =>

@@ -6,6 +6,7 @@ export { useCxOpsStore } from "./cxOpsStore";
 export { useDispatchStore } from "./dispatchStore";
 export { useDocumentStore } from "./documentStore";
 export { useFinanceStore } from "./financeStore";
+export { useInventoryDashboardStore } from "./inventoryDashboardStore";
 export { useInventoryStore } from "./inventoryStore";
 export { useLocationStore } from "./locationStore";
 export { useMarketplaceCmsStore } from "./marketplaceCmsStore";

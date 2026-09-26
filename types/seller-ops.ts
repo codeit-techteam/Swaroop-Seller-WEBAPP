@@ -26,11 +26,7 @@ export type OpsStatus =
   | "MISSING";
 
 export type PriceRevisionStatus =
-  | "PENDING"
-  | "AWAITING_RESPONSE"
-  | "COUNTER_OFFER"
-  | "ACCEPTED"
-  | "REJECTED";
+  "PENDING" | "AWAITING_RESPONSE" | "COUNTER_OFFER" | "ACCEPTED" | "REJECTED";
 
 export type VehicleSlotStatus =
   | "AVAILABLE"
@@ -57,10 +53,7 @@ export type ProcurementStage =
 export type ProcurementPriority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
 export type PaymentStatus =
-  | "PAYMENT_PENDING"
-  | "PARTIALLY_PAID"
-  | "PAID"
-  | "OVERDUE";
+  "PAYMENT_PENDING" | "PARTIALLY_PAID" | "PAID" | "OVERDUE";
 
 export type DispatchStatus =
   | "NOT_STARTED"
@@ -72,13 +65,10 @@ export type DispatchStatus =
 export type SettlementStatus = "SETTLEMENT_PENDING" | "SETTLED";
 
 export type PaymentMethod =
-  | "Advance"
-  | "Credit"
-  | "On Loading"
-  | "LC"
-  | "Other";
+  "Advance" | "Credit" | "On Loading" | "LC" | "Other";
 
-export type VehicleType = "Trailer" | "Tanker" | "Container" | "Truck" | "Tempo";
+export type VehicleType =
+  "Trailer" | "Tanker" | "Container" | "Truck" | "Tempo";
 
 export type AlertKind =
   | "PRICE_REVISION_DUE_TODAY"
@@ -146,8 +136,8 @@ export interface OpsDocument {
 
 export interface PurchaseRequest {
   id: string;
-  buyerId: string;
-  buyerName: string;
+  /** Blind marketplace label only — never a real customer name. */
+  buyerDisplayName: string;
   productId: string;
   productName: string;
   gradeId: string;
@@ -167,8 +157,8 @@ export interface PriceRevision {
   id: string;
   purchaseRequestId: string;
   orderId?: string;
-  buyerId: string;
-  buyerName: string;
+  /** Blind marketplace label only — never a real customer name. */
+  buyerDisplayName: string;
   productId: string;
   productName: string;
   gradeId: string;
@@ -259,8 +249,8 @@ export interface ProcurementRecord {
   orderId?: string;
   priceRevisionId?: string;
   vehicleSlotId?: string;
-  buyerId: string;
-  buyerName: string;
+  /** Always "Anonymous Buyer" — never a real customer name. */
+  buyerDisplayName: string;
   productId: string;
   productName: string;
   gradeId: string;
