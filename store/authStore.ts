@@ -61,6 +61,16 @@ function applySession(
   });
 }
 
+/** Keep apiClient token storage in sync with persisted Zustand session. */
+function syncTokenStorage(tokens: AuthTokens | null | undefined) {
+  if (tokens?.accessToken) {
+    storage.set(STORAGE_KEYS.AUTH_TOKEN, tokens.accessToken);
+    if (tokens.refreshToken) {
+      storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
+    }
+  }
+}
+
 async function loginDemoSellerSession(
   set: (partial: Partial<SellerAuthState>) => void,
   mobile: string,
@@ -126,33 +136,84 @@ export const useAuthStore = create<SellerAuthState>()(
         }
 
         try {
-          // Demo phone + OTP → seeded seller account (has products/catalog).
           if (isDemoLogin) {
-            await loginDemoSellerSession(set, mobile);
-            return { ok: true };
-          }
+            // 1) Preferred: real OTP verify for Karan Veer phone (dev fixed OTP).
+            try {
+              const session = await authService.verifyOtp(mobile, otp);
+              const user = authService.mapUser(session.user, {
+                ...demoUser,
+                email: session.user.email ?? demoUser.email,
+                name:
+                  [session.user.firstName, session.user.lastName]
+                    .filter(Boolean)
+                    .join(" ") || DEMO_USER_NAME,
+                company: sellerProfileMock.companyName,
+              });
+              applySession(
+                set,
+                user,
+                session.accessToken,
+                session.refreshToken ?? "refresh",
+                mobile,
+                { onboardingComplete: true },
+              );
+              return { ok: true };
+            } catch {
+              /* fall through to seeded seller email login */
+            }
 
-          try {
-            const session = await authService.verifyOtp(mobile, otp);
-            const user = authService.mapUser(session.user, {
-              ...demoUser,
-              company: sellerProfileMock.companyName,
-            });
-            applySession(
-              set,
-              user,
-              session.accessToken,
-              session.refreshToken ?? "refresh",
-              mobile,
-            );
-            return { ok: true };
-          } catch (otpError) {
-            if (otp === DEMO_OTP) {
+            // 2) Fallback: seeded seller@test.local catalog account.
+            try {
               await loginDemoSellerSession(set, mobile);
               return { ok: true };
+            } catch {
+              /* fall through */
             }
-            throw otpError;
+
+            // 3) Last resort: phone + shared demo password.
+            try {
+              const session = await authService.loginWithPassword(
+                mobile,
+                DEMO_PASSWORD,
+              );
+              const user = authService.mapUser(session.user, {
+                ...demoUser,
+                company: sellerProfileMock.companyName,
+              });
+              applySession(
+                set,
+                user,
+                session.accessToken,
+                session.refreshToken ?? "refresh",
+                mobile,
+                { onboardingComplete: true },
+              );
+              return { ok: true };
+            } catch (error) {
+              set({ isLoading: false });
+              return {
+                ok: false,
+                message: authErrorMessage(
+                  error,
+                  "Demo login failed. Start Swaroop-Backend locally or seed Karan Veer on the API DB.",
+                ),
+              };
+            }
           }
+
+          const session = await authService.verifyOtp(mobile, otp);
+          const user = authService.mapUser(session.user, {
+            ...demoUser,
+            company: sellerProfileMock.companyName,
+          });
+          applySession(
+            set,
+            user,
+            session.accessToken,
+            session.refreshToken ?? "refresh",
+            mobile,
+          );
+          return { ok: true };
         } catch (error) {
           set({ isLoading: false });
           return {
@@ -173,18 +234,23 @@ export const useAuthStore = create<SellerAuthState>()(
           set({ isLoading: false });
           return {
             ok: false,
-            message: authErrorMessage(error, "Unable to restore seller session."),
+            message: authErrorMessage(
+              error,
+              "Unable to restore seller session.",
+            ),
           };
         }
       },
       completeOnboarding: () => set({ onboardingComplete: true }),
-      setSession: (user, tokens = null) =>
+      setSession: (user, tokens = null) => {
+        syncTokenStorage(tokens);
         set({
           user,
           tokens,
           isAuthenticated: true,
           isLoading: false,
-        }),
+        });
+      },
       logout: () => {
         storage.remove(STORAGE_KEYS.AUTH_TOKEN);
         storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
@@ -208,6 +274,11 @@ export const useAuthStore = create<SellerAuthState>()(
         pendingMobile: state.pendingMobile,
       }),
       onRehydrateStorage: () => (state) => {
+        // Zustand may restore the user while apiClient's token key is empty
+        // (e.g. after a prior 401 cleared petrotrade_auth_token).
+        if (state?.tokens?.accessToken) {
+          syncTokenStorage(state.tokens);
+        }
         state?.setHasHydrated(true);
       },
     },
