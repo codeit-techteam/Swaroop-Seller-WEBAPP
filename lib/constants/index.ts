@@ -4,7 +4,8 @@ export const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3003";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:3000/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "https://swaroop-backend-xzwkz.ondigitalocean.app/api/v1";
 
 export const ADMIN_API_URL =
   process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:3002";
@@ -53,6 +54,7 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   PRODUCTS: "/products",
   PRODUCTS_NEW: "/products/new",
+  PRODUCTS_EDIT: "/products",
   INVENTORY: "/inventory",
   INVENTORY_ADD_PRODUCT: "/products/new",
   OFFERS: "/offers",
