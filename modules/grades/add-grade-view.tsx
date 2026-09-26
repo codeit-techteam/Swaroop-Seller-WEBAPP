@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { packagingTypes, polymerTypes } from "@/lib/mock/products";
 import { slabsOverlap } from "@/lib/seller/format";
+import { apiErrorMessage, buildSellerListingCode } from "@/lib/utils";
 import {
   createSellerListing,
   fetchSellerGrades,
@@ -184,11 +185,7 @@ export function AddGradeView() {
         }
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save listing on backend.",
-      );
+      toast.error(apiErrorMessage(error, "Unable to save listing on backend."));
       return;
     }
 
@@ -229,7 +226,11 @@ export function AddGradeView() {
                           "gradeName",
                           selected.displayName ?? selected.name,
                         );
-                        form.setValue("gradeCode", selected.code);
+                        // Seller Product.code is unique per org — never reuse bare Grade Master code.
+                        form.setValue(
+                          "gradeCode",
+                          buildSellerListingCode(selected.code),
+                        );
                         form.setValue(
                           "polymerType",
                           selected.category?.code ?? selected.code,
@@ -292,10 +293,14 @@ export function AddGradeView() {
               name="gradeCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Grade Code</FormLabel>
+                  <FormLabel>Listing / SKU Code</FormLabel>
                   <FormControl>
-                    <Input placeholder="P400S" {...field} />
+                    <Input placeholder="P400S-A1B2C" {...field} />
                   </FormControl>
+                  <p className="text-[11px] text-slate-500">
+                    Auto-generated from Grade Master so each listing is unique.
+                    You can edit it.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
