@@ -1,7 +1,7 @@
 export { AutoSaveIndicator } from "./auto-save-indicator";
 export { FooterNavigation } from "./footer-navigation";
-export { GstValidateCard } from "./gst-validate-card";
 export { FormSelect } from "./form-select";
+export { GstValidateCard } from "./gst-validate-card";
 export { OnboardingLocationForm } from "./location-form";
 export { MapPlaceholder } from "./map-placeholder";
 export { OtpInput } from "./otp-input";

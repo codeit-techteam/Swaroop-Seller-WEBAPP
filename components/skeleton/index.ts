@@ -17,7 +17,7 @@ export {
   InventoryPageSkeleton,
   OffersPageSkeleton,
   OrdersPageSkeleton,
-  ProductTableSkeleton,
   ProductsPageSkeleton,
+  ProductTableSkeleton,
   RequestsPageSkeleton,
 } from "./page-skeletons";

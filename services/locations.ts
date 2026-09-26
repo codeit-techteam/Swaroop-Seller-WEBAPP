@@ -158,7 +158,11 @@ export async function fetchCurrentSellerLocation(): Promise<{
     } catch {
       const saved = await locationsFromOnboarding();
       if (saved.length) {
-        return { current: saved[0], locations: saved, source: "onboarding" };
+        return {
+          current: saved[0] ?? null,
+          locations: saved,
+          source: "onboarding",
+        };
       }
       throw locationsApiError(error, "Unable to load current location.");
     }

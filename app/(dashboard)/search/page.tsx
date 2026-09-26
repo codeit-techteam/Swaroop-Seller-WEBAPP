@@ -39,7 +39,10 @@ function SearchResults() {
     };
   }, [q]);
 
-  const results = q.length < 2 ? [] : resolved.query === q ? resolved.hits : [];
+  const results = useMemo(
+    () => (q.length < 2 ? [] : resolved.query === q ? resolved.hits : []),
+    [q, resolved],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<SellerSearchCategory, SellerSearchHit[]>();

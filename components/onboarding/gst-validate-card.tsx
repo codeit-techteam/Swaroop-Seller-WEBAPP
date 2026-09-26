@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import {
   GST_BOOK_MEETING_URL,
   GST_KNOW_MORE_URL,
@@ -12,7 +13,6 @@ import {
   normalizeGstin,
   parseGstin,
 } from "@/lib/utils/gst";
-import { cn } from "@/lib/utils";
 
 const VALIDATE_DELAY_MS = 500;
 
@@ -105,10 +105,12 @@ export function GstValidateCard({
             Valid GST Number
           </p>
           <p>
-            <span className="font-semibold">GST Number:</span> {result.gstNumber}
+            <span className="font-semibold">GST Number:</span>{" "}
+            {result.gstNumber}
           </p>
           <p>
-            <span className="font-semibold">State Code:</span> {result.stateCode}
+            <span className="font-semibold">State Code:</span>{" "}
+            {result.stateCode}
           </p>
           <p>
             <span className="font-semibold">State:</span> {result.state}
