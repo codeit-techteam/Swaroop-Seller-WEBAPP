@@ -45,7 +45,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { offerFormSchema } from "@/lib/schemas/marketplace";
-import { PETROTRADE_CREDIT_NOTE, sellerPaymentMethodLabel } from "@/lib/seller/payment";
+import { PETROTRADE_CREDIT_NOTE } from "@/lib/seller/payment";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { useLocationStore } from "@/store/locationStore";
 import { useOfferStore } from "@/store/offerStore";
@@ -157,7 +157,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
         warehouseId: product.locationId,
         warehouseName: warehouse
           ? `${warehouse.name} (${warehouse.city})`
-          : product.origin ?? "",
+          : (product.origin ?? ""),
         availableInventoryMt: product.availableStock,
         basePrice: product.basePrice ?? 0,
         allocationMt: Math.min(100, product.availableStock),
@@ -172,9 +172,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
       const warehouse = locations.find((w) => w.id === warehouseId);
       setFormData({
         warehouseId,
-        warehouseName: warehouse
-          ? `${warehouse.name} (${warehouse.city})`
-          : "",
+        warehouseName: warehouse ? `${warehouse.name} (${warehouse.city})` : "",
       });
     },
     [locations, setFormData],
@@ -187,7 +185,9 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
         current.includes("credit_15") || current.includes("credit_30");
       setFormData({
         paymentTerms: hasCredit
-          ? current.filter((item) => item !== "credit_15" && item !== "credit_30")
+          ? current.filter(
+              (item) => item !== "credit_15" && item !== "credit_30",
+            )
           : [...current.filter((item) => item !== "credit_30"), "credit_15"],
       });
       return;
