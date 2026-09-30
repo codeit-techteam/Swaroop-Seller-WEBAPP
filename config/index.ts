@@ -6,6 +6,7 @@ export {
   NAV_SECTIONS,
   type NavItem,
   type NavSection,
+  permissionForPath,
 } from "./navigation";
 export type { Permission } from "./permissions";
 export { canAccess, hasPermission, ROLE_PERMISSIONS } from "./permissions";

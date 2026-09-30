@@ -3,12 +3,9 @@ import { persist } from "zustand/middleware";
 
 import { STORAGE_KEYS } from "@/lib/constants";
 import {
-  detectCurrentSellerAddress,
-  SellerLocationAccessError,
-} from "@/services/geo-location";
-import {
   fetchCurrentSellerLocation,
   fetchSellerLocations,
+  type SaveSellerGeoLocationInput,
   saveSellerLocationFromGeo,
   setCurrentSellerLocation,
 } from "@/services/locations";
@@ -25,7 +22,11 @@ interface LocationState {
   hydrated: boolean;
   loadError: string | null;
   hydrate: (options?: { force?: boolean }) => Promise<void>;
-  detectAndSaveCurrentLocation: () => Promise<SellerLocation | null>;
+  reset: () => void;
+  /** Persist a confirmed operating location (search / GPS / map pin). */
+  saveGeoLocation: (
+    input: SaveSellerGeoLocationInput,
+  ) => Promise<SellerLocation | null>;
   setSelectedLocation: (id: string) => Promise<void>;
   toggleLocationStatus: (id: string) => void;
   updateLocation: (id: string, data: Partial<SellerLocation>) => void;
@@ -42,6 +43,13 @@ export const useLocationStore = create<LocationState>()(
       detecting: false,
       hydrated: false,
       loadError: null,
+      reset: () =>
+        set({
+          locations: [],
+          selectedLocationId: "",
+          hydrated: false,
+          loadError: null,
+        }),
       hydrate: async (options) => {
         const { force = false } = options ?? {};
         const state = get();
@@ -107,39 +115,16 @@ export const useLocationStore = create<LocationState>()(
           });
         }
       },
-      detectAndSaveCurrentLocation: async () => {
-        set({ detecting: true, loadError: null });
-        try {
-          const address = await detectCurrentSellerAddress();
-          const { current, locations } = await saveSellerLocationFromGeo({
-            latitude: address.latitude,
-            longitude: address.longitude,
-            name: `${address.city} Warehouse`,
-            addressLine: address.addressLine,
-            city: address.city,
-            state: address.state,
-            pincode: address.pincode,
-            country: address.country,
-          });
-          const selected = current ?? locations[0] ?? null;
-          set({
-            locations: locations.length ? locations : get().locations,
-            selectedLocationId: selected?.id ?? get().selectedLocationId,
-            detecting: false,
-            hydrated: true,
-            loadError: null,
-          });
-          return selected;
-        } catch (error) {
-          const message =
-            error instanceof SellerLocationAccessError
-              ? error.message
-              : error instanceof Error
-                ? error.message
-                : "Unable to detect current location.";
-          set({ detecting: false, loadError: message });
-          throw new Error(message);
-        }
+      saveGeoLocation: async (input) => {
+        const { current, locations } = await saveSellerLocationFromGeo(input);
+        const selected = current ?? locations[0] ?? null;
+        set({
+          locations: locations.length ? locations : get().locations,
+          selectedLocationId: selected?.id ?? get().selectedLocationId,
+          hydrated: true,
+          loadError: null,
+        });
+        return selected;
       },
       setSelectedLocation: async (id) => {
         if (id.startsWith("saved-onboarding-")) {

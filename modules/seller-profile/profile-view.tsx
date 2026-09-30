@@ -2,6 +2,7 @@
 
 import { Mail, Phone } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import { PageContainer } from "@/components/common/page-container";
@@ -11,16 +12,60 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
 import { maskAccountNumber } from "@/lib/mock/locations";
 import { formatMt } from "@/lib/seller/format";
+import { apiClient } from "@/services/apiClient";
 import { useLocationStore } from "@/store/locationStore";
 import { useSellerStore } from "@/store/sellerStore";
+
+type AccountManagerRow = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  role?: string;
+  title?: string | null;
+  status?: string;
+  isPrimary?: boolean;
+  seller?: string;
+};
 
 export function SellerProfileView() {
   const seller = useSellerStore((s) => s.seller);
   const locations = useLocationStore((s) => s.locations);
+  const hydrateLocations = useLocationStore((s) => s.hydrate);
+  const locationsHydrated = useLocationStore((s) => s.hydrated);
+  const [managers, setManagers] = useState<AccountManagerRow[]>([]);
+  const [managersLoaded, setManagersLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!locationsHydrated) void hydrateLocations();
+  }, [hydrateLocations, locationsHydrated]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void apiClient
+      .get("/seller/profile")
+      .then((response) => {
+        const payload = response.data?.data ?? response.data;
+        const rows = Array.isArray(payload?.accountManagers)
+          ? (payload.accountManagers as AccountManagerRow[])
+          : [];
+        if (!cancelled) setManagers(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setManagers([]);
+      })
+      .finally(() => {
+        if (!cancelled) setManagersLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const manager = managers.find((row) => row.isPrimary) ?? managers[0];
   const toggleLocationStatus = useLocationStore((s) => s.toggleLocationStatus);
   const setSelectedLocation = useLocationStore((s) => s.setSelectedLocation);
   const bank = seller.bankAccounts[0];
-  const manager = seller.accountManager;
 
   return (
     <PageContainer className="space-y-5">
@@ -49,30 +94,63 @@ export function SellerProfileView() {
       </Section>
 
       <Section title="Account Manager Details">
-        <Grid
-          rows={[
-            ["Name", manager.name],
-            ["Mobile", manager.mobile],
-            ["Email", manager.email],
-            ["Region", manager.region],
-          ]}
-        />
-        <div className="mt-3 flex gap-2">
-          <Button asChild variant="outline">
-            <a href={`tel:+91${manager.mobile}`}>
-              <Phone className="mr-1 h-4 w-4" /> Call
-            </a>
-          </Button>
-          <Button asChild variant="outline">
-            <a href={`mailto:${manager.email}`}>
-              <Mail className="mr-1 h-4 w-4" /> Email
-            </a>
-          </Button>
-        </div>
+        {!managersLoaded ? (
+          <p className="text-sm text-slate-500">Loading account manager…</p>
+        ) : !manager ? (
+          <p className="text-sm text-slate-500">
+            No account manager has been assigned to this seller.
+          </p>
+        ) : (
+          <>
+            <Grid
+              rows={[
+                ["Name", manager.name],
+                ["Mobile", manager.phone ?? "—"],
+                ["Email", manager.email ?? "—"],
+                ["Role", manager.title || "Seller Manager"],
+                ["Status", manager.status ?? "—"],
+                ["Seller", manager.seller ?? seller.companyName],
+              ]}
+            />
+            <div className="mt-3 flex gap-2">
+              {manager.phone ? (
+                <Button asChild variant="outline">
+                  <a href={`tel:${manager.phone}`}>
+                    <Phone className="mr-1 h-4 w-4" /> Call
+                  </a>
+                </Button>
+              ) : null}
+              {manager.email ? (
+                <Button asChild variant="outline">
+                  <a href={`mailto:${manager.email}`}>
+                    <Mail className="mr-1 h-4 w-4" /> Email
+                  </a>
+                </Button>
+              ) : null}
+            </div>
+            {managers.length > 1 ? (
+              <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                {managers
+                  .filter((row) => row.id !== manager.id)
+                  .map((row) => (
+                    <li key={row.id}>
+                      {row.name}
+                      {row.title ? ` · ${row.title}` : ""} · {row.status}
+                    </li>
+                  ))}
+              </ul>
+            ) : null}
+          </>
+        )}
       </Section>
 
       <Section title="Locations & Decision Makers">
         <div className="space-y-3">
+          {locations.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              No operating locations are saved for this seller yet.
+            </p>
+          ) : null}
           {locations.map((location) => (
             <div
               key={location.id}

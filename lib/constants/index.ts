@@ -10,6 +10,10 @@ export const API_BASE_URL =
 export const ADMIN_API_URL =
   process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:3002";
 
+/** Referrer-restricted browser key — Maps JavaScript API (confirm map) only. */
+export const GOOGLE_MAPS_BROWSER_KEY =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+
 export const IS_DEV = process.env.NODE_ENV === "development";
 
 export const IS_PROD = process.env.NODE_ENV === "production";
@@ -34,6 +38,8 @@ export const STORAGE_KEYS = {
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
+  CHANGE_PASSWORD: "/change-password",
+  ACCEPT_INVITE: "/accept-invite",
   REGISTER: "/register",
   FORGOT_PASSWORD: "/forgot-password",
   VERIFY_OTP: "/verify-otp",
@@ -78,6 +84,7 @@ export const ROUTES = {
   DOCUMENTS: "/documents",
   DOCUMENT_CENTER: "/documents",
   PROFILE: "/profile",
+  VERIFICATION: "/verification",
   PROFILE_COMPANY: "/profile/company",
   PROFILE_LOCATIONS: "/profile/locations",
   PROFILE_BANK: "/profile/bank",

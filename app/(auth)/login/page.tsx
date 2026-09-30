@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Package } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -42,6 +43,9 @@ const features = [
 export default function SellerLoginPage() {
   const router = useRouter();
   const sendOtp = useAuthStore((s) => s.sendOtp);
+  const loginWithCredentials = useAuthStore((s) => s.loginWithCredentials);
+  const [loginId, setLoginId] = useState("");
+  const [password, setPassword] = useState("");
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -157,10 +161,48 @@ export default function SellerLoginPage() {
                 </Button>
               </form>
             </Form>
+            <form
+              className="mt-8 space-y-3 border-t pt-6"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void (async () => {
+                  const result = await loginWithCredentials(loginId, password);
+                  if (!result.ok) {
+                    toast.error(result.message ?? "Unable to sign in");
+                    return;
+                  }
+                  router.push(ROUTES.DASHBOARD);
+                })();
+              }}
+            >
+              <p className="text-sm font-medium text-slate-800">
+                Seller Manager login
+              </p>
+              <p className="text-xs text-slate-500">
+                Use the Login ID issued by PetroTrade Admin.
+              </p>
+              <Input
+                value={loginId}
+                onChange={(event) => setLoginId(event.target.value)}
+                placeholder="Login ID or email"
+                autoComplete="username"
+              />
+              <Input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Password"
+                autoComplete="current-password"
+              />
+              <Button type="submit" variant="outline" className="w-full">
+                Sign in
+              </Button>
+            </form>
             <p className="mt-4 text-xs text-slate-400">
-              Dev login: <span className="font-semibold text-slate-600">Karan Veer</span> ·{" "}
-              <span className="font-semibold text-slate-600">8240890242</span> · OTP{" "}
-              <span className="font-semibold text-slate-600">123456</span>
+              Dev login:{" "}
+              <span className="font-semibold text-slate-600">Karan Veer</span> ·{" "}
+              <span className="font-semibold text-slate-600">8240890242</span> ·
+              OTP <span className="font-semibold text-slate-600">123456</span>
             </p>
           </motion.div>
         </div>

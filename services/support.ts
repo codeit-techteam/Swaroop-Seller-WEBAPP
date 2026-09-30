@@ -1,3 +1,4 @@
+import { apiErrorMessage } from "@/lib/utils";
 import { apiClient } from "@/services/apiClient";
 
 export type SellerTicketCategory =
@@ -74,20 +75,33 @@ export async function createSellerSupportTicket(input: {
   description: string;
   attachmentName?: string;
 }): Promise<SellerSupportTicket> {
-  const { data } = await apiClient.post<Envelope<SellerSupportTicket>>(
-    "/seller/support/tickets",
-    {
+  try {
+    const payload: {
+      category: SellerTicketCategory;
+      priority: SellerTicketPriority;
+      subject: string;
+      description: string;
+      attachmentName?: string;
+    } = {
       category: input.category,
       priority: input.priority ?? "MEDIUM",
       subject: input.subject.trim(),
       description: input.description.trim(),
-      attachmentName: input.attachmentName,
-    },
-  );
-  if (!data.data) {
-    throw new Error(data.message || "Failed to create support ticket");
+    };
+    const attachment = input.attachmentName?.trim();
+    if (attachment) payload.attachmentName = attachment;
+
+    const { data } = await apiClient.post<Envelope<SellerSupportTicket>>(
+      "/seller/support/tickets",
+      payload,
+    );
+    if (!data.data) {
+      throw new Error(data.message || "Failed to create support ticket");
+    }
+    return data.data;
+  } catch (error) {
+    throw new Error(apiErrorMessage(error, "Failed to create support ticket"));
   }
-  return data.data;
 }
 
 export async function getSellerSupportTicket(

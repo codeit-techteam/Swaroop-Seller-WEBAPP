@@ -34,10 +34,14 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const router = useRouter();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const storeCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleCollapsed = useUiStore((s) => s.toggleSidebarCollapsed);
   const isCollapsed = collapsed ?? storeCollapsed;
-  const navSections = useMemo(() => getVisibleNavSections("SELLER"), []);
+  const navSections = useMemo(
+    () => getVisibleNavSections(user?.role ?? "SELLER", user?.permissions),
+    [user?.permissions, user?.role],
+  );
   const allHrefs = useMemo(() => collectNavHrefs(navSections), [navSections]);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 

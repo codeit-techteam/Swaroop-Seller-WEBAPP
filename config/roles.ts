@@ -6,7 +6,8 @@ export type UserRole =
   | "LOGISTICS"
   | "COMPLIANCE"
   | "VIEWER"
-  | "SELLER";
+  | "SELLER"
+  | "SELLER_MANAGER";
 
 export const USER_ROLES: UserRole[] = [
   "ADMIN",
@@ -17,6 +18,7 @@ export const USER_ROLES: UserRole[] = [
   "COMPLIANCE",
   "VIEWER",
   "SELLER",
+  "SELLER_MANAGER",
 ];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -28,10 +30,11 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   COMPLIANCE: "Compliance Manager",
   VIEWER: "Viewer",
   SELLER: "Seller",
+  SELLER_MANAGER: "Seller Manager",
 };
 
 export function isSellerRole(role: UserRole): boolean {
-  return role === "SELLER";
+  return role === "SELLER" || role === "SELLER_MANAGER";
 }
 
 export const CURRENT_MOCK_ROLE: UserRole = "SELLER";

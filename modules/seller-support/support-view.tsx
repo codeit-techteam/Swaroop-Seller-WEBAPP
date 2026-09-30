@@ -131,9 +131,17 @@ export function SellerSupportView() {
   function validate() {
     const next: Record<string, string> = {};
     if (!category) next.category = "Select a category";
-    if (!subject.trim()) next.subject = "Subject is required";
-    if (description.trim().length < 10)
+    const subjectText = subject.trim();
+    if (!subjectText) next.subject = "Subject is required";
+    else if (subjectText.length < 3)
+      next.subject = "Subject must be at least 3 characters";
+    else if (subjectText.length > 200)
+      next.subject = "Subject must be at most 200 characters";
+    const descriptionText = description.trim();
+    if (descriptionText.length < 10)
       next.description = "Describe the issue (min 10 characters)";
+    else if (descriptionText.length > 5000)
+      next.description = "Description must be at most 5000 characters";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -144,8 +152,8 @@ export function SellerSupportView() {
     try {
       const ticket = await createSellerSupportTicket({
         category,
-        subject,
-        description,
+        subject: subject.trim(),
+        description: description.trim(),
         attachmentName,
       });
       setLastTicketId(ticket.ticketNumber);

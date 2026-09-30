@@ -3,7 +3,7 @@
 import { Package } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ROUTES } from "@/lib/constants";
 import { ONBOARDING_STEPS } from "@/lib/constants/onboarding";
@@ -19,6 +19,15 @@ export function OnboardingShell({ children }: { children: React.ReactNode }) {
   const onboardingComplete = useAuthStore((s) => s.onboardingComplete);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const setHasHydrated = useAuthStore((s) => s.setHasHydrated);
+  const syncOnboardingFromApi = useAuthStore((s) => s.syncOnboardingFromApi);
+  const userId = useAuthStore((s) => s.user?.id);
+  const syncAttemptedFor = useRef<string | null>(null);
+  const [syncedFor, setSyncedFor] = useState<string | null>(null);
+  const sessionKey = userId ?? "";
+  const statusReady =
+    hasHydrated &&
+    isAuthenticated &&
+    (isPreview || onboardingComplete || syncedFor === sessionKey);
 
   useEffect(() => {
     const finish = () => setHasHydrated(true);
@@ -32,16 +41,52 @@ export function OnboardingShell({ children }: { children: React.ReactNode }) {
     };
   }, [setHasHydrated]);
 
+  // Existing sellers with a stale local flag should bounce to home.
   useEffect(() => {
-    if (!hasHydrated) return;
+    if (!hasHydrated || !isAuthenticated) {
+      syncAttemptedFor.current = null;
+      return;
+    }
+    if (
+      isPreview ||
+      onboardingComplete ||
+      syncAttemptedFor.current === sessionKey
+    ) {
+      return;
+    }
+    syncAttemptedFor.current = sessionKey;
+    void syncOnboardingFromApi().finally(() => setSyncedFor(sessionKey));
+  }, [
+    hasHydrated,
+    isAuthenticated,
+    isPreview,
+    onboardingComplete,
+    sessionKey,
+    syncOnboardingFromApi,
+  ]);
+
+  useEffect(() => {
+    if (!hasHydrated || !statusReady) return;
     if (!isAuthenticated) {
       router.replace(ROUTES.LOGIN);
       return;
     }
     if (onboardingComplete && !isPreview) router.replace(ROUTES.DASHBOARD);
-  }, [hasHydrated, isAuthenticated, isPreview, onboardingComplete, router]);
+  }, [
+    hasHydrated,
+    statusReady,
+    isAuthenticated,
+    isPreview,
+    onboardingComplete,
+    router,
+  ]);
 
-  if (!hasHydrated || !isAuthenticated || (onboardingComplete && !isPreview)) {
+  if (
+    !hasHydrated ||
+    !isAuthenticated ||
+    !statusReady ||
+    (onboardingComplete && !isPreview)
+  ) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#F4F7F9]">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#1B6EF3] border-t-transparent" />

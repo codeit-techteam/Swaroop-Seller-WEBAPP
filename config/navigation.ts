@@ -9,6 +9,7 @@ import {
   LogOut,
   MapPin,
   Package,
+  ShieldCheck,
   ShoppingCart,
   Tag,
   Truck,
@@ -159,6 +160,12 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: FileText,
         permission: "compliance.view",
       },
+      {
+        label: "Verification",
+        href: ROUTES.VERIFICATION,
+        icon: ShieldCheck,
+        permission: "profile.view",
+      },
     ],
   },
   {
@@ -214,19 +221,29 @@ export const MOBILE_NAV_ITEMS: NavItem[] = [
   },
 ];
 
-function visibleItem(item: NavItem, role: UserRole): boolean {
-  if (!canAccess(role, item.permission)) return false;
-  return true;
+function visibleItem(
+  item: NavItem,
+  role: UserRole,
+  permissions?: readonly string[] | null,
+): boolean {
+  if (!item.permission) return true;
+  if (permissions) return permissions.includes(item.permission);
+  return canAccess(role, item.permission);
 }
 
-export function getVisibleNavSections(role: UserRole): NavSection[] {
+export function getVisibleNavSections(
+  role: UserRole,
+  permissions?: readonly string[] | null,
+): NavSection[] {
   return NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items
-      .filter((item) => visibleItem(item, role))
+      .filter((item) => visibleItem(item, role, permissions))
       .map((item) => ({
         ...item,
-        children: item.children?.filter((child) => visibleItem(child, role)),
+        children: item.children?.filter((child) =>
+          visibleItem(child, role, permissions),
+        ),
       })),
   })).filter((section) => section.items.length > 0);
 }
@@ -258,6 +275,14 @@ export function isNavHrefActive(
     (candidate) =>
       candidate.length > href.length && pathMatchesHref(pathname, candidate),
   );
+}
+
+export function permissionForPath(pathname: string): Permission | undefined {
+  const items = NAV_SECTIONS.flatMap((section) => section.items);
+  const match = items
+    .filter((item) => pathMatchesHref(pathname, item.href))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+  return match?.permission;
 }
 
 export { LogOut };

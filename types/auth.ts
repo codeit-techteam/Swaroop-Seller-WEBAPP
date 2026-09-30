@@ -9,7 +9,11 @@ export interface User {
   role: UserRole;
   avatarUrl?: string;
   company?: string;
-  sellerId?: string;
+  sellerId?: string | null;
+  sellerName?: string | null;
+  loginId?: string | null;
+  permissions?: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface AuthTokens {

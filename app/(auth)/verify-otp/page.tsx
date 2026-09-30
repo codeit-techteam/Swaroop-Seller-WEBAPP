@@ -23,7 +23,6 @@ export default function VerifyOtpPage() {
   const pendingMobile = useAuthStore((s) => s.pendingMobile);
   const verifyOtp = useAuthStore((s) => s.verifyOtp);
   const sendOtp = useAuthStore((s) => s.sendOtp);
-  const onboardingComplete = useAuthStore((s) => s.onboardingComplete);
   const [countdown, setCountdown] = useState(RESEND_SECONDS);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -55,9 +54,11 @@ export default function VerifyOtpPage() {
         return;
       }
       toast.success("Logged in successfully");
-      router.push(onboardingComplete ? ROUTES.DASHBOARD : ROUTES.ONBOARDING);
+      const done =
+        result.onboardingComplete ?? useAuthStore.getState().onboardingComplete;
+      router.push(done ? ROUTES.DASHBOARD : ROUTES.ONBOARDING);
     },
-    [form, onboardingComplete, router, verifyOtp],
+    [form, router, verifyOtp],
   );
 
   return (

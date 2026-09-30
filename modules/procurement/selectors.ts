@@ -46,14 +46,20 @@ export function sellerStatusFromItem(item: ProcurementItem): SellerQueueStatus {
   if (item.poId || item.type === "PO") return "PO_ISSUED";
   if (item.selectedSellerId) return "SELECTED";
   if (item.status === "NEGOTIATION") return "NEGOTIATING";
-  if (item.offers.some((offer) => offer.status === "SUBMITTED" || offer.status === "PENDING")) {
+  if (
+    item.offers.some(
+      (offer) => offer.status === "SUBMITTED" || offer.status === "PENDING",
+    )
+  ) {
     return "QUOTATION_RECEIVED";
   }
   if (item.assignedSellers?.length) return "RFQ_SENT";
   return "UNASSIGNED";
 }
 
-export function defaultDocuments(item: ProcurementItem): ProcurementAttachment[] {
+export function defaultDocuments(
+  item: ProcurementItem,
+): ProcurementAttachment[] {
   const at = item.createdAt;
   const docs: ProcurementAttachment[] = [
     {
@@ -96,18 +102,17 @@ export function defaultDocuments(item: ProcurementItem): ProcurementAttachment[]
 
 export function hydrateProcurementItem(item: ProcurementItem): ProcurementItem {
   const status = normalizeStatus(item.status);
-  const assignedSellers =
-    item.assignedSellers?.length
-      ? item.assignedSellers
-      : item.supplierId
-        ? [
-            {
-              supplierId: item.supplierId,
-              supplierName: item.supplier,
-              rfqSentAt: item.createdAt,
-            },
-          ]
-        : [];
+  const assignedSellers = item.assignedSellers?.length
+    ? item.assignedSellers
+    : item.supplierId
+      ? [
+          {
+            supplierId: item.supplierId,
+            supplierName: item.supplier,
+            rfqSentAt: item.createdAt,
+          },
+        ]
+      : [];
   const offers = (item.offers ?? []).map((offer) => ({
     ...offer,
     availableQty: offer.availableQty ?? offer.quantity,
@@ -123,17 +128,22 @@ export function hydrateProcurementItem(item: ProcurementItem): ProcurementItem {
     prId: item.prId ?? (item.type === "PO" ? item.requestId : item.id),
     poId: item.poId ?? (item.type === "PO" ? item.id : undefined),
     status,
-    creditTerms: item.creditTerms || (item.creditRequired ? "Net 30" : "Advance"),
+    creditTerms:
+      item.creditTerms || (item.creditRequired ? "Net 30" : "Advance"),
     deliveryCharges: item.deliveryCharges ?? 0,
-    taxes: item.taxes ?? Math.round((item.negotiatedValue || item.estimatedCost) * 0.18),
+    taxes:
+      item.taxes ??
+      Math.round((item.negotiatedValue || item.estimatedCost) * 0.18),
     margin: item.margin ?? item.commission,
     assignedSellers,
     offers,
-    documents: item.documents?.length ? item.documents : defaultDocuments({
-      ...item,
-      assignedSellers,
-      offers,
-    }),
+    documents: item.documents?.length
+      ? item.documents
+      : defaultDocuments({
+          ...item,
+          assignedSellers,
+          offers,
+        }),
     negotiationStatus:
       item.negotiationStatus ??
       (status === "NEGOTIATION"
@@ -179,7 +189,10 @@ export function computeProcurementSummary(
         item.status === "CONVERTED_TO_PO" ||
         item.status === "COMPLETED",
     )
-    .reduce((sum, item) => sum + (item.negotiatedValue || item.estimatedCost), 0);
+    .reduce(
+      (sum, item) => sum + (item.negotiatedValue || item.estimatedCost),
+      0,
+    );
   const averageProcessingHours = items.length
     ? Math.round(
         items.reduce((sum, item) => sum + item.processingHours, 0) /
@@ -193,24 +206,30 @@ export function computeProcurementSummary(
     averageProcessingHours,
     activeNegotiations,
     openPoValue,
-    newRequests: prs.filter((item) => item.status === "NEW" || item.status === "DRAFT").length,
+    newRequests: prs.filter(
+      (item) => item.status === "NEW" || item.status === "DRAFT",
+    ).length,
     underReview: prs.filter((item) => item.status === "UNDER_REVIEW").length,
-    awaitingQuote: prs.filter((item) => item.status === "SELLER_SOURCING").length,
+    awaitingQuote: prs.filter((item) => item.status === "SELLER_SOURCING")
+      .length,
     overdue: items.filter(
       (item) =>
         item.delayed ||
-        (item.expectedCompletion && new Date(item.expectedCompletion).getTime() < now &&
+        (item.expectedCompletion &&
+          new Date(item.expectedCompletion).getTime() < now &&
           item.status !== "COMPLETED" &&
           item.status !== "REJECTED"),
     ).length,
     pendingPrs: prs.filter(
       (item) => !["COMPLETED", "REJECTED", "CANCELLED"].includes(item.status),
     ).length,
-    quotationPending: prs.filter((item) => item.status === "SELLER_SOURCING").length,
+    quotationPending: prs.filter((item) => item.status === "SELLER_SOURCING")
+      .length,
     poAwaitingSeller: items.filter(
       (item) =>
         item.type === "PO" &&
-        (item.poStatus === "SENT_TO_SELLER" || item.poStatus === "SELLER_REVIEW"),
+        (item.poStatus === "SENT_TO_SELLER" ||
+          item.poStatus === "SELLER_REVIEW"),
     ).length,
     dispatchPending: items.filter(
       (item) =>
@@ -270,7 +289,10 @@ export function csvEscape(value: string | number): string {
   return text;
 }
 
-export function matchesSeller(item: ProcurementItem, sellerId?: string): boolean {
+export function matchesSeller(
+  item: ProcurementItem,
+  sellerId?: string | null,
+): boolean {
   if (!sellerId) return true;
   return (
     item.supplierId === sellerId ||
@@ -281,13 +303,16 @@ export function matchesSeller(item: ProcurementItem, sellerId?: string): boolean
 
 export function sellerVisibleOffers(
   item: ProcurementItem,
-  sellerId?: string,
+  sellerId?: string | null,
 ): ProcurementItem["offers"] {
   if (!sellerId) return item.offers;
   return item.offers.filter((offer) => offer.supplierId === sellerId);
 }
 
-export function defaultTimeline(at: string, doneTitles: string[] = ["Created"]): ProcurementItem["timeline"] {
+export function defaultTimeline(
+  at: string,
+  doneTitles: string[] = ["Created"],
+): ProcurementItem["timeline"] {
   const titles = [
     "Created",
     "Under Review",

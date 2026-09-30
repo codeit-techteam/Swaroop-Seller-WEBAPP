@@ -1,6 +1,12 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+let activeQueryClient: QueryClient | null = null;
+
+export function clearSellerQueries() {
+  activeQueryClient?.clear();
+}
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
 
@@ -19,7 +25,11 @@ function makeQueryClient() {
 }
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(makeQueryClient);
+  const [queryClient] = useState(() => {
+    const client = makeQueryClient();
+    activeQueryClient = client;
+    return client;
+  });
 
   return (
     <QueryClientProvider client={queryClient}>

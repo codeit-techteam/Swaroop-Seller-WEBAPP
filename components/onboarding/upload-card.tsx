@@ -33,9 +33,14 @@ interface UploadCardProps {
   document: DocumentItem;
   onUpload: (file: File) => void;
   onReplace: (file: File) => void;
-  onDelete: () => void;
+  /** Omit to hide the remove action. */
+  onDelete?: () => void;
   onCancel?: () => void;
   onPreview?: () => void;
+  /** Stored file can be viewed but not replaced (e.g. while under admin review). */
+  locked?: boolean;
+  /** Highlights a slot the admin asked to be re-uploaded. */
+  highlighted?: boolean;
   className?: string;
 }
 
@@ -63,6 +68,8 @@ export function UploadCard({
   onDelete,
   onCancel,
   onPreview,
+  locked = false,
+  highlighted = false,
   className,
 }: UploadCardProps) {
   const [isDragActive, setIsDragActive] = useState(false);
@@ -110,6 +117,7 @@ export function UploadCard({
         "rounded-xl border bg-card shadow-card",
         document.status === "rejected" && "border-destructive/40",
         document.status === "verified" && "border-success/30",
+        highlighted && "ring-2 ring-amber-400/70",
         className,
       )}
     >
@@ -252,23 +260,29 @@ export function UploadCard({
                     View File
                   </Button>
                 ) : null}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={open}
-                  type="button"
-                >
-                  Replace
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onDelete}
-                  type="button"
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {locked ? null : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={open}
+                    type="button"
+                  >
+                    {document.status === "rejected"
+                      ? "Upload New File"
+                      : "Replace"}
+                  </Button>
+                )}
+                {!locked && onDelete ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onDelete}
+                    type="button"
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                ) : null}
               </div>
             </motion.div>
           )}

@@ -136,6 +136,7 @@ export async function createOnboardingDocumentUpload(input: {
     fileName: input.file.name,
     mimeType,
     fileSizeBytes: input.file.size,
+    source: "SELLER_WEB",
   });
   const data = response.data.data;
   if (!data?.id || !data.uploadUrl) {

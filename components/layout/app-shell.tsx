@@ -6,7 +6,8 @@ import { type ReactNode, useEffect } from "react";
 
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { isNavHrefActive, MOBILE_NAV_ITEMS } from "@/config";
+import { VerificationBanner } from "@/components/verification/verification-banner";
+import { isNavHrefActive, MOBILE_NAV_ITEMS, permissionForPath } from "@/config";
 import { useDisclosure, useIsMobile } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -24,7 +25,17 @@ export function AppShell({ children, className }: AppShellProps) {
   const isMobile = useIsMobile();
   const mobileNav = useDisclosure();
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
   const authReady = useAuthStore((s) => s.hasHydrated && s.isAuthenticated);
+  const requiredPermission = permissionForPath(pathname);
+  const blocked =
+    Array.isArray(user?.permissions) &&
+    Boolean(requiredPermission) &&
+    !user.permissions.includes(requiredPermission!);
+  const mobileItems = MOBILE_NAV_ITEMS.filter((item) => {
+    if (!user?.permissions || !item.permission) return true;
+    return user.permissions.includes(item.permission);
+  });
   const hydrateLocations = useLocationStore((s) => s.hydrate);
   const locationsHydrated = useLocationStore((s) => s.hydrated);
   const locationsLoading = useLocationStore((s) => s.loading);
@@ -49,22 +60,35 @@ export function AppShell({ children, className }: AppShellProps) {
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <Topbar onMenuClick={mobileNav.open} />
+          <VerificationBanner />
           <main
             className={cn(
               "relative flex-1 overflow-y-auto pb-16 lg:pb-0",
               className,
             )}
           >
-            {children}
+            {blocked ? (
+              <div className="m-6 rounded-xl border border-slate-200 bg-white p-6">
+                <h1 className="text-lg font-semibold text-slate-900">
+                  Access restricted
+                </h1>
+                <p className="mt-2 text-sm text-slate-600">
+                  Your Seller Manager account does not include this module. Ask
+                  a Super Admin to update your permissions.
+                </p>
+              </div>
+            ) : (
+              children
+            )}
           </main>
           {isMobile ? (
             <nav className="fixed inset-x-0 bottom-0 z-30 flex h-14 items-center justify-around border-t border-slate-200 bg-white lg:hidden">
-              {MOBILE_NAV_ITEMS.map((item) => {
+              {mobileItems.map((item) => {
                 const Icon = item.icon;
                 const active = isNavHrefActive(
                   pathname,
                   item.href,
-                  MOBILE_NAV_ITEMS.map((nav) => nav.href),
+                  mobileItems.map((nav) => nav.href),
                 );
                 return (
                   <Link

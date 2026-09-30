@@ -115,6 +115,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "profile.view",
   ],
   VIEWER: VIEW_ONLY,
+  SELLER_MANAGER: [],
   SELLER: [
     "dashboard.view",
     "inventory.view",

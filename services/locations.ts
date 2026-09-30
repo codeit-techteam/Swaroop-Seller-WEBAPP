@@ -186,19 +186,66 @@ export async function setCurrentSellerLocation(warehouseId: string) {
   };
 }
 
-export async function saveSellerLocationFromGeo(input: {
+export type SaveSellerGeoLocationInput = {
   latitude: number;
   longitude: number;
   name?: string;
   addressLine?: string;
+  addressLine2?: string;
+  landmark?: string;
+  locality?: string;
   city?: string;
+  district?: string;
   state?: string;
   pincode?: string;
   country?: string;
-}) {
+  placeId?: string | null;
+  formattedAddress?: string;
+  accuracyMeters?: number | null;
+  source?: "AUTOCOMPLETE" | "GPS" | "MAP_PIN" | "MANUAL";
+};
+
+function compactGeoInput(input: SaveSellerGeoLocationInput) {
+  const body: Record<string, string | number> = {
+    latitude: input.latitude,
+    longitude: input.longitude,
+  };
+  const text: Array<[keyof SaveSellerGeoLocationInput, number]> = [
+    ["name", 120],
+    ["addressLine", 200],
+    ["addressLine2", 200],
+    ["landmark", 120],
+    ["locality", 120],
+    ["city", 80],
+    ["district", 120],
+    ["state", 80],
+    ["pincode", 12],
+    ["country", 2],
+    ["placeId", 300],
+    ["formattedAddress", 500],
+    ["source", 20],
+  ];
+  for (const [key, max] of text) {
+    const value = input[key];
+    if (typeof value === "string" && value.trim()) {
+      body[key] = value.trim().slice(0, max);
+    }
+  }
+  if (input.accuracyMeters != null && Number.isFinite(input.accuracyMeters)) {
+    body.accuracyMeters = Math.min(
+      100_000,
+      Math.max(0, Math.round(input.accuracyMeters)),
+    );
+  }
+  return body;
+}
+
+export async function saveSellerLocationFromGeo(
+  input: SaveSellerGeoLocationInput,
+) {
   const response = await apiClient.post<Envelope<CurrentLocationPayload>>(
     "/seller/locations/from-geo",
-    input,
+    compactGeoInput(input),
   );
   const payload = response.data.data;
   return {

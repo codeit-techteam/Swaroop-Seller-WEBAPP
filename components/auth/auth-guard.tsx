@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ROUTES } from "@/lib/constants";
 import { useAuthStore } from "@/store/authStore";
@@ -10,9 +10,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const onboardingComplete = useAuthStore((s) => s.onboardingComplete);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const setHasHydrated = useAuthStore((s) => s.setHasHydrated);
+  const syncOnboardingFromApi = useAuthStore((s) => s.syncOnboardingFromApi);
+  const syncAttemptedFor = useRef<string | null>(null);
+  const [syncedFor, setSyncedFor] = useState<string | null>(null);
+  const sessionKey = user?.id ?? "";
+  const statusReady =
+    hasHydrated &&
+    isAuthenticated &&
+    (onboardingComplete || syncedFor === sessionKey);
 
   useEffect(() => {
     const finish = () => setHasHydrated(true);
@@ -26,18 +35,53 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     };
   }, [setHasHydrated]);
 
+  // Confirm seller status from API before forcing onboarding.
   useEffect(() => {
-    if (!hasHydrated) return;
+    if (!hasHydrated || !isAuthenticated) {
+      syncAttemptedFor.current = null;
+      return;
+    }
+    if (onboardingComplete || syncAttemptedFor.current === sessionKey) return;
+    syncAttemptedFor.current = sessionKey;
+    void syncOnboardingFromApi().finally(() => setSyncedFor(sessionKey));
+  }, [
+    hasHydrated,
+    isAuthenticated,
+    onboardingComplete,
+    sessionKey,
+    syncOnboardingFromApi,
+  ]);
+
+  useEffect(() => {
+    if (!hasHydrated || !statusReady) return;
     if (!isAuthenticated) {
       router.replace(ROUTES.LOGIN);
       return;
     }
-    if (!onboardingComplete && !pathname.startsWith("/onboarding")) {
+    if (user?.mustChangePassword) {
+      router.replace(ROUTES.CHANGE_PASSWORD);
+      return;
+    }
+    const assignedManager = user?.role === "SELLER_MANAGER";
+    if (
+      !onboardingComplete &&
+      !assignedManager &&
+      !pathname.startsWith("/onboarding")
+    ) {
       router.replace(ROUTES.ONBOARDING);
     }
-  }, [hasHydrated, isAuthenticated, onboardingComplete, pathname, router]);
+  }, [
+    hasHydrated,
+    statusReady,
+    isAuthenticated,
+    onboardingComplete,
+    pathname,
+    router,
+    user?.mustChangePassword,
+    user?.role,
+  ]);
 
-  if (!hasHydrated || !isAuthenticated) {
+  if (!hasHydrated || !isAuthenticated || !statusReady) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#F4F7F9]">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#1B6EF3] border-t-transparent" />
@@ -45,7 +89,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!onboardingComplete && !pathname.startsWith("/onboarding")) {
+  if (
+    user?.role !== "SELLER_MANAGER" &&
+    !onboardingComplete &&
+    !pathname.startsWith("/onboarding")
+  ) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#F4F7F9]">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#1B6EF3] border-t-transparent" />

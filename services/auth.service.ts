@@ -15,13 +15,39 @@ export type BackendAuthUser = {
   phone?: string | null;
   firstName?: string | null;
   lastName?: string | null;
+  displayName?: string | null;
   status?: string;
   roles?: string[];
+  loginId?: string | null;
+  sellerId?: string | null;
+  sellerName?: string | null;
+  permissions?: string[];
+  mustChangePassword?: boolean;
 };
 
 export type AuthSessionPayload = AuthTokensPayload & {
   user: BackendAuthUser;
 };
+
+export type SellerStatusPayload = {
+  sellerProfileId: string;
+  status: string;
+  onboarding?: {
+    status?: string | null;
+    currentStep?: string | null;
+    completedSteps?: string[] | null;
+  } | null;
+};
+
+/** Seller has a real profile past draft → skip onboarding wizard. */
+export function isSellerOnboardingComplete(
+  status: SellerStatusPayload | null | undefined,
+): boolean {
+  if (!status?.sellerProfileId) return false;
+  if (status.status && status.status !== "DRAFT") return true;
+  const onboardingStatus = status.onboarding?.status;
+  return Boolean(onboardingStatus && onboardingStatus !== "DRAFT");
+}
 
 export function toE164IndianPhone(mobile: string): string {
   const digits = mobile.replace(/\D/g, "");
@@ -77,24 +103,62 @@ export const authService = {
     password: string,
   ): Promise<AuthSessionPayload> {
     const trimmed = identifier.trim();
+    const digits = trimmed.replace(/\D/g, "");
     const body = trimmed.includes("@")
       ? { email: trimmed.toLowerCase(), password }
-      : { phone: toE164IndianPhone(trimmed), password };
+      : digits.length >= 10
+        ? { phone: toE164IndianPhone(trimmed), password }
+        : { identifier: trimmed, password };
     const response = await apiClient.post("/auth/login", body);
     return (response.data?.data ?? response.data) as AuthSessionPayload;
   },
 
-  mapUser(
-    backendUser: BackendAuthUser | undefined,
-    fallback: User,
-  ): User {
+  mapUser(backendUser: BackendAuthUser | undefined, fallback: User): User {
+    const roles = backendUser?.roles ?? [];
+    const role = roles.includes("SELLER_MANAGER")
+      ? "SELLER_MANAGER"
+      : roles.includes("SELLER")
+        ? "SELLER"
+        : fallback.role;
     return {
       ...fallback,
       id: backendUser?.id ?? fallback.id,
       email: backendUser?.email ?? fallback.email,
       name:
-        [backendUser?.firstName, backendUser?.lastName].filter(Boolean).join(" ") ||
+        backendUser?.displayName ||
+        [backendUser?.firstName, backendUser?.lastName]
+          .filter(Boolean)
+          .join(" ") ||
         fallback.name,
+      role,
+      loginId: backendUser?.loginId ?? fallback.loginId,
+      sellerId: backendUser?.sellerId ?? fallback.sellerId,
+      sellerName: backendUser?.sellerName ?? fallback.company,
+      company: backendUser?.sellerName ?? fallback.company,
+      permissions: backendUser?.permissions ?? fallback.permissions,
+      mustChangePassword: Boolean(backendUser?.mustChangePassword),
     };
+  },
+
+  async fetchSellerStatus(): Promise<SellerStatusPayload | null> {
+    try {
+      const response = await apiClient.get("/seller/status");
+      return (response.data?.data ?? response.data) as SellerStatusPayload;
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  /** After login: true when seller profile already exists past draft. */
+  async resolveOnboardingComplete(): Promise<boolean> {
+    try {
+      const status = await this.fetchSellerStatus();
+      return isSellerOnboardingComplete(status);
+    } catch {
+      return false;
+    }
   },
 };

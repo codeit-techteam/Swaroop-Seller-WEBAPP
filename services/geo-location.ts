@@ -1,16 +1,56 @@
+import {
+  LOCATION_ERROR_MESSAGES,
+  type LocationCaptureSource,
+  type NormalizedLocation,
+  reverseGeocodeLocation,
+} from "@/services/location-search";
+
 const GPS_TIMEOUT_MS = 12_000;
 const GEOCODER_TIMEOUT_MS = 8_000;
 
 export type ResolvedSellerAddress = {
   label: string;
   addressLine: string;
+  addressLine2: string;
+  landmark: string;
+  locality: string;
   city: string;
+  district: string;
   state: string;
   pincode: string;
   country: string;
   latitude: number;
   longitude: number;
+  placeId: string | null;
+  formattedAddress: string;
+  accuracyMeters: number | null;
+  source: LocationCaptureSource;
 };
+
+export function normalizedToSellerAddress(
+  location: NormalizedLocation,
+  accuracyMeters: number | null = null,
+): ResolvedSellerAddress {
+  return {
+    label: location.name || location.locality || location.city,
+    addressLine:
+      location.addressLine1 || location.name || location.locality || "",
+    addressLine2: location.addressLine2,
+    landmark: location.landmark,
+    locality: location.locality,
+    city: location.city,
+    district: location.district,
+    state: location.state,
+    pincode: location.postalCode,
+    country: location.countryCode || "IN",
+    latitude: location.latitude,
+    longitude: location.longitude,
+    placeId: location.placeId,
+    formattedAddress: location.formattedAddress,
+    accuracyMeters,
+    source: location.source,
+  };
+}
 
 export class SellerLocationAccessError extends Error {
   code:
@@ -61,7 +101,7 @@ function readBrowserPosition(): Promise<GeolocationPosition> {
       reject(
         new SellerLocationAccessError(
           "UNSUPPORTED",
-          "Location is not supported in this browser.",
+          LOCATION_ERROR_MESSAGES.LOCATION_UNSUPPORTED,
         ),
       );
       return;
@@ -74,7 +114,7 @@ function readBrowserPosition(): Promise<GeolocationPosition> {
           reject(
             new SellerLocationAccessError(
               "PERMISSION_DENIED",
-              "Allow location access to set your operating warehouse.",
+              LOCATION_ERROR_MESSAGES.LOCATION_PERMISSION_DENIED,
             ),
           );
           return;
@@ -83,7 +123,7 @@ function readBrowserPosition(): Promise<GeolocationPosition> {
           reject(
             new SellerLocationAccessError(
               "TIMEOUT",
-              "Taking longer than expected to find your location.",
+              LOCATION_ERROR_MESSAGES.LOCATION_TIMEOUT,
             ),
           );
           return;
@@ -91,14 +131,14 @@ function readBrowserPosition(): Promise<GeolocationPosition> {
         reject(
           new SellerLocationAccessError(
             "UNAVAILABLE",
-            "Unable to read GPS right now. Try again or pick a saved address.",
+            LOCATION_ERROR_MESSAGES.LOCATION_UNAVAILABLE,
           ),
         );
       },
       {
         enableHighAccuracy: true,
         timeout: GPS_TIMEOUT_MS,
-        maximumAge: 5 * 60 * 1000,
+        maximumAge: 30_000,
       },
     );
   });
@@ -154,49 +194,97 @@ async function reverseGeocodeOsm(
 
     if (!city && !line1) return null;
 
+    const area = firstNonEmpty(address.suburb, address.neighbourhood);
     return {
-      label: city || line1,
+      label: area || city || line1,
       addressLine: line1 || city,
-      city: city || "Current location",
+      addressLine2: area && area !== line1 ? area : "",
+      landmark: "",
+      locality: area,
+      city,
+      district: firstNonEmpty(address.state_district, address.county),
       state,
       pincode,
       country: firstNonEmpty(address.country_code)?.toUpperCase() || "IN",
       latitude,
       longitude,
+      placeId: null,
+      formattedAddress: (data.display_name ?? "").slice(0, 500),
+      accuracyMeters: null,
+      source: "GPS",
     };
   } catch {
     return null;
   }
 }
 
-/** Browser GPS + OpenStreetMap reverse geocode for seller warehouse. */
+/** Google reverse geocode via the backend proxy, OpenStreetMap as fallback. */
+export async function reverseGeocodeSellerPoint(
+  latitude: number,
+  longitude: number,
+  source: "GPS" | "MAP_PIN",
+): Promise<ResolvedSellerAddress | null> {
+  try {
+    const location = await withTimeout(
+      reverseGeocodeLocation(latitude, longitude, source),
+      GEOCODER_TIMEOUT_MS,
+      "Address lookup timed out.",
+    );
+    if (location.city || location.postalCode) {
+      return normalizedToSellerAddress(location);
+    }
+  } catch {
+    // Fall through to OpenStreetMap.
+  }
+  const fallback = await reverseGeocodeOsm(latitude, longitude);
+  return fallback ? { ...fallback, source } : null;
+}
+
+/**
+ * Browser GPS fix + reverse geocode for the seller's operating location.
+ * Always returns the real device point; address fields may be empty when no
+ * geocoder could resolve it, so the user completes them before saving.
+ */
 export async function detectCurrentSellerAddress(): Promise<ResolvedSellerAddress> {
   const position = await withTimeout(
     readBrowserPosition(),
     GPS_TIMEOUT_MS + 500,
-    "Taking longer than expected to find your location.",
+    LOCATION_ERROR_MESSAGES.LOCATION_TIMEOUT,
   );
 
-  const { latitude, longitude } = position.coords;
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+  const { latitude, longitude, accuracy } = position.coords;
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    (latitude === 0 && longitude === 0)
+  ) {
     throw new SellerLocationAccessError(
       "UNAVAILABLE",
-      "GPS coordinates were invalid.",
+      LOCATION_ERROR_MESSAGES.LOCATION_UNAVAILABLE,
     );
   }
+  const accuracyMeters = Number.isFinite(accuracy)
+    ? Math.round(accuracy)
+    : null;
 
-  const resolved = await reverseGeocodeOsm(latitude, longitude);
-  if (!resolved) {
-    return {
-      label: "Current location",
-      addressLine: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
-      city: "Current location",
-      state: "",
-      pincode: "",
-      country: "IN",
-      latitude,
-      longitude,
-    };
-  }
-  return resolved;
+  const resolved = await reverseGeocodeSellerPoint(latitude, longitude, "GPS");
+  if (resolved) return { ...resolved, accuracyMeters, source: "GPS" };
+  return {
+    label: "",
+    addressLine: "",
+    addressLine2: "",
+    landmark: "",
+    locality: "",
+    city: "",
+    district: "",
+    state: "",
+    pincode: "",
+    country: "IN",
+    latitude,
+    longitude,
+    placeId: null,
+    formattedAddress: "",
+    accuracyMeters,
+    source: "GPS",
+  };
 }

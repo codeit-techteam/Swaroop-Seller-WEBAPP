@@ -15,6 +15,7 @@ import { fetchSellerProcurementWorkbench } from "@/services/procurementService";
 import { fetchSellerDispatchesPage } from "@/services/seller-dispatches";
 import { fetchSellerDocuments } from "@/services/seller-documents";
 import { fetchVehicleSlotsPage } from "@/services/vehicle-slots";
+import { useAuthStore } from "@/store/authStore";
 import { useLocationStore } from "@/store/locationStore";
 
 export type SellerSearchCategory =
@@ -77,7 +78,11 @@ function settled<T>(result: PromiseSettledResult<T>, fallback: T): T {
 }
 
 function pageHits(query: string): SellerSearchHit[] {
-  const sections = getVisibleNavSections("SELLER");
+  const session = useAuthStore.getState().user;
+  const sections = getVisibleNavSections(
+    session?.role ?? "SELLER",
+    session?.permissions,
+  );
   const pages = sections.flatMap((section) =>
     section.items.map((item) => ({
       id: `page-${item.href}`,

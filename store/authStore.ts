@@ -5,7 +5,9 @@ import { CURRENT_USER, ROLE_LABELS } from "@/config";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { sellerProfileMock } from "@/lib/mock/locations";
 import { storage } from "@/lib/utils";
+import { clearSellerQueries } from "@/providers/query-provider";
 import { authErrorMessage, authService } from "@/services/auth.service";
+import { useLocationStore } from "@/store/locationStore";
 import type { AuthState, AuthTokens, User } from "@/types/auth";
 
 /** Shared demo phone UI; catalog belongs to seller@test.local (seeded profile). */
@@ -24,15 +26,27 @@ const demoUser: User = {
   sellerId: CURRENT_USER.sellerId,
 };
 
+type VerifyOtpResult = {
+  ok: boolean;
+  message?: string;
+  onboardingComplete?: boolean;
+};
+
 interface SellerAuthState extends AuthState {
   onboardingComplete: boolean;
   pendingMobile: string;
   hasHydrated: boolean;
   setPendingMobile: (mobile: string) => void;
   sendOtp: (mobile: string) => Promise<{ ok: boolean; message?: string }>;
-  verifyOtp: (otp: string) => Promise<{ ok: boolean; message?: string }>;
+  verifyOtp: (otp: string) => Promise<VerifyOtpResult>;
+  loginWithCredentials: (
+    identifier: string,
+    password: string,
+  ) => Promise<{ ok: boolean; message?: string }>;
   /** Re-auth as seeded seller@test.local (used when catalog 404s without a profile). */
   ensureDemoSellerSession: () => Promise<{ ok: boolean; message?: string }>;
+  /** Refresh onboarding flag from GET /seller/status (heals stuck local sessions). */
+  syncOnboardingFromApi: () => Promise<boolean>;
   completeOnboarding: () => void;
   setSession: (user: User, tokens?: AuthTokens | null) => void;
   logout: () => void;
@@ -71,6 +85,20 @@ function syncTokenStorage(tokens: AuthTokens | null | undefined) {
   }
 }
 
+async function resolveAndSetOnboarding(
+  set: (partial: Partial<SellerAuthState>) => void,
+  fallbackWhenApiFails: boolean,
+): Promise<boolean> {
+  try {
+    const complete = await authService.resolveOnboardingComplete();
+    set({ onboardingComplete: complete, isLoading: false });
+    return complete;
+  } catch {
+    set({ onboardingComplete: fallbackWhenApiFails, isLoading: false });
+    return fallbackWhenApiFails;
+  }
+}
+
 async function loginDemoSellerSession(
   set: (partial: Partial<SellerAuthState>) => void,
   mobile: string,
@@ -91,8 +119,8 @@ async function loginDemoSellerSession(
     session.accessToken,
     session.refreshToken ?? "refresh",
     mobile,
-    { onboardingComplete: true },
   );
+  return resolveAndSetOnboarding(set, true);
 }
 
 export const useAuthStore = create<SellerAuthState>()(
@@ -155,17 +183,23 @@ export const useAuthStore = create<SellerAuthState>()(
                 session.accessToken,
                 session.refreshToken ?? "refresh",
                 mobile,
-                { onboardingComplete: true },
               );
-              return { ok: true };
+              const onboardingComplete = await resolveAndSetOnboarding(
+                set,
+                true,
+              );
+              return { ok: true, onboardingComplete };
             } catch {
               /* fall through to seeded seller email login */
             }
 
             // 2) Fallback: seeded seller@test.local catalog account.
             try {
-              await loginDemoSellerSession(set, mobile);
-              return { ok: true };
+              const onboardingComplete = await loginDemoSellerSession(
+                set,
+                mobile,
+              );
+              return { ok: true, onboardingComplete };
             } catch {
               /* fall through */
             }
@@ -186,9 +220,12 @@ export const useAuthStore = create<SellerAuthState>()(
                 session.accessToken,
                 session.refreshToken ?? "refresh",
                 mobile,
-                { onboardingComplete: true },
               );
-              return { ok: true };
+              const onboardingComplete = await resolveAndSetOnboarding(
+                set,
+                true,
+              );
+              return { ok: true, onboardingComplete };
             } catch (error) {
               set({ isLoading: false });
               return {
@@ -213,7 +250,8 @@ export const useAuthStore = create<SellerAuthState>()(
             session.refreshToken ?? "refresh",
             mobile,
           );
-          return { ok: true };
+          const onboardingComplete = await resolveAndSetOnboarding(set, false);
+          return { ok: true, onboardingComplete };
         } catch (error) {
           set({ isLoading: false });
           return {
@@ -222,6 +260,41 @@ export const useAuthStore = create<SellerAuthState>()(
               error,
               "Unable to sign in. Check API connection.",
             ),
+          };
+        }
+      },
+      loginWithCredentials: async (identifier, password) => {
+        set({ isLoading: true });
+        try {
+          const session = await authService.loginWithPassword(
+            identifier,
+            password,
+          );
+          const user = authService.mapUser(session.user, {
+            id: session.user?.id ?? "",
+            email: session.user?.email ?? identifier,
+            name: "Seller",
+            role: "SELLER",
+          });
+          applySession(
+            set,
+            user,
+            session.accessToken,
+            session.refreshToken ?? "",
+            "",
+            user.role === "SELLER_MANAGER"
+              ? { onboardingComplete: true }
+              : undefined,
+          );
+          if (user.role !== "SELLER_MANAGER") {
+            await resolveAndSetOnboarding(set, false);
+          }
+          return { ok: true };
+        } catch (error) {
+          set({ isLoading: false });
+          return {
+            ok: false,
+            message: authErrorMessage(error, "Unable to sign in."),
           };
         }
       },
@@ -241,6 +314,10 @@ export const useAuthStore = create<SellerAuthState>()(
           };
         }
       },
+      syncOnboardingFromApi: async () => {
+        if (!get().isAuthenticated) return false;
+        return resolveAndSetOnboarding(set, get().onboardingComplete);
+      },
       completeOnboarding: () => set({ onboardingComplete: true }),
       setSession: (user, tokens = null) => {
         syncTokenStorage(tokens);
@@ -254,12 +331,15 @@ export const useAuthStore = create<SellerAuthState>()(
       logout: () => {
         storage.remove(STORAGE_KEYS.AUTH_TOKEN);
         storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
+        clearSellerQueries();
+        useLocationStore.getState().reset();
         set({
           user: null,
           tokens: null,
           isAuthenticated: false,
           isLoading: false,
           pendingMobile: "",
+          onboardingComplete: false,
         });
       },
       setHasHydrated: (value) => set({ hasHydrated: value }),
