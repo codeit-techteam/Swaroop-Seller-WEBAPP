@@ -2,7 +2,7 @@
 
 import { Mail, Phone } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import toast from "react-hot-toast";
 
 import { PageContainer } from "@/components/common/page-container";
@@ -12,55 +12,25 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
 import { maskAccountNumber } from "@/lib/mock/locations";
 import { formatMt } from "@/lib/seller/format";
-import { apiClient } from "@/services/apiClient";
 import { useLocationStore } from "@/store/locationStore";
 import { useSellerStore } from "@/store/sellerStore";
 
-type AccountManagerRow = {
-  id: string;
-  name: string;
-  email?: string | null;
-  phone?: string | null;
-  role?: string;
-  title?: string | null;
-  status?: string;
-  isPrimary?: boolean;
-  seller?: string;
-};
-
 export function SellerProfileView() {
   const seller = useSellerStore((s) => s.seller);
+  const managers = useSellerStore((s) => s.accountManagers);
+  const managersLoaded = useSellerStore((s) => s.accountLoaded);
+  const syncFromApi = useSellerStore((s) => s.syncFromApi);
   const locations = useLocationStore((s) => s.locations);
   const hydrateLocations = useLocationStore((s) => s.hydrate);
   const locationsHydrated = useLocationStore((s) => s.hydrated);
-  const [managers, setManagers] = useState<AccountManagerRow[]>([]);
-  const [managersLoaded, setManagersLoaded] = useState(false);
 
   useEffect(() => {
     if (!locationsHydrated) void hydrateLocations();
   }, [hydrateLocations, locationsHydrated]);
 
   useEffect(() => {
-    let cancelled = false;
-    void apiClient
-      .get("/seller/profile")
-      .then((response) => {
-        const payload = response.data?.data ?? response.data;
-        const rows = Array.isArray(payload?.accountManagers)
-          ? (payload.accountManagers as AccountManagerRow[])
-          : [];
-        if (!cancelled) setManagers(rows);
-      })
-      .catch(() => {
-        if (!cancelled) setManagers([]);
-      })
-      .finally(() => {
-        if (!cancelled) setManagersLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void syncFromApi();
+  }, [syncFromApi]);
 
   const manager = managers.find((row) => row.isPrimary) ?? managers[0];
   const toggleLocationStatus = useLocationStore((s) => s.toggleLocationStatus);

@@ -20,6 +20,7 @@ import {
   getVisibleNavSections,
   isNavHrefActive,
 } from "@/config";
+import { useImportEnabled, useImportSummary } from "@/hooks/use-import";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -38,10 +39,29 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const storeCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleCollapsed = useUiStore((s) => s.toggleSidebarCollapsed);
   const isCollapsed = collapsed ?? storeCollapsed;
+  const importEnabled = useImportEnabled();
+  const importSummary = useImportSummary();
+  const importAttention =
+    (importSummary.data?.sell?.openNegotiations ?? 0) +
+    (importSummary.data?.sell?.pendingDeals ?? 0);
   const navSections = useMemo(
-    () => getVisibleNavSections(user?.role ?? "SELLER", user?.permissions),
-    [user?.permissions, user?.role],
+    () =>
+      getVisibleNavSections(user?.role ?? "SELLER", user?.permissions).map(
+        (section) =>
+          section.id === "import" && !importEnabled
+            ? {
+                ...section,
+                items: section.items.map((item) => ({
+                  ...item,
+                  children: undefined,
+                })),
+              }
+            : section,
+      ),
+    [user?.permissions, user?.role, importEnabled],
   );
+  const badgeFor = (href: string) =>
+    href === ROUTES.IMPORT && importAttention > 0 ? importAttention : 0;
   const allHrefs = useMemo(() => collectNavHrefs(navSections), [navSections]);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
@@ -157,8 +177,14 @@ export function Sidebar({ collapsed }: SidebarProps) {
                             )}
                           />
                           {!isCollapsed ? (
-                            <span className="truncate">{item.label}</span>
+                            <span className="flex-1 truncate">
+                              {item.label}
+                            </span>
                           ) : null}
+                          <NavCount
+                            count={badgeFor(item.href)}
+                            collapsed={isCollapsed}
+                          />
                         </Link>
                         {!isCollapsed ? (
                           <button
@@ -238,6 +264,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
                       {!isCollapsed ? (
                         <span className="flex-1 truncate">{item.label}</span>
                       ) : null}
+                      <NavCount
+                        count={badgeFor(item.href)}
+                        collapsed={isCollapsed}
+                      />
                     </Link>
                   )}
                 </div>
@@ -286,5 +316,22 @@ export function Sidebar({ collapsed }: SidebarProps) {
         </AlertDialogContent>
       </AlertDialog>
     </aside>
+  );
+}
+
+function NavCount({ count, collapsed }: { count: number; collapsed: boolean }) {
+  if (count <= 0) return null;
+  if (collapsed) {
+    return (
+      <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#1B6EF3] ring-2 ring-white" />
+    );
+  }
+  return (
+    <span
+      className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#1B6EF3] px-1.5 text-[10px] font-semibold text-white"
+      aria-label={`${count} need your action`}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
   );
 }

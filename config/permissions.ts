@@ -7,6 +7,8 @@ export type Permission =
   | "offers.view"
   | "offers.manage"
   | "offers.review"
+  | "import.view"
+  | "import.manage"
   | "procurement.view"
   | "procurement.manage"
   | "orders.view"
@@ -40,6 +42,8 @@ const ALL_PERMISSIONS: Permission[] = [
   "offers.view",
   "offers.manage",
   "offers.review",
+  "import.view",
+  "import.manage",
   "procurement.view",
   "procurement.manage",
   "orders.view",
@@ -122,6 +126,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "inventory.manage",
     "offers.view",
     "offers.manage",
+    "import.view",
+    "import.manage",
     "procurement.view",
     "procurement.manage",
     "orders.view",

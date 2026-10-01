@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Package,
   Plus,
+  RefreshCw,
   ShoppingCart,
   Tag,
   Truck,
@@ -40,11 +41,13 @@ export function DashboardView() {
   const user = useAuthStore((s) => s.user);
   const seller = useSellerStore((s) => s.seller);
   const activity = useSellerStore((s) => s.activity);
+  const syncSellerAccount = useSellerStore((s) => s.syncFromApi);
   const location = useLocationStore((s) => s.getSelectedLocation());
   const locationId = useLocationStore((s) => s.selectedLocationId);
   const products = useSellerProductStore((s) => s.products);
   const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const productsLoading = useSellerProductStore((s) => s.loading);
+  const productsError = useSellerProductStore((s) => s.loadError);
   const offers = useSellerOfferStore((s) => s.offers);
   const requests = useSellerRequestStore((s) => s.requests);
   const hydrateRequests = useSellerRequestStore((s) => s.hydrate);
@@ -53,6 +56,10 @@ export function DashboardView() {
   const hydrateOrders = useSellerOrderStore((s) => s.hydrate);
   const settlementSummary = useSellerSettlementSummary();
   const unread = useSellerNotificationStore((s) => s.getUnreadCount());
+
+  useEffect(() => {
+    void syncSellerAccount();
+  }, [syncSellerAccount]);
 
   useEffect(() => {
     void fetchProducts();
@@ -64,6 +71,9 @@ export function DashboardView() {
 
   // Full seller catalog for the My Products KPI (not warehouse-scoped).
   const myProductGrades = products.length;
+  const liveProductGrades = products.filter(
+    (item) => item.offerStatus === "active",
+  ).length;
   const scopedOffers = useMemo(
     () => offers.filter((item) => item.locationId === locationId),
     [locationId, offers],
@@ -127,11 +137,36 @@ export function DashboardView() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <KpiCard
-          label="My Products"
-          value={`${myProductGrades} Grades`}
-          icon={Package}
-        />
+        {productsError ? (
+          <KpiCard
+            label="My Products"
+            value="—"
+            hint={productsError}
+            tone="error"
+            icon={Package}
+            footer={
+              <button
+                type="button"
+                onClick={() => void fetchProducts()}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#1B6EF3] hover:underline"
+              >
+                <RefreshCw className="h-3 w-3" /> Retry
+              </button>
+            }
+          />
+        ) : (
+          <KpiCard
+            label="My Products"
+            value={`${myProductGrades} ${myProductGrades === 1 ? "Grade" : "Grades"}`}
+            hint={
+              myProductGrades === 0
+                ? "Add your first grade"
+                : `${liveProductGrades} live on marketplace`
+            }
+            href={myProductGrades === 0 ? ROUTES.PRODUCTS_NEW : ROUTES.PRODUCTS}
+            icon={Package}
+          />
+        )}
         <KpiCard
           label="Active Offers"
           value={String(activeOffers)}

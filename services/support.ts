@@ -28,11 +28,13 @@ export type SellerSupportTicket = {
   description: string;
   attachmentName?: string | null;
   assignedToName?: string | null;
+  resolutionNote?: string | null;
+  resolvedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   messages?: Array<{
     id: string;
-    sender: string;
+    sender: "REQUESTER" | "AGENT" | "SYSTEM" | string;
     senderName: string;
     body: string;
     createdAt: string;
@@ -82,11 +84,13 @@ export async function createSellerSupportTicket(input: {
       subject: string;
       description: string;
       attachmentName?: string;
+      channel: "WEB";
     } = {
       category: input.category,
       priority: input.priority ?? "MEDIUM",
       subject: input.subject.trim(),
       description: input.description.trim(),
+      channel: "WEB",
     };
     const attachment = input.attachmentName?.trim();
     if (attachment) payload.attachmentName = attachment;
@@ -114,4 +118,22 @@ export async function getSellerSupportTicket(
     throw new Error("Support ticket not found");
   }
   return data.data;
+}
+
+export async function replySellerSupportTicket(
+  id: string,
+  body: string,
+): Promise<SellerSupportTicket> {
+  try {
+    const { data } = await apiClient.post<Envelope<SellerSupportTicket>>(
+      `/seller/support/tickets/${id}/reply`,
+      { body: body.trim() },
+    );
+    if (!data.data) {
+      throw new Error(data.message || "Failed to send reply");
+    }
+    return data.data;
+  } catch (error) {
+    throw new Error(apiErrorMessage(error, "Failed to send reply"));
+  }
 }

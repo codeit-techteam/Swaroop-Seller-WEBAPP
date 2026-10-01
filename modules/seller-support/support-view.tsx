@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import {
   createSellerSupportTicket,
   listSellerSupportTickets,
+  replySellerSupportTicket,
   SELLER_TICKET_CATEGORIES,
   type SellerSupportTicket,
   type SellerTicketCategory,
@@ -44,18 +45,30 @@ import {
 
 const STATUS_LABEL: Record<string, string> = {
   OPEN: "Open",
-  IN_PROGRESS: "Pending",
-  WAITING_CUSTOMER: "Pending",
+  IN_PROGRESS: "In Progress",
+  WAITING_CUSTOMER: "Awaiting your reply",
   RESOLVED: "Resolved",
   CLOSED: "Closed",
 };
 
 const STATUS_CLASS: Record<string, string> = {
   Open: "bg-sky-50 text-sky-700 ring-sky-200",
-  Pending: "bg-amber-50 text-amber-700 ring-amber-200",
+  "In Progress": "bg-amber-50 text-amber-700 ring-amber-200",
+  "Awaiting your reply": "bg-orange-50 text-orange-700 ring-orange-200",
   Resolved: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   Closed: "bg-slate-100 text-slate-600 ring-slate-200",
 };
+
+function formatDateTime(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function formatRelative(iso: string) {
   const date = new Date(iso);
@@ -82,6 +95,8 @@ export function SellerSupportView() {
     null,
   );
   const [submitting, setSubmitting] = useState(false);
+  const [replyDraft, setReplyDraft] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
 
   const [category, setCategory] = useState<SellerTicketCategory | "">("");
   const [subject, setSubject] = useState("");
@@ -113,7 +128,7 @@ export function SellerSupportView() {
       [...tickets]
         .sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         )
         .slice(0, 20),
     [tickets],
@@ -144,6 +159,26 @@ export function SellerSupportView() {
       next.description = "Description must be at most 5000 characters";
     setErrors(next);
     return Object.keys(next).length === 0;
+  }
+
+  async function handleReply() {
+    if (!viewTicket || !replyDraft.trim()) return;
+    setSendingReply(true);
+    try {
+      const updated = await replySellerSupportTicket(viewTicket.id, replyDraft);
+      setViewTicket(updated);
+      setTickets((current) =>
+        current.map((t) => (t.id === updated.id ? updated : t)),
+      );
+      setReplyDraft("");
+      toast.success("Reply sent to support");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not send reply",
+      );
+    } finally {
+      setSendingReply(false);
+    }
   }
 
   async function handleSubmit() {
@@ -420,9 +455,13 @@ export function SellerSupportView() {
 
       <Dialog
         open={Boolean(viewTicket)}
-        onOpenChange={(open) => !open && setViewTicket(null)}
+        onOpenChange={(open) => {
+          if (open) return;
+          setViewTicket(null);
+          setReplyDraft("");
+        }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-lg">
           {viewTicket ? (
             <>
               <DialogHeader>
@@ -438,18 +477,90 @@ export function SellerSupportView() {
                   <dd className="font-medium">{viewTicket.subject}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase text-slate-400">
-                    Description
-                  </dt>
-                  <dd className="text-slate-700">{viewTicket.description}</dd>
-                </div>
-                <div>
                   <dt className="text-xs uppercase text-slate-400">Status</dt>
                   <dd>
                     {STATUS_LABEL[viewTicket.status] ?? viewTicket.status}
                   </dd>
                 </div>
               </dl>
+
+              {viewTicket.resolutionNote &&
+              (viewTicket.status === "RESOLVED" ||
+                viewTicket.status === "CLOSED") ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm">
+                  <p className="mb-1 text-xs font-semibold uppercase text-emerald-800">
+                    Resolution from support
+                  </p>
+                  <p className="whitespace-pre-wrap text-emerald-900">
+                    {viewTicket.resolutionNote}
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="space-y-2">
+                <p className="text-xs uppercase text-slate-400">Conversation</p>
+                <div className="max-h-64 space-y-2 overflow-y-auto">
+                  {(viewTicket.messages ?? []).map((m) => (
+                    <div
+                      key={m.id}
+                      className={cn(
+                        "rounded-xl border p-2.5 text-sm",
+                        m.sender === "AGENT"
+                          ? "border-sky-200 bg-sky-50"
+                          : m.sender === "SYSTEM"
+                            ? "border-dashed border-slate-200 bg-slate-50 text-slate-500"
+                            : "border-slate-200 bg-white",
+                      )}
+                    >
+                      <p className="flex justify-between gap-2 text-xs">
+                        <span className="font-medium text-slate-800">
+                          {m.sender === "AGENT"
+                            ? `${m.senderName} · PetroTrade Support`
+                            : m.sender === "REQUESTER"
+                              ? "You"
+                              : m.senderName}
+                        </span>
+                        <span className="text-slate-400">
+                          {formatDateTime(m.createdAt)}
+                        </span>
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-slate-700">
+                        {m.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {viewTicket.status === "CLOSED" ? (
+                <p className="text-xs text-slate-500">
+                  This ticket is closed. Raise a new ticket if you still need
+                  help.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  <Textarea
+                    rows={3}
+                    maxLength={5000}
+                    value={replyDraft}
+                    onChange={(e) => setReplyDraft(e.target.value)}
+                    placeholder={
+                      viewTicket.status === "RESOLVED"
+                        ? "Still facing the issue? Reply to reopen this ticket."
+                        : "Write a reply to support…"
+                    }
+                  />
+                  <DialogFooter>
+                    <Button
+                      disabled={!replyDraft.trim() || sendingReply}
+                      onClick={() => void handleReply()}
+                      className="bg-slate-900 hover:bg-slate-800"
+                    >
+                      {sendingReply ? "Sending…" : "Send reply"}
+                    </Button>
+                  </DialogFooter>
+                </div>
+              )}
             </>
           ) : null}
         </DialogContent>

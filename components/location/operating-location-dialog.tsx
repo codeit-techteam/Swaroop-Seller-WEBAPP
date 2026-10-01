@@ -22,6 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
+  CURRENT_LOCATION_PHASE_LABELS,
+  type CurrentLocationPhase,
   detectCurrentSellerAddress,
   normalizedToSellerAddress,
   type ResolvedSellerAddress,
@@ -131,7 +133,10 @@ function OperatingLocationBody({
   const [geo, setGeo] = useState<ResolvedSellerAddress | null>(null);
   const [searchEnabled, setSearchEnabled] = useState(true);
   const [searchNotice, setSearchNotice] = useState<string | null>(null);
-  const [detecting, setDetecting] = useState(startWithGps);
+  const [gpsPhase, setGpsPhase] = useState<CurrentLocationPhase | null>(
+    startWithGps ? "locating" : null,
+  );
+  const detecting = gpsPhase != null;
   const [refreshingPin, setRefreshingPin] = useState(false);
   const [saving, setSaving] = useState(false);
   const touchedRef = useRef(new Set<FormKey>());
@@ -141,7 +146,9 @@ function OperatingLocationBody({
     (address: ResolvedSellerAddress, mode: "replace" | "merge") => {
       const next = toForm(address);
       setForm((prev) => {
-        if (mode === "replace") return { ...next, name: prev.name };
+        if (mode === "replace") {
+          return { ...next, name: prev.name.trim() || address.label };
+        }
         const merged = { ...prev };
         (Object.keys(next) as FormKey[]).forEach((key) => {
           if (key === "name") return;
@@ -158,7 +165,7 @@ function OperatingLocationBody({
 
   const detectLocation = useCallback(async () => {
     try {
-      const address = await detectCurrentSellerAddress();
+      const address = await detectCurrentSellerAddress(setGpsPhase);
       touchedRef.current.clear();
       applyAddress(address, "replace");
       setStep("confirm");
@@ -169,7 +176,7 @@ function OperatingLocationBody({
           : "Unable to detect your location. Search for the address instead.",
       );
     } finally {
-      setDetecting(false);
+      setGpsPhase(null);
     }
   }, [applyAddress]);
 
@@ -196,7 +203,7 @@ function OperatingLocationBody({
   }, [startWithGps, detectLocation]);
 
   function handleUseCurrentLocation() {
-    setDetecting(true);
+    setGpsPhase("locating");
     void detectLocation();
   }
 
@@ -269,7 +276,7 @@ function OperatingLocationBody({
   const showMap = Boolean(geo) && isMapPickerAvailable();
 
   async function handleSave() {
-    if (!geo) return;
+    if (!geo || saving) return;
     if (coordsUnusable) {
       toast.error(
         showMap
@@ -278,11 +285,15 @@ function OperatingLocationBody({
       );
       return;
     }
+    if (!form.addressLine.trim()) {
+      toast.error("Enter the street or warehouse address");
+      return;
+    }
     if (!form.city.trim() || !form.state.trim()) {
       toast.error("Enter the city and state for this location");
       return;
     }
-    if (form.pincode && !PINCODE_REGEX.test(form.pincode)) {
+    if (!PINCODE_REGEX.test(form.pincode)) {
       toast.error("Enter a valid 6-digit PIN code");
       return;
     }
@@ -293,7 +304,7 @@ function OperatingLocationBody({
         latitude: geo.latitude,
         longitude: geo.longitude,
         name: form.name.trim() || `${city} Warehouse`,
-        addressLine: form.addressLine.trim() || geo.locality || city,
+        addressLine: form.addressLine.trim(),
         addressLine2: form.addressLine2,
         landmark: form.landmark,
         locality: geo.locality,
@@ -383,20 +394,35 @@ function OperatingLocationBody({
                 <Crosshair className="h-4 w-4" />
               )}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-[#1B6EF3]">
-                {detecting
-                  ? "Detecting your location…"
-                  : "Use current location"}
-              </span>
-              <span className="mt-0.5 block text-xs text-slate-500">
-                You can adjust the pin before saving
-              </span>
+            <span className="min-w-0 flex-1 text-sm font-semibold text-[#1B6EF3]">
+              {gpsPhase
+                ? CURRENT_LOCATION_PHASE_LABELS[gpsPhase]
+                : "Use current location"}
             </span>
           </button>
         </div>
       ) : (
         <div className="space-y-4">
+          {searchEnabled ? (
+            <div className="space-y-1.5">
+              <Label>Search warehouse location</Label>
+              <AddressAutocomplete
+                placeholder="Search area, building, landmark or PIN"
+                onSelect={handlePlaceSelected}
+                onError={handleSearchError}
+                disabled={saving || detecting}
+              />
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Type a place name and pick a suggestion to fill the address. You
+                can still edit every field.
+              </p>
+            </div>
+          ) : searchNotice ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              {searchNotice}
+            </p>
+          ) : null}
+
           <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#1B6EF3]/10 text-[#1B6EF3]">
               {refreshingPin ? (
@@ -449,9 +475,9 @@ function OperatingLocationBody({
 
           <div className="grid gap-3">
             <Field
-              label="Location name"
+              label="Save as"
               placeholder={
-                form.city ? `${form.city} Warehouse` : "e.g. Main warehouse"
+                form.city ? `${form.city} Warehouse` : "Optional nickname"
               }
               value={form.name}
               onChange={(value) => setField("name", value)}

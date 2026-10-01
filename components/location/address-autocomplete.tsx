@@ -103,7 +103,7 @@ export function AddressAutocomplete({
       : undefined;
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("relative z-30 space-y-2", className)}>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
@@ -145,7 +145,7 @@ export function AddressAutocomplete({
       </div>
 
       {showPanel ? (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
           {suggestions.length > 0 ? (
             <ul
               id={listId}

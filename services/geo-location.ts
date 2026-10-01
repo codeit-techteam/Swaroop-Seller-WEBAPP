@@ -245,7 +245,20 @@ export async function reverseGeocodeSellerPoint(
  * Always returns the real device point; address fields may be empty when no
  * geocoder could resolve it, so the user completes them before saving.
  */
-export async function detectCurrentSellerAddress(): Promise<ResolvedSellerAddress> {
+export type CurrentLocationPhase = "locating" | "resolving";
+
+export const CURRENT_LOCATION_PHASE_LABELS: Record<
+  CurrentLocationPhase,
+  string
+> = {
+  locating: "Getting your location…",
+  resolving: "Resolving address…",
+};
+
+export async function detectCurrentSellerAddress(
+  onPhase?: (phase: CurrentLocationPhase) => void,
+): Promise<ResolvedSellerAddress> {
+  onPhase?.("locating");
   const position = await withTimeout(
     readBrowserPosition(),
     GPS_TIMEOUT_MS + 500,
@@ -267,6 +280,7 @@ export async function detectCurrentSellerAddress(): Promise<ResolvedSellerAddres
     ? Math.round(accuracy)
     : null;
 
+  onPhase?.("resolving");
   const resolved = await reverseGeocodeSellerPoint(latitude, longitude, "GPS");
   if (resolved) return { ...resolved, accuracyMeters, source: "GPS" };
   return {

@@ -8,6 +8,7 @@ import { storage } from "@/lib/utils";
 import { clearSellerQueries } from "@/providers/query-provider";
 import { authErrorMessage, authService } from "@/services/auth.service";
 import { useLocationStore } from "@/store/locationStore";
+import { useSellerStore } from "@/store/sellerStore";
 import type { AuthState, AuthTokens, User } from "@/types/auth";
 
 /** Shared demo phone UI; catalog belongs to seller@test.local (seeded profile). */
@@ -333,6 +334,7 @@ export const useAuthStore = create<SellerAuthState>()(
         storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
         clearSellerQueries();
         useLocationStore.getState().reset();
+        useSellerStore.getState().resetSeller();
         set({
           user: null,
           tokens: null,
