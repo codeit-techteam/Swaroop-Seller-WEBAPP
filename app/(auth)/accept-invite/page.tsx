@@ -30,6 +30,12 @@ function AcceptInviteForm() {
         className="mt-6 space-y-3"
         onSubmit={(event) => {
           event.preventDefault();
+          if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,128}$/.test(password)) {
+            toast.error(
+              "Use 8+ characters with uppercase, lowercase, and a number",
+            );
+            return;
+          }
           if (password !== confirm) {
             toast.error("Passwords do not match");
             return;
@@ -37,16 +43,20 @@ function AcceptInviteForm() {
           setBusy(true);
           void apiClient
             .post("/auth/password/reset", { token, newPassword: password })
-            .then(() => {
+            .then((response: unknown) => {
+              const message = serverMessage(response);
+              if (message && /not active/i.test(message)) {
+                toast.error(message);
+                return;
+              }
               toast.success("Password saved. Sign in with your Login ID.");
               router.push(ROUTES.LOGIN);
             })
             .catch((error: unknown) => {
-              const message =
-                error && typeof error === "object" && "message" in error
-                  ? String((error as { message?: string }).message)
-                  : "Unable to set password";
-              toast.error(message);
+              toast.error(
+                serverMessage((error as { response?: unknown })?.response) ??
+                  "This invitation link is invalid or has expired. Ask your administrator for a new one.",
+              );
             })
             .finally(() => setBusy(false));
         }}
@@ -71,6 +81,14 @@ function AcceptInviteForm() {
       </form>
     </main>
   );
+}
+
+function serverMessage(response: unknown): string | null {
+  const body = (response as { data?: unknown })?.data ?? response;
+  const nested = (body as { data?: { message?: unknown } })?.data?.message;
+  const message = nested ?? (body as { message?: unknown })?.message;
+  if (Array.isArray(message)) return message.join(". ");
+  return typeof message === "string" && message.trim() ? message : null;
 }
 
 export default function AcceptInvitePage() {

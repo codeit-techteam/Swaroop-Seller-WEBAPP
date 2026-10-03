@@ -10,7 +10,6 @@ import {
   fetchSellerInventory,
   fetchSellerInventoryWarehouses,
 } from "@/services/inventory";
-import { useAuthStore } from "@/store/authStore";
 import type {
   InventoryListItem,
   InventoryStockStatus,
@@ -18,26 +17,6 @@ import type {
   InventoryWarehouse,
   LatestStockMovement,
 } from "@/types/inventory";
-
-function isMissingSellerProfile(error: unknown): boolean {
-  if (!isAxiosError(error)) return false;
-  if (error.response?.status !== 404) return false;
-  const message = error.response?.data?.message;
-  return (
-    typeof message === "string" &&
-    message.toLowerCase().includes("seller profile")
-  );
-}
-
-function isAuthRequired(error: unknown): boolean {
-  if (!isAxiosError(error)) return false;
-  if (error.response?.status === 401) return true;
-  const message = error.response?.data?.message;
-  return (
-    typeof message === "string" &&
-    message.toLowerCase().includes("authentication required")
-  );
-}
 
 function inventoryErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
@@ -142,34 +121,6 @@ export const useInventoryDashboardStore = create<InventoryDashboardState>()(
             loadError: null,
           });
         } catch (error) {
-          if (isAuthRequired(error) || isMissingSellerProfile(error)) {
-            try {
-              const restored = await useAuthStore
-                .getState()
-                .ensureDemoSellerSession();
-              if (restored.ok) {
-                const payload = await loadAll(get());
-                set({
-                  ...payload,
-                  loading: false,
-                  loadError: null,
-                });
-                return;
-              }
-            } catch (retryError) {
-              set({
-                summary: null,
-                items: [],
-                alerts: [],
-                warehouses: [],
-                latestMovement: null,
-                total: 0,
-                loading: false,
-                loadError: inventoryErrorMessage(retryError),
-              });
-              return;
-            }
-          }
           set({
             summary: null,
             items: [],

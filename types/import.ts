@@ -76,6 +76,8 @@ export type ImportMasterBundle = {
     inspectionTypes: string[];
     readyStockTypes: string[];
     portTypes: string[];
+    shipmentModes?: ImportShipmentMode[];
+    shipmentStatuses?: ImportShipmentStatus[];
   };
 };
 
@@ -324,6 +326,104 @@ export type ImportDeal = {
   confirmedAt: string | null;
   cancelledAt: string | null;
   createdAt: string;
+};
+
+export type ImportDealDetail = ImportDeal & { shipments: ImportShipment[] };
+
+export type ImportShipmentStatus =
+  | "BOOKED"
+  | "SHIPPED"
+  | "IN_TRANSIT"
+  | "ARRIVED"
+  | "CUSTOMS_CLEARANCE"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "EXCEPTION"
+  | "CANCELLED";
+
+export type ImportShipmentMode = "SEA" | "AIR" | "ROAD" | "RAIL" | "MULTIMODAL";
+
+export type ImportShipmentEvent = {
+  id: string;
+  status: ImportShipmentStatus;
+  /** `null` when the event only recorded a location or note. */
+  previousStatus: ImportShipmentStatus | null;
+  location: string | null;
+  description: string | null;
+  occurredAt: string;
+  actorParty: ImportParty | "ADMIN" | "SYSTEM";
+  source: string;
+};
+
+export type ImportShipment = {
+  id: string;
+  referenceNumber: string;
+  status: ImportShipmentStatus;
+  mode: ImportShipmentMode;
+  myParty: ImportParty | "ADMIN";
+  canManage: boolean;
+  allowedTransitions?: ImportShipmentStatus[];
+  deal: {
+    id: string;
+    referenceNumber: string;
+    status: ImportDealStatus;
+    quantity: string;
+    quantityUnit: ImportQuantityUnit;
+    product: string | null;
+  };
+  buyerRef: string;
+  sellerRef: string;
+  quantity: string;
+  quantityUnit: ImportQuantityUnit;
+  carrierName: string | null;
+  trackingNumber: string | null;
+  vesselName: string | null;
+  voyageNumber: string | null;
+  containerNumbers: string[];
+  originLocation: string | null;
+  destinationLocation: string | null;
+  etd: string | null;
+  eta: string | null;
+  departedAt: string | null;
+  arrivedAt: string | null;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
+  exceptionReason: string | null;
+  remarks: string | null;
+  version: number;
+  events: ImportShipmentEvent[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Carrier and routing fields a seller maintains on a shipment. */
+export type ImportShipmentDetailsInput = {
+  mode?: ImportShipmentMode;
+  carrierName?: string | null;
+  trackingNumber?: string | null;
+  vesselName?: string | null;
+  voyageNumber?: string | null;
+  containerNumbers?: string[];
+  originLocation?: string | null;
+  destinationLocation?: string | null;
+  etd?: string | null;
+  eta?: string | null;
+  remarks?: string | null;
+};
+
+export type ImportShipmentCreateInput = ImportShipmentDetailsInput & {
+  quantity: string;
+};
+
+export type ImportShipmentUpdateInput = ImportShipmentDetailsInput & {
+  version: number;
+};
+
+export type ImportShipmentEventInput = {
+  status?: ImportShipmentStatus;
+  location?: string;
+  description?: string;
+  occurredAt?: string;
 };
 
 export type ImportDocument = {

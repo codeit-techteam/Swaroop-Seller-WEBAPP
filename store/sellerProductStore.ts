@@ -4,7 +4,6 @@ import { devtools } from "zustand/middleware";
 
 import { defaultProductForm } from "@/lib/mock/products";
 import { adjustSellerInventory, fetchSellerProducts } from "@/services/catalog";
-import { useAuthStore } from "@/store/authStore";
 import { useLocationStore } from "@/store/locationStore";
 import type {
   ProductFormValues,
@@ -20,26 +19,6 @@ function withActiveLocation(products: SellerProduct[]): SellerProduct[] {
       : product,
   );
 }
-function isMissingSellerProfile(error: unknown): boolean {
-  if (!isAxiosError(error)) return false;
-  if (error.response?.status !== 404) return false;
-  const message = error.response?.data?.message;
-  return (
-    typeof message === "string" &&
-    message.toLowerCase().includes("seller profile")
-  );
-}
-
-function isAuthRequired(error: unknown): boolean {
-  if (!isAxiosError(error)) return false;
-  if (error.response?.status === 401) return true;
-  const message = error.response?.data?.message;
-  return (
-    typeof message === "string" &&
-    message.toLowerCase().includes("authentication required")
-  );
-}
-
 function catalogErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
     const message = error.response?.data?.message;
@@ -47,12 +26,6 @@ function catalogErrorMessage(error: unknown): string {
   }
   if (error instanceof Error) return error.message;
   return "Unable to load seller catalog.";
-}
-
-async function restoreSellerSessionAndRetry(): Promise<SellerProduct[] | null> {
-  const restored = await useAuthStore.getState().ensureDemoSellerSession();
-  if (!restored.ok) return null;
-  return fetchSellerProducts();
 }
 
 interface SellerProductState {
@@ -109,26 +82,6 @@ export const useSellerProductStore = create<SellerProductState>()(
           const products = withActiveLocation(await fetchSellerProducts());
           set({ products, loading: false, loadError: null });
         } catch (error) {
-          if (isAuthRequired(error) || isMissingSellerProfile(error)) {
-            try {
-              const restored = await restoreSellerSessionAndRetry();
-              if (restored) {
-                set({
-                  products: withActiveLocation(restored),
-                  loading: false,
-                  loadError: null,
-                });
-                return;
-              }
-            } catch (retryError) {
-              set({
-                products: [],
-                loading: false,
-                loadError: catalogErrorMessage(retryError),
-              });
-              return;
-            }
-          }
           set({
             products: [],
             loading: false,

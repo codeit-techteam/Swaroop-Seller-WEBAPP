@@ -25,6 +25,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  useCanManageImport,
   useImportListing,
   useImportMatches,
   useImportNegotiations,
@@ -125,7 +126,17 @@ function ListingHeader({
 
 // Create / edit ---------------------------------------------------------------
 
+function ManageRequired() {
+  return (
+    <p className="rounded-2xl border border-dashed bg-card px-6 py-12 text-center text-sm text-muted-foreground">
+      Creating and editing {IMPORT_COPY.ownPlural.toLowerCase()} needs Import
+      Trading manage access.
+    </p>
+  );
+}
+
 export function ImportCreatePage() {
+  const canManage = useCanManageImport();
   return (
     <ImportPage
       title={`New ${IMPORT_COPY.own.toLowerCase()}`}
@@ -138,13 +149,18 @@ export function ImportCreatePage() {
         { label: "New" },
       ]}
     >
-      <ImportListingForm side={IMPORT_OWN_SIDE} />
+      {canManage ? (
+        <ImportListingForm side={IMPORT_OWN_SIDE} />
+      ) : (
+        <ManageRequired />
+      )}
     </ImportPage>
   );
 }
 
 export function ImportEditPage({ id }: { id: string }) {
-  const listing = useImportListing(IMPORT_OWN_SIDE, id);
+  const canManage = useCanManageImport();
+  const listing = useImportListing(IMPORT_OWN_SIDE, canManage ? id : null);
   const l = listing.data;
   return (
     <ImportPage
@@ -168,7 +184,9 @@ export function ImportEditPage({ id }: { id: string }) {
         { label: "Edit" },
       ]}
     >
-      {listing.isLoading ? (
+      {!canManage ? (
+        <ManageRequired />
+      ) : listing.isLoading ? (
         <DetailSkeleton />
       ) : listing.isError || !l ? (
         <ErrorPanel
@@ -190,6 +208,7 @@ export function ImportEditPage({ id }: { id: string }) {
 export function ImportOwnerDetailPage({ id }: { id: string }) {
   const router = useRouter();
   const invalidate = useInvalidateImport();
+  const canManage = useCanManageImport();
   const listing = useImportListing(IMPORT_OWN_SIDE, id);
   const l = listing.data;
   const live = Boolean(l && OPEN_STATUSES.includes(l.status));
@@ -243,9 +262,12 @@ export function ImportOwnerDetailPage({ id }: { id: string }) {
     }
   }
 
-  const can = (s: string) => l?.allowedTransitions?.includes(s as never);
+  const can = (s: string) =>
+    canManage && l?.allowedTransitions?.includes(s as never);
   const editable =
-    l && ([...OPEN_STATUSES, "DRAFT", "PAUSED"] as string[]).includes(l.status);
+    canManage &&
+    l &&
+    ([...OPEN_STATUSES, "DRAFT", "PAUSED"] as string[]).includes(l.status);
 
   return (
     <ImportPage
@@ -267,7 +289,7 @@ export function ImportOwnerDetailPage({ id }: { id: string }) {
                 </Link>
               </Button>
             ) : null}
-            {l.status === "DRAFT" ? (
+            {canManage && l.status === "DRAFT" ? (
               <Button
                 variant="outline"
                 onClick={() => void run("delete")}
@@ -285,7 +307,9 @@ export function ImportOwnerDetailPage({ id }: { id: string }) {
                 Pause
               </Button>
             ) : null}
-            {IMPORT_OWN_SIDE === "SELL" && l.status === "PAUSED" ? (
+            {canManage &&
+            IMPORT_OWN_SIDE === "SELL" &&
+            l.status === "PAUSED" ? (
               <Button
                 variant="outline"
                 onClick={() => void run("resume")}
@@ -412,6 +436,7 @@ export function ImportOwnerDetailPage({ id }: { id: string }) {
               listing={l}
               matches={matches.data}
               loading={matches.isLoading}
+              canManage={canManage}
               onDismiss={async (matchId) => {
                 try {
                   await dismissMatch(IMPORT_OWN_SIDE, l.id, matchId);
@@ -466,11 +491,13 @@ function MatchesPanel({
   listing,
   matches,
   loading,
+  canManage,
   onDismiss,
 }: {
   listing: ImportListing;
   matches?: ImportMatch[];
   loading: boolean;
+  canManage: boolean;
   onDismiss: (matchId: string) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -589,7 +616,7 @@ function MatchesPanel({
               >
                 {expanded === m.id ? "Hide scoring" : "Why this score"}
               </Button>
-              {m.status === "SUGGESTED" ? (
+              {canManage && m.status === "SUGGESTED" ? (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -617,11 +644,12 @@ export function ImportMarketDetailPage({
 }) {
   const router = useRouter();
   const invalidate = useInvalidateImport();
+  const canManage = useCanManageImport();
   const listing = useImportListing(IMPORT_MARKET_SIDE, id);
   const l = listing.data;
   const [offerOpen, setOfferOpen] = useState(false);
   const open = Boolean(
-    l && OPEN_STATUSES.includes(l.status) && !l.validity.isExpired,
+    canManage && l && OPEN_STATUSES.includes(l.status) && !l.validity.isExpired,
   );
   const existing = l?.myNegotiation;
 

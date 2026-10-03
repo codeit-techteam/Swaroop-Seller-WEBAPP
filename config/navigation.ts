@@ -1,4 +1,5 @@
 import {
+  Anchor,
   CalendarClock,
   ClipboardList,
   FileText,
@@ -125,6 +126,12 @@ export const NAV_SECTIONS: NavSection[] = [
             label: "Deals",
             href: ROUTES.IMPORT_DEALS,
             icon: Handshake,
+            permission: "import.view",
+          },
+          {
+            label: "Shipments",
+            href: ROUTES.IMPORT_SHIPMENTS,
+            icon: Anchor,
             permission: "import.view",
           },
         ],

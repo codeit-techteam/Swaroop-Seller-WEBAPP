@@ -31,6 +31,7 @@ export const IMPORT_ROUTES = {
   negotiationDetail: (id: string) => `/import/negotiations/${id}`,
   deals: "/import/deals",
   dealDetail: (id: string) => `/import/deals/${id}`,
+  shipments: "/import/shipments",
 } as const;
 
 /** API path segment for a listing side. */

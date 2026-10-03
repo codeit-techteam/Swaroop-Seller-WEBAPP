@@ -5,6 +5,7 @@ import { apiClient as http } from "@/services/apiClient";
 import type {
   ImportBrand,
   ImportDeal,
+  ImportDealDetail,
   ImportDocument,
   ImportGrade,
   ImportListing,
@@ -16,6 +17,11 @@ import type {
   ImportPaymentTerm,
   ImportPort,
   ImportProduct,
+  ImportShipment,
+  ImportShipmentCreateInput,
+  ImportShipmentEventInput,
+  ImportShipmentStatus,
+  ImportShipmentUpdateInput,
   ImportSide,
   ImportSummary,
   ImportTermsInput,
@@ -360,7 +366,7 @@ export const fetchDeals = (query: {
 }) => paged(apiClient.get<Envelope<ImportDeal[]>>(`/import/deals${qs(query)}`));
 
 export const fetchDeal = (id: string) =>
-  data(apiClient.get<Envelope<ImportDeal>>(`/import/deals/${id}`));
+  data(apiClient.get<Envelope<ImportDealDetail>>(`/import/deals/${id}`));
 
 export const confirmDeal = (id: string, idempotencyKey: string) =>
   data(
@@ -368,5 +374,50 @@ export const confirmDeal = (id: string, idempotencyKey: string) =>
       `/import/deals/${id}/confirm`,
       {},
       idem(idempotencyKey),
+    ),
+  );
+
+// Shipments -----------------------------------------------------------------
+
+export type ShipmentQuery = {
+  status?: ImportShipmentStatus;
+  dealId?: string;
+  search?: string;
+  as?: "buyer" | "seller";
+  page?: number;
+  limit?: number;
+};
+
+export const listShipments = (query: ShipmentQuery) =>
+  paged(
+    apiClient.get<Envelope<ImportShipment[]>>(`/import/shipments${qs(query)}`),
+  );
+
+export const getShipment = (id: string) =>
+  data(apiClient.get<Envelope<ImportShipment>>(`/import/shipments/${id}`));
+
+export const createShipment = (
+  dealId: string,
+  body: ImportShipmentCreateInput,
+  idempotencyKey: string,
+) =>
+  data(
+    apiClient.post<Envelope<ImportShipment>>(
+      `/import/deals/${dealId}/shipments`,
+      body,
+      idem(idempotencyKey),
+    ),
+  );
+
+export const updateShipment = (id: string, body: ImportShipmentUpdateInput) =>
+  data(
+    apiClient.patch<Envelope<ImportShipment>>(`/import/shipments/${id}`, body),
+  );
+
+export const addShipmentEvent = (id: string, body: ImportShipmentEventInput) =>
+  data(
+    apiClient.post<Envelope<ImportShipment>>(
+      `/import/shipments/${id}/events`,
+      body,
     ),
   );

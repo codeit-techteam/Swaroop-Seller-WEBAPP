@@ -5,6 +5,7 @@ import {
   Check,
   ChevronsUpDown,
   Clock,
+  Eye,
   FilePlus2,
   Gauge,
   LifeBuoy,
@@ -34,7 +35,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useImportAvailability, useServerCountdown } from "@/hooks/use-import";
+import {
+  useImportAccess,
+  useImportAvailability,
+  useServerCountdown,
+} from "@/hooks/use-import";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ROUTES } from "@/lib/constants";
 import { IMPORT_COPY, IMPORT_ROUTES } from "@/lib/import/config";
@@ -57,7 +62,28 @@ const SUB_NAV = [
   { href: IMPORT_ROUTES.market, label: IMPORT_COPY.marketPlural },
   { href: IMPORT_ROUTES.negotiations, label: "Negotiations" },
   { href: IMPORT_ROUTES.deals, label: "Deals" },
+  { href: IMPORT_ROUTES.shipments, label: "Shipments" },
 ];
+
+export const IMPORT_VIEW_ONLY = "You have view-only access to Import Trading";
+
+export function ImportViewOnlyNote({ className }: { className?: string }) {
+  return (
+    <div
+      role="note"
+      className={cn(
+        "flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700",
+        className,
+      )}
+    >
+      <Eye className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+      <span>
+        {IMPORT_VIEW_ONLY}. You can browse listings, negotiations, deals and
+        shipments; ask a Super Admin to update your permissions to make changes.
+      </span>
+    </div>
+  );
+}
 
 export function ImportPage({
   title,
@@ -74,6 +100,7 @@ export function ImportPage({
 }) {
   const pathname = usePathname();
   const availability = useImportAvailability();
+  const { canManage } = useImportAccess();
   const enabled = availability.status === "enabled";
 
   return (
@@ -113,6 +140,7 @@ export function ImportPage({
           })}
         </nav>
       ) : null}
+      {enabled && !canManage ? <ImportViewOnlyNote /> : null}
       {availability.status === "loading" ? (
         <div
           className="space-y-4"

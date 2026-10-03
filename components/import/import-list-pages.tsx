@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  useCanManageImport,
   useImportListings,
   useImportMaster,
   useImportSummary,
@@ -100,6 +101,7 @@ const CreateButton = () => (
 
 export function ImportOverviewPage() {
   const summary = useImportSummary();
+  const canManage = useCanManageImport();
   const mine =
     IMPORT_OWN_SIDE === "BUY" ? summary.data?.buy : summary.data?.sell;
   const count = (statuses: string[]) =>
@@ -138,7 +140,7 @@ export function ImportOverviewPage() {
     <ImportPage
       title="Import trading"
       description={`Publish ${IMPORT_COPY.ownPlural.toLowerCase()} for international cargo and negotiate anonymously with verified counterparties.`}
-      actions={<CreateButton />}
+      actions={canManage ? <CreateButton /> : undefined}
     >
       {summary.isError ? (
         <ErrorPanel
@@ -179,9 +181,11 @@ export function ImportOverviewPage() {
                 Matching {IMPORT_COPY.marketPlural.toLowerCase()} are scored
                 automatically on transparent criteria.
               </p>
-              <Button asChild variant="link" className="mt-1 h-auto p-0">
-                <Link href={IMPORT_ROUTES.create}>Start a draft</Link>
-              </Button>
+              {canManage ? (
+                <Button asChild variant="link" className="mt-1 h-auto p-0">
+                  <Link href={IMPORT_ROUTES.create}>Start a draft</Link>
+                </Button>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -245,13 +249,14 @@ export function ImportMyListingsPage({ initialTab }: { initialTab?: string }) {
     limit: 20,
   };
   const listings = useImportListings(IMPORT_OWN_SIDE, query);
+  const canManage = useCanManageImport();
 
   return (
     <ImportPage
       title={`My ${IMPORT_COPY.ownPlural.toLowerCase()}`}
       description="Drafts save automatically. Published listings are matched and visible to verified counterparties without revealing your identity."
       breadcrumbs={[{ label: `My ${IMPORT_COPY.ownPlural.toLowerCase()}` }]}
-      actions={<CreateButton />}
+      actions={canManage ? <CreateButton /> : undefined}
     >
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
@@ -307,7 +312,9 @@ export function ImportMyListingsPage({ initialTab }: { initialTab?: string }) {
               ? "Try another tab or clear the search."
               : `Create your first ${IMPORT_COPY.own.toLowerCase()} to start receiving matched offers.`
           }
-          action={!debounced && !status ? <CreateButton /> : undefined}
+          action={
+            canManage && !debounced && !status ? <CreateButton /> : undefined
+          }
         />
       ) : (
         <div className="space-y-3">
@@ -316,7 +323,7 @@ export function ImportMyListingsPage({ initialTab }: { initialTab?: string }) {
               key={l.id}
               listing={l}
               href={
-                l.status === "DRAFT"
+                canManage && l.status === "DRAFT"
                   ? IMPORT_ROUTES.edit(l.id)
                   : IMPORT_ROUTES.mineDetail(l.id)
               }

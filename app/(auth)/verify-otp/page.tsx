@@ -133,7 +133,12 @@ export default function VerifyOtpPage() {
               const result = await sendOtp(pendingMobile);
               setCountdown(RESEND_SECONDS);
               if (result.message) toast(result.message, { icon: "⚠️" });
-              else toast.success("OTP resent — use 123456 in development");
+              else
+                toast.success(
+                  process.env.NODE_ENV !== "production"
+                    ? "OTP resent — use 123456 in development"
+                    : "OTP resent",
+                );
             }}
             className="mt-4 text-sm font-medium text-[#1B6EF3] disabled:text-slate-400"
           >

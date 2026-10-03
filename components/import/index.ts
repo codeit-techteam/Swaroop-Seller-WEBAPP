@@ -9,6 +9,7 @@ export {
   ImportMarketDetailPage,
   ImportOwnerDetailPage,
 } from "./import-listing-pages";
+export { ImportShipmentsPage } from "./import-shipments";
 export {
   ImportDealDetailPage,
   ImportDealsPage,

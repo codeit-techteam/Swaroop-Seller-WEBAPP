@@ -26,6 +26,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  useCanManageImport,
   useImportDeal,
   useImportDeals,
   useImportNegotiation,
@@ -56,6 +57,7 @@ import {
 } from "@/services/import";
 import type { ImportNegotiationEvent } from "@/types/import";
 
+import { ImportDealShipments } from "./import-shipments";
 import { ImportTermsDialog } from "./import-terms-dialog";
 import {
   ErrorPanel,
@@ -232,6 +234,7 @@ function EventTerms({ e }: { e: ImportNegotiationEvent }) {
 export function ImportNegotiationDetailPage({ id }: { id: string }) {
   const router = useRouter();
   const invalidate = useInvalidateImport();
+  const canManage = useCanManageImport();
   const q = useImportNegotiation(id);
   const n = q.data;
   const [counterOpen, setCounterOpen] = useState(false);
@@ -287,7 +290,8 @@ export function ImportNegotiationDetailPage({ id }: { id: string }) {
     }
   }
 
-  const can = (a: string) => n?.allowedActions.includes(a as never);
+  const can = (a: string) =>
+    canManage && n?.allowedActions.includes(a as never);
 
   return (
     <ImportPage
@@ -630,6 +634,7 @@ export function ImportDealsPage({ initialStatus }: { initialStatus?: string }) {
 
 export function ImportDealDetailPage({ id }: { id: string }) {
   const invalidate = useInvalidateImport();
+  const canManage = useCanManageImport();
   const q = useImportDeal(id);
   const d = q.data;
   const [busy, setBusy] = useState(false);
@@ -672,7 +677,7 @@ export function ImportDealDetailPage({ id }: { id: string }) {
         { label: d?.referenceNumber ?? "Detail" },
       ]}
       actions={
-        d?.awaitingMyConfirmation ? (
+        canManage && d?.awaitingMyConfirmation ? (
           <Button onClick={() => void confirm()} disabled={busy}>
             {busy ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}{" "}
             Confirm deal
@@ -789,6 +794,7 @@ export function ImportDealDetailPage({ id }: { id: string }) {
               ) : null}
             </CardContent>
           </Card>
+          <ImportDealShipments deal={d} canManage={canManage} />
         </div>
       )}
     </ImportPage>

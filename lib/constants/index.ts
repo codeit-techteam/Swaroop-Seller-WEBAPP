@@ -74,6 +74,7 @@ export const ROUTES = {
   IMPORT_BUY_REQUESTS: "/import/requests",
   IMPORT_NEGOTIATIONS: "/import/negotiations",
   IMPORT_DEALS: "/import/deals",
+  IMPORT_SHIPMENTS: "/import/shipments",
   ORDERS: "/orders",
   ORDER_MANAGEMENT: "/orders",
   ORDER_DETAIL: "/orders",

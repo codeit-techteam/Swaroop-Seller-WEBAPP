@@ -81,9 +81,25 @@ const LABELS: Record<string, string> = {
   PAYMENT_TERMS: "Payment terms",
   SHIPMENT_WINDOW: "Shipment window",
   QUALITY: "Quality & documents",
+  // Shipment status
+  BOOKED: "Shipment booked",
+  SHIPPED: "Shipped / picked up",
+  IN_TRANSIT: "In transit",
+  ARRIVED: "Arrived at destination port",
+  CUSTOMS_CLEARANCE: "Customs clearance",
+  OUT_FOR_DELIVERY: "Out for delivery",
+  DELIVERED: "Delivered",
+  EXCEPTION: "Exception",
+  // Shipment mode
+  SEA: "Sea",
+  AIR: "Air",
+  ROAD: "Road",
+  RAIL: "Rail",
+  MULTIMODAL: "Multimodal",
   // Parties
   BUYER: "Buyer",
   SELLER: "Seller",
+  ADMIN: "Swaroop team",
   SYSTEM: "System",
 };
 
@@ -119,6 +135,14 @@ const TONES: Record<string, Tone> = {
   WITHDRAWN: "neutral",
   PENDING_CONFIRMATION: "warning",
   CONFIRMED: "success",
+  BOOKED: "info",
+  SHIPPED: "info",
+  IN_TRANSIT: "info",
+  ARRIVED: "info",
+  CUSTOMS_CLEARANCE: "warning",
+  OUT_FOR_DELIVERY: "info",
+  DELIVERED: "success",
+  EXCEPTION: "danger",
 };
 
 export const toneFor = (status: string): Tone => TONES[status] ?? "neutral";
@@ -267,3 +291,26 @@ export function newIdempotencyKey(): string {
 
 export const DECIMAL_QTY = /^\d{1,15}(\.\d{1,3})?$/;
 export const DECIMAL_PRICE = /^\d{1,14}(\.\d{1,4})?$/;
+
+/** Quantity decimal string → integer thousandths, so sums never drift. */
+export function qtyToMilli(value?: string | null): bigint {
+  const match = /^(\d*)(?:\.(\d*))?$/.exec((value ?? "").trim());
+  if (!match) return BigInt(0);
+  const frac = (match[2] ?? "").padEnd(3, "0").slice(0, 3);
+  return BigInt(`${match[1] || "0"}${frac}`);
+}
+
+export function milliToQty(value: bigint): string {
+  const negative = value < BigInt(0);
+  const digits = (negative ? -value : value).toString().padStart(4, "0");
+  const frac = digits.slice(-3).replace(/0+$/, "");
+  return `${negative ? "-" : ""}${digits.slice(0, -3)}${frac ? `.${frac}` : ""}`;
+}
+
+/** `<input type="datetime-local">` value in the browser's time zone. */
+export function toLocalDateTimeInput(value: Date | string): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
