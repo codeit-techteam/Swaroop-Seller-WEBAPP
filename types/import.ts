@@ -95,6 +95,9 @@ export type ImportGrade = {
   name: string;
   displayName: string | null;
   categoryId: string;
+  gradeNo?: string | null;
+  gradeGroup?: string | null;
+  manufacturer?: string | null;
 };
 
 export type ImportBrand = Named & { country?: Named | null };

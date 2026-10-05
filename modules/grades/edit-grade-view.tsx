@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import {
   type PendingDoc,
   ProductDocumentsPanel,
 } from "@/components/grades/product-documents-panel";
+import { SearchSelect } from "@/components/import/import-ui";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -33,13 +34,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
-import { packagingTypes, polymerTypes } from "@/lib/mock/products";
+import { packagingTypes, polymerTypes, withCurrent } from "@/lib/mock/products";
 import { slabsOverlap } from "@/lib/seller/format";
 import { apiErrorMessage } from "@/lib/utils";
 import {
-  fetchSellerGrades,
   fetchSellerProduct,
-  type SellerGradeOption,
+  searchSellerGrades,
+  sellerGradeHint,
+  sellerGradeLabel,
   updateSellerListing,
 } from "@/services/catalog";
 import { uploadProductDocument } from "@/services/product-documents";
@@ -102,7 +104,8 @@ export function EditGradeView() {
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
   const [loadedBasePrice, setLoadedBasePrice] = useState(0);
   const [wasPublished, setWasPublished] = useState(true);
-  const [grades, setGrades] = useState<SellerGradeOption[]>([]);
+  const [gradeLabel, setGradeLabel] = useState<string | null>(null);
+  const [gradeInactive, setGradeInactive] = useState(false);
   const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -133,10 +136,13 @@ export function EditGradeView() {
     },
   });
 
-  useEffect(() => {
-    void fetchSellerGrades()
-      .then(setGrades)
-      .catch(() => setGrades([]));
+  const loadGrades = useCallback(async (search: string) => {
+    const items = await searchSellerGrades(search);
+    return items.map((item) => ({
+      value: item.id,
+      label: sellerGradeLabel(item),
+      hint: sellerGradeHint(item),
+    }));
   }, []);
 
   useEffect(() => {
@@ -168,6 +174,10 @@ export function EditGradeView() {
           notes: product.notes ?? "",
           sellingPrice: product.basePrice ?? 0,
         });
+        setGradeLabel(product.gradeLabel ?? null);
+        setGradeInactive(
+          Boolean(product.gradeStatus) && product.gradeStatus !== "ACTIVE",
+        );
         setLoadedBasePrice(product.basePrice ?? 0);
         setWasPublished(product.offerStatus === "active");
         setSlabs(product.bulkPricing ?? []);
@@ -298,23 +308,26 @@ export function EditGradeView() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Grade Master</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select central grade" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {grades.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.displayName ?? item.name}
-                          {item.category?.name
-                            ? ` · ${item.category.name}`
-                            : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <SearchSelect
+                      value={field.value}
+                      selectedLabel={gradeLabel}
+                      placeholder="Search grade, grade no. or manufacturer"
+                      queryKey={["seller", "grade-master"]}
+                      load={loadGrades}
+                      onChange={(value, option) => {
+                        field.onChange(value ?? "");
+                        setGradeLabel(option?.label ?? null);
+                        setGradeInactive(false);
+                      }}
+                    />
+                  </FormControl>
+                  {gradeInactive ? (
+                    <p className="text-xs text-amber-700">
+                      This grade has been deactivated in the Grade Master.
+                      Choose an active grade to save changes.
+                    </p>
+                  ) : null}
                   <FormMessage />
                 </FormItem>
               )}
@@ -371,7 +384,7 @@ export function EditGradeView() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {polymerTypes.map((item) => (
+                      {withCurrent(polymerTypes, field.value).map((item) => (
                         <SelectItem key={item} value={item}>
                           {item}
                         </SelectItem>

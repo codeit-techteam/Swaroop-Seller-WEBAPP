@@ -64,6 +64,13 @@ export const polymerTypes = [
   "PET",
 ] as const;
 
+/** Keeps a value set from the Grade Master selectable even when it is not a preset. */
+export const withCurrent = (
+  presets: readonly string[],
+  current: string | undefined,
+): string[] =>
+  current && !presets.includes(current) ? [...presets, current] : [...presets];
+
 export const packagingTypes = [
   "25 kg bags",
   "Jumbo bags",

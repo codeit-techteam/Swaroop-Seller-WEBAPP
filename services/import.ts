@@ -103,10 +103,14 @@ export const fetchImportProducts = (search?: string) =>
     ),
   );
 
-export const fetchImportGrades = (categoryId?: string, search?: string) =>
+export const fetchImportGrades = (
+  categoryId?: string,
+  search?: string,
+  side?: ImportSide,
+) =>
   data(
     apiClient.get<Envelope<ImportGrade[]>>(
-      `/import/master-data/grades${qs({ categoryId, search, limit: 50 })}`,
+      `/import/master-data/grades${qs({ categoryId, search, side, limit: 50 })}`,
     ),
   );
 

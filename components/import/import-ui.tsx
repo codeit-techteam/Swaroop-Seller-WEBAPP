@@ -444,7 +444,20 @@ export function SearchSelect({
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
               </div>
             ) : null}
-            <CommandEmpty>No results.</CommandEmpty>
+            {remote.isError && !remote.isFetching ? (
+              <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-red-600">
+                <span>Unable to load options.</span>
+                <button
+                  type="button"
+                  className="font-medium underline"
+                  onClick={() => void remote.refetch()}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <CommandEmpty>No results.</CommandEmpty>
+            )}
             {allowClear && value ? (
               <CommandItem
                 value="__clear"

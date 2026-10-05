@@ -161,6 +161,8 @@ export interface SellerProduct {
   offerId?: string;
   /** Grade master id */
   gradeId?: string;
+  gradeLabel?: string;
+  gradeStatus?: string;
   updatedAt: string;
   createdAt: string;
 }

@@ -724,14 +724,18 @@ function ListingForm({
                       await fetchImportGrades(
                         values.categoryId ?? undefined,
                         search || undefined,
+                        side,
                       )
                     ).map((g) => ({
                       value: g.id,
                       label: g.displayName ?? g.name,
-                      hint: g.code,
+                      hint:
+                        [g.manufacturer, g.gradeGroup]
+                          .filter(Boolean)
+                          .join(" · ") || g.code,
                     }))
                   }
-                  queryKey={["import", "grades", values.categoryId]}
+                  queryKey={["import", "grades", side, values.categoryId]}
                   placeholder={
                     values.categoryId
                       ? "Search grade"

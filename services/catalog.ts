@@ -12,8 +12,37 @@ export type SellerGradeOption = {
   code: string;
   name: string;
   displayName?: string;
+  gradeNo?: string | null;
+  gradeGroup?: string | null;
+  manufacturer?: string | null;
   category?: { id: string; code: string; name: string } | null;
 };
+
+export const sellerGradeLabel = (grade: SellerGradeOption) =>
+  grade.displayName || grade.name;
+
+export const sellerGradeHint = (grade: SellerGradeOption) =>
+  [grade.manufacturer, grade.category?.name].filter(Boolean).join(" · ");
+
+/** Server-side Grade Master search (ACTIVE + seller-visible grades only). */
+export async function searchSellerGrades(
+  search: string,
+  limit = 30,
+): Promise<SellerGradeOption[]> {
+  const response = await apiClient.get<Envelope<SellerGradeOption[]>>(
+    `/master-data/grades/seller`,
+    {
+      params: {
+        search: search.trim() || undefined,
+        page: 1,
+        limit,
+        sortBy: "sortOrder",
+        sortOrder: "asc",
+      },
+    },
+  );
+  return response.data.data ?? [];
+}
 
 export async function fetchSellerGrades(): Promise<SellerGradeOption[]> {
   const pages: SellerGradeOption[] = [];
@@ -62,6 +91,8 @@ type BackendSellerProduct = {
     id: string;
     code: string;
     name: string;
+    displayName?: string | null;
+    status?: string;
     category?: { name?: string; code?: string } | null;
   };
   inventory?: Array<{
@@ -143,6 +174,10 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     inventoryId: inventory?.id ?? offer?.inventoryId ?? undefined,
     offerId: offer?.id ?? item.offerId,
     gradeId: item.grade?.id,
+    gradeLabel: item.grade
+      ? item.grade.displayName || item.grade.name
+      : undefined,
+    gradeStatus: item.grade?.status,
     updatedAt: item.updatedAt ?? new Date().toISOString(),
     createdAt: item.createdAt ?? new Date().toISOString(),
   } satisfies SellerProduct;

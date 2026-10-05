@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import {
   type PendingDoc,
   ProductDocumentsPanel,
 } from "@/components/grades/product-documents-panel";
+import { SearchSelect } from "@/components/import/import-ui";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -33,12 +34,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
-import { packagingTypes, polymerTypes } from "@/lib/mock/products";
+import { packagingTypes, polymerTypes, withCurrent } from "@/lib/mock/products";
 import { slabsOverlap } from "@/lib/seller/format";
 import { apiErrorMessage, buildSellerListingCode } from "@/lib/utils";
 import {
   createSellerListing,
-  fetchSellerGrades,
+  searchSellerGrades,
+  sellerGradeHint,
+  sellerGradeLabel,
   type SellerGradeOption,
 } from "@/services/catalog";
 import { uploadProductDocument } from "@/services/product-documents";
@@ -75,25 +78,21 @@ export function AddGradeView() {
   const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const addActivity = useSellerStore((s) => s.addActivity);
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
-  const [grades, setGrades] = useState<SellerGradeOption[]>([]);
-  const [gradesError, setGradesError] = useState<string | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<SellerGradeOption | null>(
+    null,
+  );
+  const gradeResults = useRef(new Map<string, SellerGradeOption>());
   const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
   const overlap = useMemo(() => slabsOverlap(slabs), [slabs]);
 
-  useEffect(() => {
-    void fetchSellerGrades()
-      .then((items) => {
-        setGrades(items);
-        setGradesError(null);
-      })
-      .catch((error: unknown) => {
-        setGrades([]);
-        setGradesError(
-          error instanceof Error
-            ? error.message
-            : "Unable to load Grade Master.",
-        );
-      });
+  const loadGrades = useCallback(async (search: string) => {
+    const items = await searchSellerGrades(search);
+    for (const item of items) gradeResults.current.set(item.id, item);
+    return items.map((item) => ({
+      value: item.id,
+      label: sellerGradeLabel(item),
+      hint: sellerGradeHint(item),
+    }));
   }, []);
 
   const form = useForm<Values>({
@@ -127,8 +126,7 @@ export function AddGradeView() {
       return;
     }
 
-    const selectedGrade = grades.find((item) => item.id === values.category);
-    if (!selectedGrade) {
+    if (!selectedGrade || selectedGrade.id !== values.category) {
       toast.error("Select a grade from the central Grade Master.");
       return;
     }
@@ -217,47 +215,45 @@ export function AddGradeView() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Grade Master</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      const selected = grades.find((item) => item.id === value);
-                      if (selected) {
-                        form.setValue(
-                          "gradeName",
-                          selected.displayName ?? selected.name,
-                        );
-                        // Seller Product.code is unique per org — never reuse bare Grade Master code.
-                        form.setValue(
-                          "gradeCode",
-                          buildSellerListingCode(selected.code),
-                        );
-                        form.setValue(
-                          "polymerType",
-                          selected.category?.code ?? selected.code,
-                        );
+                  <FormControl>
+                    <SearchSelect
+                      value={field.value}
+                      selectedLabel={
+                        selectedGrade ? sellerGradeLabel(selectedGrade) : null
                       }
-                    }}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select central grade" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {grades.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.displayName ?? item.name}
-                          {item.category?.name
-                            ? ` · ${item.category.name}`
-                            : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {gradesError ? (
-                    <p className="text-xs text-red-600">{gradesError}</p>
-                  ) : null}
+                      placeholder="Search grade, grade no. or manufacturer"
+                      queryKey={["seller", "grade-master"]}
+                      load={loadGrades}
+                      onChange={(value) => {
+                        field.onChange(value ?? "");
+                        const selected = value
+                          ? (gradeResults.current.get(value) ?? null)
+                          : null;
+                        setSelectedGrade(selected);
+                        if (selected) {
+                          form.setValue(
+                            "gradeName",
+                            sellerGradeLabel(selected),
+                          );
+                          // Seller Product.code is unique per org — never reuse bare Grade Master code.
+                          form.setValue(
+                            "gradeCode",
+                            buildSellerListingCode(selected.code),
+                          );
+                          form.setValue(
+                            "polymerType",
+                            selected.category?.code ?? selected.code,
+                          );
+                          if (selected.manufacturer) {
+                            form.setValue(
+                              "manufacturer",
+                              selected.manufacturer,
+                            );
+                          }
+                        }
+                      }}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -318,7 +314,7 @@ export function AddGradeView() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {polymerTypes.map((item) => (
+                      {withCurrent(polymerTypes, field.value).map((item) => (
                         <SelectItem key={item} value={item}>
                           {item}
                         </SelectItem>
