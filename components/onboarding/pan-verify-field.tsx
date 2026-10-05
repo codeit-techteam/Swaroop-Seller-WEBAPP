@@ -15,6 +15,14 @@ import {
 import type { VerificationStatus } from "@/types/onboarding";
 
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const PAN_NAME_REGEX = /^[A-Za-z0-9][A-Za-z0-9 .&'()/,-]*$/;
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+function todayIso() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}
 
 type PanVerifyFieldProps = {
   value: string;
@@ -47,6 +55,8 @@ export function PanVerifyField({
 }: PanVerifyFieldProps) {
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [dob, setDob] = useState("");
   const accepted = status === "verified" || status === "pending";
   const inputLocked = locked || accepted;
   const displayStatus: VerificationStatus = verifying ? "loading" : status;
@@ -57,10 +67,21 @@ export function PanVerifyField({
       setError("Enter a valid 10-character PAN (for example ABCDE1234F).");
       return;
     }
+    const name = fullName.trim().replace(/\s+/g, " ");
+    if (name.length < 2 || !PAN_NAME_REGEX.test(name)) {
+      setError("Enter the name exactly as printed on the PAN card.");
+      return;
+    }
+    if (!ISO_DATE_REGEX.test(dob) || dob > todayIso()) {
+      setError(
+        "Enter the date of birth / incorporation shown on the PAN card.",
+      );
+      return;
+    }
     setError(null);
     setVerifying(true);
     try {
-      const result = await verifySellerPan(pan);
+      const result = await verifySellerPan(pan, { fullName: name, dob });
       if (result.status === "FAILED") setError(result.message);
       onResult(result, pan);
     } catch (err) {
@@ -90,7 +111,13 @@ export function PanVerifyField({
         <Button
           type="button"
           onClick={() => void handleVerify()}
-          disabled={verifying || inputLocked || value.length !== 10}
+          disabled={
+            verifying ||
+            inputLocked ||
+            value.length !== 10 ||
+            fullName.trim().length < 2 ||
+            !dob
+          }
           className={cn(
             "shrink-0",
             status === "verified" &&
@@ -103,6 +130,34 @@ export function PanVerifyField({
           {buttonLabel(displayStatus)}
         </Button>
       </div>
+      {!inputLocked ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Input
+            value={fullName}
+            onChange={(event) => {
+              setFullName(event.target.value.slice(0, 150));
+              setError(null);
+            }}
+            placeholder="Name as per PAN"
+            maxLength={150}
+            disabled={verifying}
+            autoComplete="off"
+            aria-label="Name as per PAN"
+          />
+          <Input
+            type="date"
+            value={dob}
+            onChange={(event) => {
+              setDob(event.target.value);
+              setError(null);
+            }}
+            max={todayIso()}
+            disabled={verifying}
+            aria-label="Date of birth or incorporation as per PAN"
+            title="Date of birth (individual) or incorporation (company/firm) as per PAN"
+          />
+        </div>
+      ) : null}
       {status === "verified" && details?.nameOnPan ? (
         <p className="text-xs text-green-700">
           Name on PAN:{" "}

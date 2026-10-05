@@ -108,12 +108,16 @@ export async function verifySellerGst(
   return response.data.data;
 }
 
+/** Name and date of birth / incorporation exactly as printed on the PAN card. */
+export type PanHolderDetails = { fullName: string; dob: string };
+
 export async function verifySellerPan(
   pan: string,
+  holder: PanHolderDetails,
 ): Promise<KycVerificationResult> {
   const response = await apiClient.post<Envelope<KycVerificationResult>>(
     "/seller/onboarding/pan/verify",
-    { pan, source: "SELLER_WEB" },
+    { pan, fullName: holder.fullName, dob: holder.dob, source: "SELLER_WEB" },
     { timeout: VERIFY_TIMEOUT_MS },
   );
   return response.data.data;
