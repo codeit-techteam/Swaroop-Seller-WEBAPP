@@ -60,18 +60,14 @@ export function buildOnboardingDraftPayload(
     businessData: { ...state.business },
     gstData: {
       gstin,
-      status: state.gst.status,
       companyName: state.gst.companyName,
-      gstStatus: state.gst.gstStatus,
       state: state.gst.state,
       stateCode: state.gst.stateCode,
       pan: state.gst.pan || pan,
     },
     panData: {
       pan,
-      status: state.pan.status,
       holderName: state.pan.holderName,
-      panStatus: state.pan.panStatus,
     },
     bankData: {
       accountHolder: state.bank.accountHolderName,

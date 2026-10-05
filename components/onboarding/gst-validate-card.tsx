@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,49 +9,90 @@ import { cn } from "@/lib/utils";
 import {
   GST_BOOK_MEETING_URL,
   GST_KNOW_MORE_URL,
-  type GstParseResult,
   normalizeGstin,
   parseGstin,
 } from "@/lib/utils/gst";
+import {
+  type KycVerificationDetails,
+  type KycVerificationResult,
+  verificationApiError,
+  verifySellerGst,
+} from "@/services/seller-kyc-verification";
+import type { VerificationStatus } from "@/types/onboarding";
 
-const VALIDATE_DELAY_MS = 500;
+export const REVERIFY_NOTICE =
+  "Changing this information requires re-verification.";
 
 type GstValidateCardProps = {
   value: string;
-  verified: boolean;
-  result?: GstParseResult | null;
+  status: VerificationStatus;
+  details?: KycVerificationDetails;
+  message?: string;
+  /** Onboarding is submitted / approved — identifiers cannot change. */
+  locked?: boolean;
   onChange: (gstNumber: string) => void;
-  onVerified: (result: GstParseResult) => void;
+  onResult: (result: KycVerificationResult, gstin: string) => void;
+  onEdit?: () => void;
   className?: string;
 };
 
+function buttonLabel(status: VerificationStatus) {
+  if (status === "loading") return "Verifying…";
+  if (status === "verified") return "✓ Verified";
+  if (status === "rejected") return "✕ Failed";
+  if (status === "pending") return "Sent for review";
+  return "Verify";
+}
+
 export function GstValidateCard({
   value,
-  verified,
-  result,
+  status,
+  details,
+  message,
+  locked = false,
   onChange,
-  onVerified,
+  onResult,
+  onEdit,
   className,
 }: GstValidateCardProps) {
-  const [validating, setValidating] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const accepted = status === "verified" || status === "pending";
+  const inputLocked = locked || accepted;
+  const displayStatus: VerificationStatus = verifying ? "loading" : status;
 
-  const handleValidate = () => {
+  const handleVerify = async () => {
     const parsed = parseGstin(value);
     if (!parsed.isValid) {
       setError(parsed.error ?? "Enter a valid GST number");
       return;
     }
-
     setError(null);
-    setValidating(true);
-    window.setTimeout(() => {
-      onVerified(parsed);
-      setValidating(false);
-    }, VALIDATE_DELAY_MS);
+    setVerifying(true);
+    try {
+      const result = await verifySellerGst(parsed.gstNumber);
+      if (result.status === "FAILED") setError(result.message);
+      onResult(result, parsed.gstNumber);
+    } catch (err) {
+      setError(verificationApiError(err, "GST verification failed."));
+    } finally {
+      setVerifying(false);
+    }
   };
 
-  const showResult = verified && result?.isValid;
+  const rows: [string, string | null | undefined][] = details
+    ? [
+        ["Legal Name", details.legalName],
+        ["Trade Name", details.tradeName],
+        ["GST Status", details.gstStatus],
+        ["State", details.state],
+        ["State Code", details.stateCode],
+        ["Company PAN", details.panMasked],
+        ["Taxpayer Type", details.taxpayerType],
+        ["Registered On", details.registrationDate],
+      ]
+    : [];
+  const visibleRows = rows.filter(([, v]) => Boolean(v));
 
   return (
     <div
@@ -79,17 +120,39 @@ export function GstValidateCard({
           }}
           placeholder="19ABCCA6289R1ZP"
           maxLength={15}
+          disabled={inputLocked || verifying}
           className="h-12 rounded-full border-slate-300 px-4 text-center font-medium uppercase tracking-wide"
           aria-label="GST number"
         />
         <Button
           type="button"
-          onClick={handleValidate}
-          disabled={validating || value.length !== 15}
-          className="h-12 w-full rounded-full bg-[#4F6BFF] text-base font-semibold hover:bg-[#3F58E8]"
+          onClick={() => void handleVerify()}
+          disabled={verifying || inputLocked || value.length !== 15}
+          className={cn(
+            "h-12 w-full rounded-full text-base font-semibold",
+            status === "verified"
+              ? "bg-green-600 hover:bg-green-600 disabled:opacity-100"
+              : status === "rejected" && !verifying
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-[#4F6BFF] hover:bg-[#3F58E8]",
+          )}
         >
-          {validating ? "Validating…" : "Validate"}
+          {buttonLabel(displayStatus)}
         </Button>
+        {inputLocked ? (
+          <p className="flex items-center justify-between gap-2 text-xs text-slate-500">
+            <span>{REVERIFY_NOTICE}</span>
+            {!locked && onEdit ? (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="font-semibold text-[#4F6BFF] hover:underline"
+              >
+                Change
+              </button>
+            ) : null}
+          </p>
+        ) : null}
       </div>
 
       {error ? (
@@ -98,29 +161,27 @@ export function GstValidateCard({
         </p>
       ) : null}
 
-      {showResult ? (
+      {accepted ? (
         <div className="mt-5 space-y-2 text-left text-sm text-slate-800">
-          <p className="flex items-center gap-2 font-semibold text-green-600">
-            <Check className="h-4 w-4" aria-hidden="true" />
-            Valid GST Number
-          </p>
+          {status === "verified" ? (
+            <p className="flex items-center gap-2 font-semibold text-green-600">
+              <Check className="h-4 w-4" aria-hidden="true" />
+              GSTIN verified
+            </p>
+          ) : (
+            <p className="text-amber-700">
+              {message ||
+                "GST verification is temporarily unavailable. Our team will verify it during review."}
+            </p>
+          )}
           <p>
-            <span className="font-semibold">GST Number:</span>{" "}
-            {result.gstNumber}
+            <span className="font-semibold">GST Number:</span> {value}
           </p>
-          <p>
-            <span className="font-semibold">State Code:</span>{" "}
-            {result.stateCode}
-          </p>
-          <p>
-            <span className="font-semibold">State:</span> {result.state}
-          </p>
-          <p>
-            <span className="font-semibold">Company PAN:</span>{" "}
-            <span className="rounded bg-sky-100 px-1.5 py-0.5 font-semibold tracking-wide">
-              {result.pan}
-            </span>
-          </p>
+          {visibleRows.map(([label, rowValue]) => (
+            <p key={label}>
+              <span className="font-semibold">{label}:</span> {rowValue}
+            </p>
+          ))}
           <div className="pt-3">
             <p className="font-semibold text-slate-900">For more details:</p>
             <a
@@ -133,6 +194,11 @@ export function GstValidateCard({
             </a>
           </div>
         </div>
+      ) : status === "rejected" && !error && message ? (
+        <p className="mt-3 flex items-start gap-2 text-left text-sm text-red-600">
+          <X className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          {message}
+        </p>
       ) : null}
     </div>
   );

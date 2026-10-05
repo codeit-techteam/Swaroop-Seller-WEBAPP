@@ -2,23 +2,25 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
 import { GstValidateCard } from "@/components/onboarding/gst-validate-card";
+import { PanVerifyField } from "@/components/onboarding/pan-verify-field";
 import { Button } from "@/components/ui/button";
 import {
   Form,
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { useSellerIdentityVerification } from "@/hooks/useSellerIdentityVerification";
 import { ROUTES } from "@/lib/constants";
 import { type GstPanFormValues, gstPanSchema } from "@/lib/schemas/onboarding";
-import { type GstParseResult, parseGstin } from "@/lib/utils/gst";
+import { extractPanFromGstin } from "@/lib/utils/gst";
+import { isVerificationAccepted } from "@/services/seller-kyc-verification";
 import { useOnboardingStore } from "@/store/onboardingStore";
 
 export default function OnboardingGstPage() {
@@ -31,9 +33,9 @@ export default function OnboardingGstPage() {
   const updateCompany = useOnboardingStore((s) => s.updateCompany);
   const updateGst = useOnboardingStore((s) => s.updateGst);
   const updatePan = useOnboardingStore((s) => s.updatePan);
-  const updateLocation = useOnboardingStore((s) => s.updateLocation);
   const markStepComplete = useOnboardingStore((s) => s.markStepComplete);
   const setCurrentStep = useOnboardingStore((s) => s.setCurrentStep);
+  const identity = useSellerIdentityVerification();
 
   const form = useForm<GstPanFormValues>({
     resolver: zodResolver(gstPanSchema),
@@ -43,59 +45,49 @@ export default function OnboardingGstPage() {
     },
   });
 
-  const gstNumber = form.watch("gstNumber");
-  const gstResult = parseGstin(gst.gstNumber || gstNumber);
-  const gstVerified =
-    gst.status === "verified" &&
-    gst.gstNumber === gstNumber &&
-    gstResult.isValid;
+  useEffect(() => {
+    if (isVerificationAccepted(gst.status) && gst.gstNumber) {
+      form.setValue("gstNumber", gst.gstNumber, { shouldValidate: true });
+    }
+    if (isVerificationAccepted(pan.status) && pan.panNumber) {
+      form.setValue("panNumber", pan.panNumber, { shouldValidate: true });
+    }
+  }, [form, gst.gstNumber, gst.status, pan.panNumber, pan.status]);
 
-  const applyGstResult = (result: GstParseResult) => {
-    form.setValue("gstNumber", result.gstNumber, { shouldValidate: true });
-    form.setValue("panNumber", result.pan, { shouldValidate: true });
-    updateCompany({
-      gstNumber: result.gstNumber,
-      panNumber: result.pan,
-    });
-    updateGst({
-      gstNumber: result.gstNumber,
-      status: "verified",
-      gstStatus: "ACTIVE",
-      gstType: "Regular",
-      stateCode: result.stateCode,
-      state: result.state,
-      pan: result.pan,
-    });
-    updatePan({
-      panNumber: result.pan,
-      status: "verified",
-      panStatus: "VALID",
-    });
-    updateLocation({ state: result.state });
+  const gstNumber = form.watch("gstNumber");
+  const panNumber = form.watch("panNumber");
+  const gstStatus = gst.gstNumber === gstNumber ? gst.status : "idle";
+  const panStatus = pan.panNumber === panNumber ? pan.status : "idle";
+  const identityAccepted =
+    isVerificationAccepted(gstStatus) &&
+    isVerificationAccepted(panStatus) &&
+    !identity.mismatch;
+
+  const setPanValue = (next: string) => {
+    form.setValue("panNumber", next, { shouldValidate: true });
+    if (pan.panNumber !== next && pan.status !== "idle") {
+      updatePan({ panNumber: next, status: "idle", details: undefined });
+    }
   };
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit((values) => {
-          if (!gstVerified) {
-            toast.error("Validate GST before continuing");
+          if (!identityAccepted) {
+            toast.error(
+              identity.mismatch
+                ? "GST/PAN mismatch: verify the PAN that the GSTIN is registered to."
+                : "Verify GST and PAN before continuing",
+            );
             return;
           }
-          const panNumber = values.panNumber.toUpperCase();
+          const panValue = values.panNumber.toUpperCase();
           updateCompany({
             gstNumber: values.gstNumber.toUpperCase(),
-            panNumber,
+            panNumber: panValue,
           });
-          updateGst({
-            gstNumber: values.gstNumber.toUpperCase(),
-            status: "verified",
-            pan: panNumber,
-          });
-          updatePan({
-            panNumber,
-            status: "verified",
-          });
+          updateGst({ pan: panValue });
           markStepComplete("gst-pan");
           setCurrentStep("bank");
           toast.success("GST and PAN saved");
@@ -106,8 +98,8 @@ export default function OnboardingGstPage() {
         <div>
           <h1 className="text-xl font-semibold">GST & PAN</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Validate GST to confirm state and auto-fill company PAN, same as
-            Seller Panel onboarding.
+            GST and PAN are verified with the government registry before you
+            continue.
           </p>
         </div>
         <FormField
@@ -117,21 +109,34 @@ export default function OnboardingGstPage() {
             <FormItem>
               <GstValidateCard
                 value={field.value}
-                verified={gstVerified}
-                result={gstVerified ? gstResult : null}
+                status={gstStatus}
+                details={gst.details}
+                message={gst.message}
+                locked={identity.locked}
                 onChange={(next) => {
                   field.onChange(next);
-                  if (gst.status === "verified" && gst.gstNumber !== next) {
+                  if (gst.gstNumber !== next && gst.status !== "idle") {
                     updateGst({
                       gstNumber: next,
                       status: "idle",
+                      details: undefined,
                       stateCode: undefined,
                       state: undefined,
                       pan: undefined,
                     });
                   }
                 }}
-                onVerified={applyGstResult}
+                onResult={(result, gstin) => {
+                  form.setValue("gstNumber", gstin, { shouldValidate: true });
+                  identity.applyGstResult(result, gstin);
+                  if (
+                    result.status !== "FAILED" &&
+                    !form.getValues("panNumber")
+                  ) {
+                    setPanValue(extractPanFromGstin(gstin));
+                  }
+                }}
+                onEdit={identity.editGst}
               />
               <FormMessage />
             </FormItem>
@@ -143,16 +148,25 @@ export default function OnboardingGstPage() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>PAN Number</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Validate GST to auto-fill PAN"
-                  className="uppercase"
-                  {...field}
-                />
-              </FormControl>
-              <p className="text-xs text-slate-500">
-                Company PAN is extracted from GSTIN after validation.
-              </p>
+              <PanVerifyField
+                value={field.value}
+                status={panStatus}
+                details={pan.details}
+                message={pan.message}
+                locked={identity.locked}
+                onChange={setPanValue}
+                onResult={(result, value) => {
+                  form.setValue("panNumber", value, { shouldValidate: true });
+                  identity.applyPanResult(result, value);
+                }}
+                onEdit={identity.editPan}
+              />
+              {identity.mismatch ? (
+                <p className="text-xs text-red-600" role="alert">
+                  GST/PAN mismatch: the PAN associated with the GSTIN does not
+                  match the entered PAN.
+                </p>
+              ) : null}
               <FormMessage />
             </FormItem>
           )}
@@ -161,7 +175,7 @@ export default function OnboardingGstPage() {
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Back
           </Button>
-          <Button type="submit" disabled={!gstVerified}>
+          <Button type="submit" disabled={!identityAccepted}>
             Continue
           </Button>
         </div>

@@ -183,7 +183,12 @@ export default function OnboardingReviewPage() {
           title="Bank"
           rows={[
             ["Bank", bank.bankName],
-            ["Account", maskAccountNumber(bank.accountNumber || "00009220")],
+            [
+              "Account",
+              bank.accountNumber
+                ? maskAccountNumber(bank.accountNumber)
+                : "Not provided",
+            ],
             ["IFSC", bank.ifscCode],
           ]}
         />

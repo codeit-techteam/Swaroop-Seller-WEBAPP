@@ -1,3 +1,5 @@
+import type { KycVerificationDetails } from "@/services/seller-kyc-verification";
+
 export type OnboardingStepId =
   | "company"
   | "business"
@@ -69,6 +71,9 @@ export interface GstVerificationData {
   stateCode?: string;
   state?: string;
   pan?: string;
+  /** Normalized provider details returned by the backend verification. */
+  details?: KycVerificationDetails;
+  message?: string;
 }
 
 export interface PanVerificationData {
@@ -76,6 +81,8 @@ export interface PanVerificationData {
   status: VerificationStatus;
   holderName?: string;
   panStatus?: string;
+  details?: KycVerificationDetails;
+  message?: string;
 }
 
 export interface BankFormData {
