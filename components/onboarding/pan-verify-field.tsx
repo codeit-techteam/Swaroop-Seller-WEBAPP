@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
+  formatKycDate,
   type KycVerificationDetails,
   type KycVerificationResult,
   verificationApiError,
@@ -159,10 +160,20 @@ export function PanVerifyField({
         </div>
       ) : null}
       {status === "verified" && details?.nameOnPan ? (
-        <p className="text-xs text-green-700">
-          Name on PAN:{" "}
-          <span className="font-semibold">{details.nameOnPan}</span>
-        </p>
+        <div className="space-y-0.5 text-xs text-green-700">
+          <p>
+            Name on PAN:{" "}
+            <span className="font-semibold">{details.nameOnPan}</span>
+          </p>
+          {details.dateOnPan ? (
+            <p>
+              Date of birth / incorporation:{" "}
+              <span className="font-semibold">
+                {formatKycDate(details.dateOnPan)}
+              </span>
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {status === "pending" ? (
         <p className="text-xs text-amber-700">

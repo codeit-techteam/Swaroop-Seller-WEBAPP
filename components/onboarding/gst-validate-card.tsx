@@ -13,6 +13,7 @@ import {
   parseGstin,
 } from "@/lib/utils/gst";
 import {
+  formatKycDate,
   type KycVerificationDetails,
   type KycVerificationResult,
   verificationApiError,
@@ -89,7 +90,9 @@ export function GstValidateCard({
         ["State Code", details.stateCode],
         ["Company PAN", details.panMasked],
         ["Taxpayer Type", details.taxpayerType],
-        ["Registered On", details.registrationDate],
+        ["Constitution", details.constitution],
+        ["Registered On", formatKycDate(details.registrationDate)],
+        ["Cancelled On", formatKycDate(details.cancellationDate)],
       ]
     : [];
   const visibleRows = rows.filter(([, v]) => Boolean(v));

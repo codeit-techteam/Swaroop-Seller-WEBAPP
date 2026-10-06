@@ -26,6 +26,8 @@ export type KycVerificationDetails = {
   pincode?: string | null;
   panMasked?: string | null;
   nameOnPan?: string | null;
+  /** Date of birth / incorporation (YYYY-MM-DD) confirmed by PAN Verify. */
+  dateOnPan?: string | null;
   panStatus?: string | null;
   panCategory?: string | null;
 };
@@ -121,6 +123,17 @@ export async function verifySellerPan(
     { timeout: VERIFY_TIMEOUT_MS },
   );
   return response.data.data;
+}
+
+/** Formats a provider YYYY-MM-DD date as "01 Jan 2000"; other values pass through. */
+export function formatKycDate(value: string | null | undefined): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return value ?? null;
+  return new Date(`${value}T00:00:00Z`).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 function readString(value: unknown): string | null {
