@@ -93,6 +93,8 @@ export function GstValidateCard({
         ["Constitution", details.constitution],
         ["Registered On", formatKycDate(details.registrationDate)],
         ["Cancelled On", formatKycDate(details.cancellationDate)],
+        ["Registered Address", details.address],
+        ["PIN Code", details.pincode],
       ]
     : [];
   const visibleRows = rows.filter(([, v]) => Boolean(v));
