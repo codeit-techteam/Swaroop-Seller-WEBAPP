@@ -53,11 +53,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   ]);
 
   useEffect(() => {
-    if (!hasHydrated || !statusReady) return;
+    if (!hasHydrated) return;
     if (!isAuthenticated) {
       router.replace(ROUTES.LOGIN);
       return;
     }
+    if (!statusReady) return;
     if (user?.mustChangePassword) {
       router.replace(ROUTES.CHANGE_PASSWORD);
       return;

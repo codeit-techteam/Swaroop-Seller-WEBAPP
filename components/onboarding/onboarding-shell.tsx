@@ -66,11 +66,12 @@ export function OnboardingShell({ children }: { children: React.ReactNode }) {
   ]);
 
   useEffect(() => {
-    if (!hasHydrated || !statusReady) return;
+    if (!hasHydrated) return;
     if (!isAuthenticated) {
       router.replace(ROUTES.LOGIN);
       return;
     }
+    if (!statusReady) return;
     if (onboardingComplete && !isPreview) router.replace(ROUTES.DASHBOARD);
   }, [
     hasHydrated,

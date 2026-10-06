@@ -6,6 +6,11 @@ import { ROLE_LABELS } from "@/config";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { storage } from "@/lib/utils";
 import { clearSellerQueries } from "@/providers/query-provider";
+import {
+  type RotatedTokens,
+  SESSION_EXPIRED_EVENT,
+  TOKENS_ROTATED_EVENT,
+} from "@/services/apiClient";
 import { authErrorMessage, authService } from "@/services/auth.service";
 import { useLocationStore } from "@/store/locationStore";
 import { useOnboardingStore } from "@/store/onboardingStore";
@@ -242,15 +247,65 @@ export const useAuthStore = create<SellerAuthState>()(
         pendingMobile: state.pendingMobile,
       }),
       onRehydrateStorage: () => (state) => {
-        // Zustand may restore the user while apiClient's token key is empty
-        // (e.g. after a prior 401 cleared petrotrade_auth_token).
         if (state?.tokens?.accessToken) {
-          syncTokenStorage(state.tokens);
+          // The token keys are the source of truth; the persisted copy may
+          // predate a silent refresh and hold an already-rotated refresh token.
+          const liveAccess = storage.get<string | null>(
+            STORAGE_KEYS.AUTH_TOKEN,
+            null,
+          );
+          const liveRefresh = storage.get<string | null>(
+            STORAGE_KEYS.REFRESH_TOKEN,
+            null,
+          );
+          if (liveAccess && liveRefresh) {
+            state.tokens = {
+              accessToken: liveAccess,
+              refreshToken: liveRefresh,
+            };
+          } else {
+            syncTokenStorage(state.tokens);
+          }
         }
         state?.setHasHydrated(true);
       },
     },
   ),
 );
+
+if (typeof window !== "undefined") {
+  window.addEventListener(TOKENS_ROTATED_EVENT, (event) => {
+    if (!useAuthStore.getState().isAuthenticated) return;
+    useAuthStore.setState({
+      tokens: (event as CustomEvent<RotatedTokens>).detail,
+    });
+  });
+  window.addEventListener(SESSION_EXPIRED_EVENT, () => {
+    if (useAuthStore.getState().isAuthenticated) {
+      useAuthStore.getState().logout();
+    }
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key !== STORAGE_KEYS.REFRESH_TOKEN) return;
+    const state = useAuthStore.getState();
+    if (!state.isAuthenticated) return;
+    if (!event.newValue) {
+      // Signed out in another tab.
+      state.logout();
+      return;
+    }
+    const refreshToken = storage.get<string | null>(
+      STORAGE_KEYS.REFRESH_TOKEN,
+      null,
+    );
+    const accessToken = storage.get<string | null>(
+      STORAGE_KEYS.AUTH_TOKEN,
+      null,
+    );
+    if (refreshToken && accessToken) {
+      useAuthStore.setState({ tokens: { accessToken, refreshToken } });
+    }
+  });
+}
 
 export { ROLE_LABELS };
