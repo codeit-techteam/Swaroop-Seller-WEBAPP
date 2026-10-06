@@ -8,6 +8,7 @@ import { storage } from "@/lib/utils";
 import { clearSellerQueries } from "@/providers/query-provider";
 import { authErrorMessage, authService } from "@/services/auth.service";
 import { useLocationStore } from "@/store/locationStore";
+import { useOnboardingStore } from "@/store/onboardingStore";
 import { useSellerStore } from "@/store/sellerStore";
 import type { AuthState, AuthTokens, User } from "@/types/auth";
 
@@ -199,6 +200,12 @@ export const useAuthStore = create<SellerAuthState>()(
       },
       completeOnboarding: () => set({ onboardingComplete: true }),
       setSession: (user, tokens = null) => {
+        const previousUserId = get().user?.id;
+        if (previousUserId && user.id && previousUserId !== user.id) {
+          clearSellerQueries();
+          useSellerStore.getState().resetSeller();
+          useOnboardingStore.getState().resetOnboarding();
+        }
         syncTokenStorage(tokens);
         set({
           user,
@@ -213,6 +220,7 @@ export const useAuthStore = create<SellerAuthState>()(
         clearSellerQueries();
         useLocationStore.getState().reset();
         useSellerStore.getState().resetSeller();
+        useOnboardingStore.getState().resetOnboarding();
         set({
           user: null,
           tokens: null,

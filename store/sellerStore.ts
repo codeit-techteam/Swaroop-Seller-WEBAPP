@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { sellerProfileMock } from "@/lib/mock/locations";
 import { sellerActivityMock } from "@/lib/mock/notifications";
 import {
   fetchSellerAccountProfile,
@@ -97,10 +96,42 @@ function mergeSummary(
 
 let inflight: Promise<SellerAccountSummary | null> | null = null;
 
+if (typeof window !== "undefined") {
+  window.localStorage.removeItem("petrotrade-seller-profile");
+}
+
+/** Filled from GET /seller/profile; no business is shown until the backend answers. */
+const EMPTY_SELLER_PROFILE: SellerProfile = {
+  id: "",
+  companyName: "",
+  legalName: "",
+  businessType: "",
+  sellerType: "trader",
+  gst: "",
+  pan: "",
+  contactPerson: "",
+  designation: "",
+  mobile: "",
+  email: "",
+  registeredAddress: "",
+  yearsInBusiness: "",
+  primaryCategories: [],
+  operatingCapacityMt: 0,
+  monthlyTradingCapacityMt: 0,
+  paymentTerms: "",
+  offerValidityHours: 24,
+  volumeSoldLastMonthMt: 0,
+  preferredContactMethod: "Mobile",
+  verificationStatus: "incomplete",
+  locations: [],
+  bankAccounts: [],
+  accountManager: { id: "", name: "", mobile: "", email: "", region: "" },
+};
+
 export const useSellerStore = create<SellerState>()(
   persist(
     (set, get) => ({
-      seller: sellerProfileMock,
+      seller: EMPTY_SELLER_PROFILE,
       activity: sellerActivityMock,
       account: null,
       accountManagers: [],
@@ -144,14 +175,15 @@ export const useSellerStore = create<SellerState>()(
       },
       resetSeller: () =>
         set({
-          seller: sellerProfileMock,
+          seller: EMPTY_SELLER_PROFILE,
           account: null,
           accountManagers: [],
           accountLoaded: false,
         }),
     }),
     {
-      name: "petrotrade-seller-profile",
+      // v2: v1 caches started from a demo company and must not be restored.
+      name: "petrotrade-seller-profile.v2",
       partialize: (state) => ({ seller: state.seller, account: state.account }),
     },
   ),
