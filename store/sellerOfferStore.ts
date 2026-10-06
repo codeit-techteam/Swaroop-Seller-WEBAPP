@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { defaultOfferForm } from "@/lib/mock/offers";
 import {
   activateSellerOffer,
   bulkActivateSellerOffers,
@@ -355,5 +354,3 @@ export const useSellerOfferStore = create<SellerOfferState>()(
     { name: "seller-offer-store" },
   ),
 );
-
-export { defaultOfferForm };

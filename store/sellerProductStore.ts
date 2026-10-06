@@ -2,7 +2,6 @@ import { isAxiosError } from "axios";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { defaultProductForm } from "@/lib/mock/products";
 import { adjustSellerInventory, fetchSellerProducts } from "@/services/catalog";
 import { useLocationStore } from "@/store/locationStore";
 import type {
@@ -187,5 +186,3 @@ export const useSellerProductStore = create<SellerProductState>()(
     { name: "seller-product-store" },
   ),
 );
-
-export { defaultProductForm };

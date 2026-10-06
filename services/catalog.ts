@@ -12,21 +12,42 @@ export type SellerGradeOption = {
   code: string;
   name: string;
   displayName?: string;
+  status?: string;
   gradeNo?: string | null;
   gradeGroup?: string | null;
   manufacturer?: string | null;
-  category?: { id: string; code: string; name: string } | null;
+  fullGradeName?: string | null;
+  categoryId?: string;
+  category?: {
+    id: string;
+    code: string;
+    name: string;
+    displayName?: string | null;
+  } | null;
 };
 
 export const sellerGradeLabel = (grade: SellerGradeOption) =>
   grade.displayName || grade.name;
 
 export const sellerGradeHint = (grade: SellerGradeOption) =>
-  [grade.manufacturer, grade.category?.name].filter(Boolean).join(" · ");
+  [grade.manufacturer, grade.gradeGroup ?? grade.category?.name]
+    .filter(Boolean)
+    .join(" · ");
+
+/** Grade Master category name — the listing's "Polymer Type". */
+export const sellerGradeCategoryName = (grade: SellerGradeOption) =>
+  grade.category?.name || grade.category?.displayName || "";
+
+export type SellerGradeFilters = {
+  categoryId?: string;
+  gradeGroup?: string;
+  manufacturer?: string;
+};
 
 /** Server-side Grade Master search (ACTIVE + seller-visible grades only). */
 export async function searchSellerGrades(
   search: string,
+  filters: SellerGradeFilters = {},
   limit = 30,
 ): Promise<SellerGradeOption[]> {
   const response = await apiClient.get<Envelope<SellerGradeOption[]>>(
@@ -34,6 +55,9 @@ export async function searchSellerGrades(
     {
       params: {
         search: search.trim() || undefined,
+        categoryId: filters.categoryId || undefined,
+        gradeGroup: filters.gradeGroup || undefined,
+        manufacturer: filters.manufacturer || undefined,
         page: 1,
         limit,
         sortBy: "sortOrder",
@@ -42,6 +66,44 @@ export async function searchSellerGrades(
     },
   );
   return response.data.data ?? [];
+}
+
+export type SellerGradeFacets = {
+  categories: Array<{
+    id: string;
+    code: string;
+    name: string;
+    displayName: string;
+    gradeCount: number;
+  }>;
+  /** Scoped to the requested category. */
+  gradeGroups: Array<{ name: string; gradeCount: number }>;
+  manufacturers: Array<{ name: string; gradeCount: number }>;
+};
+
+export async function fetchSellerGradeFacets(
+  params: { categoryId?: string; search?: string } = {},
+): Promise<SellerGradeFacets> {
+  const response = await apiClient.get<Envelope<SellerGradeFacets>>(
+    `/master-data/grades/seller/facets`,
+    {
+      params: {
+        categoryId: params.categoryId || undefined,
+        search: params.search?.trim() || undefined,
+      },
+    },
+  );
+  return (
+    response.data.data ?? { categories: [], gradeGroups: [], manufacturers: [] }
+  );
+}
+
+/** Single seller-visible grade; rejects when the grade is inactive or hidden. */
+export async function fetchSellerGrade(id: string): Promise<SellerGradeOption> {
+  const response = await apiClient.get<Envelope<SellerGradeOption>>(
+    `/master-data/grades/${id}`,
+  );
+  return response.data.data;
 }
 
 export async function fetchSellerGrades(): Promise<SellerGradeOption[]> {
@@ -93,7 +155,7 @@ type BackendSellerProduct = {
     name: string;
     displayName?: string | null;
     status?: string;
-    category?: { name?: string; code?: string } | null;
+    category?: { id?: string; name?: string; code?: string } | null;
   };
   inventory?: Array<{
     id?: string;
@@ -140,9 +202,8 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     manufacturer: item.manufacturer ?? item.brand ?? "PRIVATE",
     gradeCode: item.code,
     polymerType:
+      item.grade?.category?.name ||
       (typeof specs.polymerType === "string" && specs.polymerType) ||
-      item.grade?.category?.code ||
-      item.grade?.code ||
       "",
     application:
       (typeof specs.application === "string" && specs.application) ||
@@ -211,6 +272,7 @@ export type CreateMarketplaceListingInput = {
   countryOfOrigin?: string;
   supplyOrigin?: string;
   application?: string;
+  /** Grade Master category name; stored on the seller product only. */
   polymerType?: string;
   warehouseName?: string;
   availableStock: number;

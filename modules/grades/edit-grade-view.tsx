@@ -3,18 +3,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
 
 import { PageContainer } from "@/components/common/page-container";
 import { PageHeader } from "@/components/common/page-header";
+import { GradeMasterPicker } from "@/components/grades/grade-master-picker";
 import {
   type PendingDoc,
   ProductDocumentsPanel,
 } from "@/components/grades/product-documents-panel";
-import { SearchSelect } from "@/components/import/import-ui";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -34,14 +34,18 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
-import { packagingTypes, polymerTypes, withCurrent } from "@/lib/mock/products";
+import {
+  DEFAULT_PACKAGING_TYPE,
+  packagingOptions,
+} from "@/lib/constants/products";
 import { slabsOverlap } from "@/lib/seller/format";
 import { apiErrorMessage } from "@/lib/utils";
 import {
+  fetchSellerGrade,
   fetchSellerProduct,
-  searchSellerGrades,
-  sellerGradeHint,
+  sellerGradeCategoryName,
   sellerGradeLabel,
+  type SellerGradeOption,
   updateSellerListing,
 } from "@/services/catalog";
 import { uploadProductDocument } from "@/services/product-documents";
@@ -74,11 +78,9 @@ function syncSlabsToSellingPrice(
 }
 
 const schema = z.object({
-  gradeId: z.string().min(1, "Select a grade"),
-  gradeName: z.string().min(2, "Grade name is required"),
-  manufacturer: z.string().min(2, "Manufacturer is required"),
+  gradeId: z.string().min(1, "Select a grade from the Grade Master"),
+  gradeName: z.string().min(1, "Select a grade from the Grade Master"),
   gradeCode: z.string().min(1, "Grade code is required"),
-  polymerType: z.string().min(1, "Required"),
   application: z.string().min(2, "Required"),
   mfi: z.string().min(1, "Required"),
   density: z.string().optional(),
@@ -104,8 +106,15 @@ export function EditGradeView() {
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
   const [loadedBasePrice, setLoadedBasePrice] = useState(0);
   const [wasPublished, setWasPublished] = useState(true);
-  const [gradeLabel, setGradeLabel] = useState<string | null>(null);
-  const [gradeInactive, setGradeInactive] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState<SellerGradeOption | null>(
+    null,
+  );
+  /** Saved values used when the listing's grade is no longer seller-visible. */
+  const [savedGrade, setSavedGrade] = useState<{
+    label: string | null;
+    category: string;
+    manufacturer: string;
+  } | null>(null);
   const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -116,13 +125,11 @@ export function EditGradeView() {
     defaultValues: {
       gradeId: "",
       gradeName: "",
-      manufacturer: "",
       gradeCode: "",
-      polymerType: "",
       application: "",
       mfi: "",
       density: "",
-      packagingType: "25 kg bags",
+      packagingType: DEFAULT_PACKAGING_TYPE,
       unit: "MT",
       availableStock: 0,
       origin: "India",
@@ -136,29 +143,24 @@ export function EditGradeView() {
     },
   });
 
-  const loadGrades = useCallback(async (search: string) => {
-    const items = await searchSellerGrades(search);
-    return items.map((item) => ({
-      value: item.id,
-      label: sellerGradeLabel(item),
-      hint: sellerGradeHint(item),
-    }));
-  }, []);
-
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load listing for edit
     setLoading(true);
     setLoadError(null);
     void fetchSellerProduct(params.id)
-      .then((product) => {
+      .then(async (product) => {
+        const grade = product.gradeId
+          ? await fetchSellerGrade(product.gradeId).catch(() => null)
+          : null;
+        return { product, grade };
+      })
+      .then(({ product, grade }) => {
         if (cancelled) return;
         form.reset({
           gradeId: product.gradeId ?? "",
           gradeName: product.gradeName,
-          manufacturer: product.manufacturer,
           gradeCode: product.gradeCode,
-          polymerType: product.polymerType,
           application: product.application,
           mfi: product.mfi,
           density: product.density ?? "",
@@ -174,9 +176,15 @@ export function EditGradeView() {
           notes: product.notes ?? "",
           sellingPrice: product.basePrice ?? 0,
         });
-        setGradeLabel(product.gradeLabel ?? null);
-        setGradeInactive(
-          Boolean(product.gradeStatus) && product.gradeStatus !== "ACTIVE",
+        setSelectedGrade(grade);
+        setSavedGrade(
+          grade || !product.gradeId
+            ? null
+            : {
+                label: product.gradeLabel ?? product.gradeName,
+                category: product.category,
+                manufacturer: product.manufacturer,
+              },
         );
         setLoadedBasePrice(product.basePrice ?? 0);
         setWasPublished(product.offerStatus === "active");
@@ -213,18 +221,23 @@ export function EditGradeView() {
       );
       if (syncedSlabs !== slabs) setSlabs(syncedSlabs);
 
+      const grade = selectedGrade?.id === values.gradeId ? selectedGrade : null;
+      const legacy = grade ? null : savedGrade;
       await updateSellerListing(params.id, {
         gradeId: values.gradeId,
-        name: values.gradeName,
+        name: grade ? sellerGradeLabel(grade) : values.gradeName,
         code: values.gradeCode,
-        manufacturer: values.manufacturer,
+        manufacturer:
+          (grade ? grade.manufacturer : legacy?.manufacturer) ?? undefined,
         mfi: values.mfi,
         density: values.density,
         packaging: values.packagingType,
         unit: values.unit,
         countryOfOrigin: values.origin,
         application: values.application,
-        polymerType: values.polymerType,
+        polymerType:
+          (grade ? sellerGradeCategoryName(grade) : legacy?.category) ||
+          undefined,
         warehouseName: values.warehouse,
         availableStock: values.availableStock,
         reservedStock: values.reservedStock,
@@ -301,37 +314,29 @@ export function EditGradeView() {
           onSubmit={form.handleSubmit(save)}
           className="space-y-5 rounded-xl border border-slate-200 bg-white p-6"
         >
+          <GradeMasterPicker
+            selectedGrade={selectedGrade}
+            fallbackLabel={savedGrade?.label}
+            error={form.formState.errors.gradeId?.message}
+            notice={
+              savedGrade ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  This listing&apos;s grade is no longer active or visible to
+                  sellers in the Grade Master. Choose an active grade to save
+                  changes.
+                </p>
+              ) : null
+            }
+            onSelect={(grade) => {
+              setSelectedGrade(grade);
+              setSavedGrade(null);
+              form.setValue("gradeId", grade?.id ?? "", {
+                shouldValidate: form.formState.isSubmitted,
+              });
+              form.setValue("gradeName", grade ? sellerGradeLabel(grade) : "");
+            }}
+          />
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="gradeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Grade Master</FormLabel>
-                  <FormControl>
-                    <SearchSelect
-                      value={field.value}
-                      selectedLabel={gradeLabel}
-                      placeholder="Search grade, grade no. or manufacturer"
-                      queryKey={["seller", "grade-master"]}
-                      load={loadGrades}
-                      onChange={(value, option) => {
-                        field.onChange(value ?? "");
-                        setGradeLabel(option?.label ?? null);
-                        setGradeInactive(false);
-                      }}
-                    />
-                  </FormControl>
-                  {gradeInactive ? (
-                    <p className="text-xs text-amber-700">
-                      This grade has been deactivated in the Grade Master.
-                      Choose an active grade to save changes.
-                    </p>
-                  ) : null}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="gradeName"
@@ -339,22 +344,16 @@ export function EditGradeView() {
                 <FormItem>
                   <FormLabel>Grade Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input
+                      readOnly
+                      placeholder="Select a grade above"
+                      className="bg-slate-50"
+                      {...field}
+                    />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="manufacturer"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Manufacturer / Brand</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
+                  <p className="text-[11px] text-slate-500">
+                    From the Grade Master.
+                  </p>
                 </FormItem>
               )}
             />
@@ -367,30 +366,6 @@ export function EditGradeView() {
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="polymerType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Polymer Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {withCurrent(polymerTypes, field.value).map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -447,7 +422,7 @@ export function EditGradeView() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {packagingTypes.map((item) => (
+                      {packagingOptions(field.value).map((item) => (
                         <SelectItem key={item} value={item}>
                           {item}
                         </SelectItem>

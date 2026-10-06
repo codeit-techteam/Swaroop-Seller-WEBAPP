@@ -43,40 +43,6 @@ export const defaultBulkPricing = (base = 0): BulkPriceSlab[] => {
 export const paymentTermsSummary = (_pricing?: PaymentTermPricing): string =>
   "Platform-managed. Credit eligibility is determined by PetroTrade.";
 
-export const productCategories = [
-  "PVC K67 ETHYLENE",
-  "PP RAFFIA",
-  "PP FILM",
-  "PP INJECTION",
-  "HDPE FILM",
-  "HDPE BLOW",
-  "LDPE",
-  "LLDPE FILM",
-  "PET",
-] as const;
-
-export const polymerTypes = [
-  "PVC",
-  "PP",
-  "HDPE",
-  "LLDPE",
-  "LDPE",
-  "PET",
-] as const;
-
-/** Keeps a value set from the Grade Master selectable even when it is not a preset. */
-export const withCurrent = (
-  presets: readonly string[],
-  current: string | undefined,
-): string[] =>
-  current && !presets.includes(current) ? [...presets, current] : [...presets];
-
-export const packagingTypes = [
-  "25 kg bags",
-  "Jumbo bags",
-  "Palletized bags",
-] as const;
-
 const _sellerProductsSeed: SellerProduct[] = [
   {
     id: "prod-pvc-hs1000r",
