@@ -10,10 +10,10 @@ import {
   MapPin,
   ShieldCheck,
 } from "lucide-react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { ONBOARDING_STEPS } from "@/lib/constants/onboarding";
+import { openContactSupport } from "@/lib/legal-links";
 import { cn } from "@/lib/utils";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import type { OnboardingStepId } from "@/types/onboarding";
@@ -117,9 +117,13 @@ export function StepSidebar({ className }: StepSidebarProps) {
       <div className="border-t border-sidebar-muted px-6 py-4">
         <p className="text-xs text-sidebar-foreground/50">
           Need help?{" "}
-          <Link href="#" className="text-sidebar-accent underline">
+          <button
+            type="button"
+            className="text-sidebar-accent underline"
+            onClick={() => void openContactSupport()}
+          >
             Contact Support
-          </Link>
+          </button>
         </p>
       </div>
     </aside>

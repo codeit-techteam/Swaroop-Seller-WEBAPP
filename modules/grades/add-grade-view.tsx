@@ -60,15 +60,24 @@ const schema = z.object({
   density: z.string().optional(),
   packagingType: z.string().min(1, "Required"),
   unit: z.enum(["MT", "kg"]),
-  availableStock: z.coerce.number().min(0),
-  moq: z.coerce.number().min(1),
+  availableStock: z.coerce
+    .number({ invalid_type_error: "Stock must be a number" })
+    .finite()
+    .min(0, "Stock cannot be negative"),
+  moq: z.coerce
+    .number({ invalid_type_error: "MOQ must be a number" })
+    .finite()
+    .min(0.001, "MOQ must be greater than zero"),
   origin: z.string().min(2, "Origin is required"),
   currency: z.string().min(1),
   gstPercent: z.coerce.number().min(0),
   warehouse: z.string().min(1),
   reservedStock: z.coerce.number().min(0),
   notes: z.string().optional(),
-  sellingPrice: z.coerce.number().min(0.01, "Selling price is required"),
+  sellingPrice: z.coerce
+    .number({ invalid_type_error: "Price must be a number" })
+    .finite()
+    .min(0.01, "Selling price must be greater than zero"),
 });
 
 type Values = z.infer<typeof schema>;

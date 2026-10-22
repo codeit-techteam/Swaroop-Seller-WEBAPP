@@ -237,6 +237,70 @@ function localDecimalError(key: string, value: unknown): string | undefined {
     : "Enter a number with up to 3 decimal places.";
 }
 
+/** Per-step required fields mirroring backend publish rules (sell side). */
+function validateImportStep(
+  stepId: StepId,
+  values: Values,
+  isBuy: boolean,
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const need = (key: keyof Values, label: string) => {
+    const v = values[key];
+    if (v === null || v === undefined || v === "") {
+      errors[key as string] = `${label} is required.`;
+    }
+  };
+  const needPositive = (key: keyof Values, label: string) => {
+    const v = values[key];
+    if (v === null || v === undefined || v === "") {
+      errors[key as string] = `${label} is required.`;
+      return;
+    }
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) {
+      errors[key as string] = `${label} must be greater than zero.`;
+    }
+  };
+
+  if (stepId === "product") {
+    need("categoryId", "Product / material");
+    if (!values.gradeId && !values.customGradeName?.trim()) {
+      errors.gradeId = "Grade is required.";
+    }
+    need("brandId", "Brand / manufacturer");
+    need("originCountryId", "Country of origin");
+    needPositive("quantity", "Quantity");
+    if (!isBuy) {
+      needPositive("moq", "MOQ");
+      need("readyStockType", "Ready stock type");
+    }
+  }
+  if (stepId === "commercial") {
+    needPositive("price", isBuy ? "Target price" : "Offer price");
+    need("currencyId", "Currency");
+    need("priceType", "Price type");
+    need("incotermId", "Incoterm");
+    if (!values.priceBasisPortId && !values.priceBasisLocation?.trim()) {
+      errors.priceBasisPortId = "Price basis port or location is required.";
+    }
+    need("paymentTermId", "Payment term");
+  }
+  if (stepId === "shipping") {
+    need("polId", "Port of loading");
+    need("podId", "Port of destination");
+    need("esd", "Earliest shipment date");
+    need("lsd", "Latest shipment date");
+  }
+  if (stepId === "review" && !isBuy) {
+    need("validUntil", "Offer validity");
+  }
+  for (const key of Object.keys(DECIMAL_FIELDS)) {
+    const msg = localDecimalError(key, values[key as keyof Values]);
+    if (msg && FIELD_STEP[key] === stepId) errors[key] = msg;
+  }
+  return errors;
+}
+
 /** `<input type="datetime-local">` value in the user's zone ↔ ISO instant. */
 function toLocalInput(iso?: string | null): string {
   if (!iso) return "";
@@ -490,7 +554,17 @@ function ListingForm({
   const stepIndex = STEPS.findIndex((s) => s.id === step);
   const goToStep = (index: number) => {
     const target = STEPS[index];
-    if (target) setStep(target.id);
+    if (!target) return;
+    // Allow going back freely; block forward jumps when the current step is incomplete.
+    if (index > stepIndex && !live) {
+      const stepFieldErrors = validateImportStep(step, values, isBuy);
+      if (Object.keys(stepFieldErrors).length > 0) {
+        setFieldErrors((prev) => ({ ...prev, ...stepFieldErrors }));
+        toast.error("Please complete the required fields before continuing.");
+        return;
+      }
+    }
+    setStep(target.id);
   };
   const stepErrors = useMemo(() => {
     const counts: Partial<Record<StepId, number>> = {};

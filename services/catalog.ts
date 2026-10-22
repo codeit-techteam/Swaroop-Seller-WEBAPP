@@ -27,7 +27,10 @@ export type SellerGradeOption = {
 };
 
 export const sellerGradeLabel = (grade: SellerGradeOption) =>
-  grade.displayName || grade.name;
+  grade.fullGradeName?.trim() ||
+  grade.displayName?.trim() ||
+  [grade.gradeGroup, grade.gradeNo].filter(Boolean).join(" ").trim() ||
+  grade.name;
 
 export const sellerGradeHint = (grade: SellerGradeOption) =>
   [grade.manufacturer, grade.gradeGroup ?? grade.category?.name]
@@ -154,6 +157,8 @@ type BackendSellerProduct = {
     code: string;
     name: string;
     displayName?: string | null;
+    fullGradeName?: string | null;
+    manufacturer?: string | null;
     status?: string;
     category?: { id?: string; name?: string; code?: string } | null;
   };
@@ -195,11 +200,16 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     price: Number(t.price ?? 0),
   }));
 
+  const gradeLabel =
+    item.grade?.fullGradeName?.trim() ||
+    item.grade?.displayName?.trim() ||
+    item.name;
   return {
     id: item.id,
     category: item.grade?.category?.name ?? item.grade?.name ?? "Grade",
-    gradeName: item.name,
-    manufacturer: item.manufacturer ?? item.brand ?? "PRIVATE",
+    gradeName: gradeLabel,
+    manufacturer:
+      item.manufacturer ?? item.brand ?? item.grade?.manufacturer ?? "",
     gradeCode: item.code,
     polymerType:
       item.grade?.category?.name ||

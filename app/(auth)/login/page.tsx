@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { CheckCircle2, Package } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -20,6 +19,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/constants";
+import {
+  openContactSupport,
+  openPrivacyPolicy,
+  openTermsOfService,
+} from "@/lib/legal-links";
 import { type LoginFormValues, loginSchema } from "@/lib/schemas/onboarding";
 import { useAuthStore } from "@/store/authStore";
 
@@ -215,15 +219,27 @@ export default function SellerLoginPage() {
           </motion.div>
         </div>
         <footer className="flex justify-center gap-6 border-t px-8 py-4 text-xs text-slate-500">
-          <Link href={ROUTES.SUPPORT} className="hover:text-slate-800">
+          <button
+            type="button"
+            className="hover:text-slate-800"
+            onClick={() => void openContactSupport()}
+          >
             Support
-          </Link>
-          <Link href="#" className="hover:text-slate-800">
+          </button>
+          <button
+            type="button"
+            className="hover:text-slate-800"
+            onClick={() => void openPrivacyPolicy()}
+          >
             Privacy Policy
-          </Link>
-          <Link href="#" className="hover:text-slate-800">
+          </button>
+          <button
+            type="button"
+            className="hover:text-slate-800"
+            onClick={() => void openTermsOfService()}
+          >
             Terms
-          </Link>
+          </button>
         </footer>
       </div>
     </div>

@@ -69,9 +69,20 @@ export function DashboardView() {
 
   const ready = !productsLoading;
 
-  // Full seller catalog for the My Products KPI (not warehouse-scoped).
-  const myProductGrades = products.length;
-  const liveProductGrades = products.filter(
+  // Align KPI with the Products tab filter (selected warehouse / loc-default).
+  const locationScopedProducts = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          !locationId ||
+          product.locationId === locationId ||
+          product.locationId === "loc-default" ||
+          !product.locationId,
+      ),
+    [locationId, products],
+  );
+  const myProductGrades = locationScopedProducts.length;
+  const liveProductGrades = locationScopedProducts.filter(
     (item) => item.offerStatus === "active",
   ).length;
   const scopedOffers = useMemo(

@@ -90,7 +90,8 @@ export function SellerProductsView() {
         (product) =>
           !locationId ||
           product.locationId === locationId ||
-          product.locationId === "loc-default",
+          product.locationId === "loc-default" ||
+          !product.locationId,
       )
       .filter((product) => category === "all" || product.category === category)
       .filter(
