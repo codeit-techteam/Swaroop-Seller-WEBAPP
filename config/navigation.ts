@@ -1,5 +1,6 @@
 import {
   Anchor,
+  BarChart3,
   CalendarClock,
   ClipboardList,
   FileText,
@@ -55,6 +56,12 @@ export const NAV_SECTIONS: NavSection[] = [
         href: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
         permission: "dashboard.view",
+      },
+      {
+        label: "Analytics",
+        href: ROUTES.ANALYTICS,
+        icon: BarChart3,
+        permission: "analytics.view",
       },
     ],
   },

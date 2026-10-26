@@ -36,12 +36,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   createSellerSupportTicket,
+  getSellerSupportTicket,
   listSellerSupportTickets,
   replySellerSupportTicket,
   SELLER_TICKET_CATEGORIES,
   type SellerSupportTicket,
   type SellerTicketCategory,
 } from "@/services/support";
+
+async function openTicketConversation(
+  ticket: SellerSupportTicket,
+  setViewTicket: (ticket: SellerSupportTicket) => void,
+  setReplyDraft: (value: string) => void,
+) {
+  setReplyDraft("");
+  setViewTicket(ticket);
+  try {
+    const fresh = await getSellerSupportTicket(ticket.id);
+    setViewTicket(fresh);
+  } catch {
+    // Keep list payload if detail fetch fails.
+  }
+}
 
 const STATUS_LABEL: Record<string, string> = {
   OPEN: "Open",
@@ -228,17 +244,36 @@ export function SellerSupportView() {
                   Chat Support
                 </h3>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Talk to our team
+                  Continue an open ticket conversation with support
                 </p>
               </div>
             </div>
             <Button
               className="w-full bg-slate-900 hover:bg-slate-800"
-              onClick={() =>
-                toast("Live chat is coming soon. Please raise a ticket.", {
-                  icon: "💬",
-                })
-              }
+              onClick={() => {
+                const openThread = [...tickets]
+                  .filter(
+                    (t) => t.status !== "CLOSED" && t.status !== "RESOLVED",
+                  )
+                  .sort(
+                    (a, b) =>
+                      new Date(b.updatedAt).getTime() -
+                      new Date(a.updatedAt).getTime(),
+                  )[0];
+                const awaiting = tickets.find(
+                  (t) => t.status === "WAITING_CUSTOMER",
+                );
+                const target = awaiting ?? openThread;
+                if (target) {
+                  void openTicketConversation(
+                    target,
+                    setViewTicket,
+                    setReplyDraft,
+                  );
+                  return;
+                }
+                setRaiseOpen(true);
+              }}
             >
               Start Chat
             </Button>
@@ -335,10 +370,16 @@ export function SellerSupportView() {
                           variant="ghost"
                           size="sm"
                           className="text-slate-800"
-                          onClick={() => setViewTicket(ticket)}
+                          onClick={() =>
+                            void openTicketConversation(
+                              ticket,
+                              setViewTicket,
+                              setReplyDraft,
+                            )
+                          }
                         >
                           <Eye className="mr-1.5 h-3.5 w-3.5" />
-                          View
+                          Chat
                         </Button>
                       </TableCell>
                     </TableRow>

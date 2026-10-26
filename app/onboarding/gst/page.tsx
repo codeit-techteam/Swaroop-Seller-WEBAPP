@@ -112,6 +112,7 @@ export default function OnboardingGstPage() {
                 status={gstStatus}
                 details={gst.details}
                 message={gst.message}
+                verification={identity.gstVerification}
                 locked={identity.locked}
                 onChange={(next) => {
                   field.onChange(next);
@@ -153,6 +154,7 @@ export default function OnboardingGstPage() {
                 status={panStatus}
                 details={pan.details}
                 message={pan.message}
+                verification={identity.panVerification}
                 locked={identity.locked}
                 onChange={setPanValue}
                 onResult={(result, value) => {

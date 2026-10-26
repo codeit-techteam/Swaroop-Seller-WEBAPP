@@ -1,4 +1,8 @@
 import { apiClient } from "@/services/apiClient";
+import type {
+  KycVerificationResult,
+  SellerIdentityStatus,
+} from "@/services/seller-kyc-verification";
 
 type Envelope<T> = {
   success: boolean;
@@ -22,12 +26,22 @@ export type SellerVerificationStatus = {
   rejectedReason: string | null;
   changeRequest: SellerChangeRequest | null;
   canResubmit: boolean;
+  locked: boolean;
+  verifications: {
+    pan: KycVerificationResult | null;
+    gst: KycVerificationResult | null;
+    mismatch: boolean;
+  };
+  verificationBlockers: string[];
 };
 
 export type SellerVerificationDetails = {
   legalName: string;
   gstin: string;
   pan: string;
+  /** Server-owned: verified | manual_review | null after admin identity reset. */
+  gstStatus: string | null;
+  panStatus: string | null;
   accountHolder: string;
   bankName: string;
   accountNumber: string;
@@ -50,10 +64,26 @@ function text(value: unknown): string {
 }
 
 export async function fetchSellerVerificationStatus(): Promise<SellerVerificationStatus> {
-  const response = await apiClient.get<Envelope<SellerVerificationStatus>>(
+  const response = await apiClient.get<Envelope<SellerIdentityStatus>>(
     "/seller/onboarding/status",
   );
-  return response.data.data;
+  const data = response.data.data;
+  return {
+    status: data.status,
+    sellerStatus: data.sellerStatus ?? null,
+    submittedAt: data.submittedAt ?? null,
+    reviewedAt: data.reviewedAt ?? null,
+    rejectedReason: data.rejectedReason ?? null,
+    changeRequest: data.changeRequest ?? null,
+    canResubmit: Boolean(data.canResubmit),
+    locked: Boolean(data.locked),
+    verifications: data.verifications ?? {
+      pan: null,
+      gst: null,
+      mismatch: false,
+    },
+    verificationBlockers: data.verificationBlockers ?? [],
+  };
 }
 
 async function fetchOnboardingPayload(): Promise<OnboardingPayload> {
@@ -66,10 +96,20 @@ export async function fetchSellerVerificationDetails(): Promise<SellerVerificati
   const data = await fetchOnboardingPayload();
   const company = data.companyData ?? {};
   const bank = data.bankData ?? {};
+  const gstStatus = text(data.gstData?.status) || null;
+  const panStatus = text(data.panData?.status) || null;
   return {
     legalName: text(company.legalName) || text(company.name),
     gstin: text(data.gstData?.gstin),
     pan: text(data.panData?.pan),
+    gstStatus:
+      gstStatus === "verified" || gstStatus === "manual_review"
+        ? gstStatus
+        : null,
+    panStatus:
+      panStatus === "verified" || panStatus === "manual_review"
+        ? panStatus
+        : null,
     accountHolder: text(bank.accountHolder),
     bankName: text(bank.bankName),
     accountNumber: text(bank.accountNumber),
@@ -78,28 +118,20 @@ export async function fetchSellerVerificationDetails(): Promise<SellerVerificati
 }
 
 /**
- * PATCH only the onboarding sections that changed. Sections are stored as
- * whole JSON blobs, so each one is merged with the server copy first; sending
- * an unchanged verified GST/PAN section would be rejected by the API.
+ * PATCH company name and bank only. GSTIN / PAN are owned by the Surepass
+ * verify endpoints — sending unverified identifiers here is rejected or
+ * stripped by the backend.
  */
 export async function updateSellerVerificationDetails(
   next: SellerVerificationDetails,
 ): Promise<void> {
   const current = await fetchOnboardingPayload();
   const company = current.companyData ?? {};
-  const gst = current.gstData ?? {};
-  const pan = current.panData ?? {};
   const bank = current.bankData ?? {};
   const patch: Record<string, Record<string, unknown>> = {};
 
   if (next.legalName !== (text(company.legalName) || text(company.name))) {
     patch.companyData = { ...company, legalName: next.legalName };
-  }
-  if (next.gstin !== text(gst.gstin)) {
-    patch.gstData = { ...gst, gstin: next.gstin };
-  }
-  if (next.pan !== text(pan.pan)) {
-    patch.panData = { ...pan, pan: next.pan };
   }
   if (
     next.accountHolder !== text(bank.accountHolder) ||

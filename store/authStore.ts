@@ -17,6 +17,8 @@ import { useOnboardingStore } from "@/store/onboardingStore";
 import { useSellerStore } from "@/store/sellerStore";
 import type { AuthState, AuthTokens, User } from "@/types/auth";
 
+/** Demo OTP password bypass removed — production and local use real OTP verify only. */
+
 /** Placeholder until the API's user payload fills these in; never a real tenant. */
 function fallbackUser(email = ""): User {
   return { id: "", email, name: "Seller", role: "SELLER" };

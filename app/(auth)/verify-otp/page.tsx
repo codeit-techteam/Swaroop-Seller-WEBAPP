@@ -135,9 +135,9 @@ export default function VerifyOtpPage() {
               if (result.message) toast(result.message, { icon: "⚠️" });
               else
                 toast.success(
-                  process.env.NODE_ENV !== "production"
-                    ? "OTP resent — use 123456 in development"
-                    : "OTP resent",
+                  process.env.NEXT_PUBLIC_DEMO_OTP === "false"
+                    ? "OTP resent"
+                    : "OTP resent — use 123456 in development",
                 );
             }}
             className="mt-4 text-sm font-medium text-[#1B6EF3] disabled:text-slate-400"

@@ -27,7 +27,11 @@ import {
 import { type LoginFormValues, loginSchema } from "@/lib/schemas/onboarding";
 import { useAuthStore } from "@/store/authStore";
 
-const IS_DEV = process.env.NODE_ENV !== "production";
+/** Show demo credentials while OTP SMS is not production-locked. */
+const SHOW_DEMO_OTP =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_DEMO_OTP === "123456" ||
+  process.env.NEXT_PUBLIC_DEMO_OTP === "true";
 
 const features = [
   {
@@ -55,7 +59,7 @@ export default function SellerLoginPage() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { mobileNumber: IS_DEV ? "8240890242" : "" },
+    defaultValues: { mobileNumber: SHOW_DEMO_OTP ? "8240890242" : "" },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -68,7 +72,7 @@ export default function SellerLoginPage() {
       toast(result.message, { icon: "⚠️" });
     } else {
       toast.success(
-        IS_DEV ? "OTP sent — use 123456 in development" : "OTP sent",
+        SHOW_DEMO_OTP ? "OTP sent — use 123456 in development" : "OTP sent",
       );
     }
     router.push(ROUTES.VERIFY_OTP);
@@ -206,7 +210,7 @@ export default function SellerLoginPage() {
                 Sign in
               </Button>
             </form>
-            {IS_DEV ? (
+            {SHOW_DEMO_OTP ? (
               <p className="mt-4 text-xs text-slate-400">
                 Dev login:{" "}
                 <span className="font-semibold text-slate-600">Karan Veer</span>{" "}

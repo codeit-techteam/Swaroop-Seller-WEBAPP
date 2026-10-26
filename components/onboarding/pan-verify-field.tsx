@@ -11,6 +11,7 @@ import {
   type KycVerificationDetails,
   type KycVerificationResult,
   verificationApiError,
+  verifiedByLine,
   verifySellerPan,
 } from "@/services/seller-kyc-verification";
 import type { VerificationStatus } from "@/types/onboarding";
@@ -30,6 +31,7 @@ type PanVerifyFieldProps = {
   status: VerificationStatus;
   details?: KycVerificationDetails;
   message?: string;
+  verification?: KycVerificationResult | null;
   locked?: boolean;
   onChange: (pan: string) => void;
   onResult: (result: KycVerificationResult, pan: string) => void;
@@ -49,6 +51,7 @@ export function PanVerifyField({
   status,
   details,
   message,
+  verification = null,
   locked = false,
   onChange,
   onResult,
@@ -61,6 +64,8 @@ export function PanVerifyField({
   const accepted = status === "verified" || status === "pending";
   const inputLocked = locked || accepted;
   const displayStatus: VerificationStatus = verifying ? "loading" : status;
+  const providerLine =
+    status === "verified" && verification ? verifiedByLine(verification) : null;
 
   const handleVerify = async () => {
     const pan = value.trim().toUpperCase();
@@ -173,7 +178,12 @@ export function PanVerifyField({
               </span>
             </p>
           ) : null}
+          {providerLine ? (
+            <p className="text-slate-500">{providerLine}</p>
+          ) : null}
         </div>
+      ) : status === "verified" && providerLine ? (
+        <p className="text-xs text-slate-500">{providerLine}</p>
       ) : null}
       {status === "pending" ? (
         <p className="text-xs text-amber-700">

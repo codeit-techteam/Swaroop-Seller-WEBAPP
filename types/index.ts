@@ -1,4 +1,12 @@
-export type { AnalyticsSummary } from "./analytics";
+export type {
+  AnalyticsActivity,
+  AnalyticsSummary,
+  OrderBreakdownItem,
+  RevenueFilterPeriod,
+  SellerAnalyticsSnapshot,
+  TopSellingProduct,
+  WarehouseAnalytics,
+} from "./analytics";
 export type { AuthState, AuthTokens, User, UserRole } from "./auth";
 export type {
   ApiErrorResponse,

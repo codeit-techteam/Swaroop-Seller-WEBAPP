@@ -104,7 +104,7 @@ export const ROUTES = {
   PRICE_REVISIONS: "/price-revisions",
   OFFER_REVIEW: "/offers",
   OFFER_REVIEW_STATUS: "/offers",
-  ANALYTICS: "/dashboard",
+  ANALYTICS: "/analytics",
   REPORTS: "/dashboard",
   PERFORMANCE_DASHBOARD: "/dashboard",
   CUSTOMERS: "/dashboard",

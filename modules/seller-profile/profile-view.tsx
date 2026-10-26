@@ -17,6 +17,7 @@ import { useSellerStore } from "@/store/sellerStore";
 
 export function SellerProfileView() {
   const seller = useSellerStore((s) => s.seller);
+  const account = useSellerStore((s) => s.account);
   const managers = useSellerStore((s) => s.accountManagers);
   const managersLoaded = useSellerStore((s) => s.accountLoaded);
   const syncFromApi = useSellerStore((s) => s.syncFromApi);
@@ -53,13 +54,39 @@ export function SellerProfileView() {
             ["Payment terms", seller.paymentTerms],
             ["Offer validity", `${seller.offerValidityHours} hours`],
             ["Volume sold last month", formatMt(seller.volumeSoldLastMonthMt)],
-            ["GST", seller.gst],
-            ["PAN", seller.pan],
             ["Contact", seller.contactPerson],
           ]}
         />
         <Button className="mt-3" variant="outline" asChild>
           <Link href={ROUTES.PROFILE_COMPANY}>Edit company details</Link>
+        </Button>
+      </Section>
+
+      <Section title="GST Information">
+        <p className="mb-3 text-xs text-slate-500">
+          Tax registration and compliance details.
+        </p>
+        <Grid
+          rows={[
+            ["GSTIN", account?.gstin ?? seller.gst],
+            ["GST state", account?.gstState ?? "—"],
+            [
+              "GST verification",
+              account?.gstVerified ? "Verified" : "Pending verification",
+            ],
+            ["PAN", account?.pan ?? seller.pan],
+            [
+              "PAN verification",
+              account?.panVerified ? "Verified" : "Pending verification",
+            ],
+          ]}
+        />
+        <p className="mt-3 text-xs text-slate-500">
+          Verified GST and PAN are locked. Contact PetroTrade support to request
+          re-verification.
+        </p>
+        <Button className="mt-3" variant="outline" asChild>
+          <Link href={ROUTES.VERIFICATION}>Open verification</Link>
         </Button>
       </Section>
 

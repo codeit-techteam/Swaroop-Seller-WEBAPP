@@ -36,11 +36,15 @@ export type KycVerificationResult = {
   id: string;
   type: "PAN" | "GST";
   status: KycVerificationApiStatus;
+  method?: "PROVIDER" | "MANUAL" | null;
   identifierMasked: string;
+  provider?: string | null;
+  providerReference?: string | null;
   details: KycVerificationDetails;
   failureCode: string | null;
   message: string;
   verifiedAt: string | null;
+  reviewedAt?: string | null;
   createdAt: string;
   mismatch?: boolean;
   warning?: string | null;
@@ -48,6 +52,17 @@ export type KycVerificationResult = {
 
 export type SellerIdentityStatus = {
   status: string;
+  sellerStatus?: string | null;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  rejectedReason?: string | null;
+  changeRequest?: {
+    reason: string;
+    documentIds: string[];
+    slots: string[];
+    requestedAt: string;
+  } | null;
+  canResubmit?: boolean;
   locked: boolean;
   verifications: {
     pan: KycVerificationResult | null;
@@ -56,6 +71,33 @@ export type SellerIdentityStatus = {
   };
   verificationBlockers: string[];
 };
+
+/** Who confirmed a VERIFIED result — mirrors Customer Web KYC copy. */
+export function verifiedByLine(
+  verification: Pick<
+    KycVerificationResult,
+    "status" | "method" | "provider" | "verifiedAt" | "reviewedAt"
+  >,
+): string | null {
+  if (verification.status !== "VERIFIED") return null;
+  const at = verification.reviewedAt ?? verification.verifiedAt;
+  const when = at
+    ? new Date(at).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+  const by =
+    verification.method === "MANUAL"
+      ? "Verified by the PetroTrade compliance team"
+      : verification.provider === "surepass"
+        ? "Verified via Surepass"
+        : "Verified";
+  return when ? `${by} · ${when}` : by;
+}
 
 export type SellerOnboardingIdentity = {
   gstin: string | null;

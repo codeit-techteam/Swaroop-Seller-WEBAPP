@@ -152,6 +152,8 @@ export function useSellerIdentityVerification() {
     locked: identity?.locked ?? false,
     mismatch: identity?.verifications.mismatch ?? false,
     blockers: identity?.verificationBlockers ?? [],
+    gstVerification: identity?.verifications.gst ?? null,
+    panVerification: identity?.verifications.pan ?? null,
     applyGstResult,
     applyPanResult,
     editGst,
