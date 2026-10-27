@@ -26,7 +26,8 @@ function normalizeBulkPrices(
   if (rows?.length) {
     return rows.map((row) => ({
       minQty: Number(row.minQty) || moq,
-      maxQty: row.maxQty == null || row.maxQty === 0 ? null : Number(row.maxQty),
+      maxQty:
+        row.maxQty == null || row.maxQty === 0 ? null : Number(row.maxQty),
       price: Number(row.price) || sellingPrice,
     }));
   }
@@ -79,13 +80,12 @@ export const catalogService = {
       creditEligible: true,
       highlights: input.highlights ??
         existing?.highlights ?? [
-          "PetroTrade Verified",
+          "PolyStoreX Verified",
           "GST Invoice Available",
           "Fast Dispatch",
           "Quality Certified",
         ],
-      qualityBadges:
-        input.qualityBadges ??
+      qualityBadges: input.qualityBadges ??
         existing?.qualityBadges ?? [...DEFAULT_QUALITY_BADGES],
       deliveryAvailable:
         input.deliveryAvailable ?? existing?.deliveryAvailable ?? true,

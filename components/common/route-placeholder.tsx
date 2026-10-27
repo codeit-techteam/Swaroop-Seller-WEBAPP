@@ -13,8 +13,8 @@ export function createRouteMetadata(
   description?: string,
 ): Metadata {
   return {
-    title: `${title} | PetroTrade Seller`,
-    description: description ?? `${title} for PetroTrade Seller Portal`,
+    title: `${title} | PolyStoreX Seller`,
+    description: description ?? `${title} for PolyStoreX Seller Portal`,
   };
 }
 

@@ -178,7 +178,7 @@ function StatusBanner({ status }: { status: SellerVerificationStatus }) {
       <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
         <p className="flex items-center gap-2 font-semibold">
           <MessageSquareWarning className="h-4 w-4" />
-          PetroTrade requested changes to your verification
+          PolyStoreX requested changes to your verification
         </p>
         <p className="mt-2 whitespace-pre-line text-sm">
           {status.changeRequest.reason}
@@ -223,7 +223,7 @@ function StatusBanner({ status }: { status: SellerVerificationStatus }) {
         {status.submittedAt
           ? new Date(status.submittedAt).toLocaleString()
           : "submission"}
-        . You can only replace documents the PetroTrade team rejects.
+        . You can only replace documents the PolyStoreX team rejects.
       </div>
     );
   }
@@ -296,7 +296,7 @@ function GstInformationCard({
         ))}
       </dl>
       <p className="text-xs text-slate-500">
-        Verified GST and PAN are locked. Contact PetroTrade support to request
+        Verified GST and PAN are locked. Contact PolyStoreX support to request
         re-verification.
       </p>
     </section>
@@ -624,7 +624,7 @@ export function SellerVerificationView() {
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           GST and PAN are verified via Surepass. Documents are reviewed by the
-          PetroTrade compliance team.
+          PolyStoreX compliance team.
         </p>
       </div>
 

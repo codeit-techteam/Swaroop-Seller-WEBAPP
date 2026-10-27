@@ -275,7 +275,7 @@ export function PriceRevisionView() {
           if (!open) closeDialog();
         }}
         title="Submit Counter Offer"
-        description="Your counter offer will be sent to PetroTrade Admin for review. You cannot directly change live marketplace pricing."
+        description="Your counter offer will be sent to PolyStoreX Admin for review. You cannot directly change live marketplace pricing."
         confirmLabel="Submit Counter"
         onConfirm={handleCounterConfirm}
       />

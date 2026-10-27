@@ -59,7 +59,7 @@ export function VerificationBanner() {
         <span className="font-semibold">
           {rejected
             ? "Verification rejected."
-            : "PetroTrade requested changes to your verification."}
+            : "PolyStoreX requested changes to your verification."}
         </span>{" "}
         {reason ? <span className="line-clamp-1">{reason}</span> : null}
       </p>

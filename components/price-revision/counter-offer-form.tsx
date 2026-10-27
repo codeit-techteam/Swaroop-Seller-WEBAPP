@@ -158,7 +158,7 @@ export function CounterOfferForm({
         <Textarea
           id="remarks"
           rows={3}
-          placeholder="Message to PetroTrade admin..."
+          placeholder="Message to PolyStoreX admin..."
           disabled={disabled}
           {...register("remarks", {
             onChange: (e) => onChange({ remarks: e.target.value }),

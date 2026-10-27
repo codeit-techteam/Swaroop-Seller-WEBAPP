@@ -54,7 +54,7 @@ function locationsApiError(error: unknown, fallback: string): Error {
   if (isAxiosError<{ message?: string | string[] }>(error)) {
     if (!error.response) {
       return new Error(
-        "Unable to reach PetroTrade API. Confirm the backend is running.",
+        "Unable to reach PolyStoreX API. Confirm the backend is running.",
       );
     }
     const message = error.response.data?.message;

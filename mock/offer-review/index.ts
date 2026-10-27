@@ -232,7 +232,7 @@ function buildAdminFeedback(status: OfferReviewStatus): AdminFeedback | null {
     return {
       title: "Review In Progress",
       message:
-        "Your offer is currently under review by the PetroTrade compliance team. Expected turnaround: 1-2 business days.",
+        "Your offer is currently under review by the PolyStoreX compliance team. Expected turnaround: 1-2 business days.",
       type: "info",
     };
   }

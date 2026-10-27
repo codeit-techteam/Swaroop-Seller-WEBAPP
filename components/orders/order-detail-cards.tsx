@@ -210,7 +210,7 @@ export function PaymentRiskCard({ order, className }: PaymentRiskCardProps) {
             Settlement
           </p>
           <p className="mt-0.5 text-sm font-semibold text-sky-900">
-            Managed by PetroTrade
+            Managed by PolyStoreX
           </p>
         </div>
         <div className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-3">

@@ -42,6 +42,7 @@ import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/constants";
 import { formatMt, formatPricePerKg, hoursLeft } from "@/lib/seller/format";
 import { formatDateTime } from "@/lib/utils";
+import { apiErrorMessage } from "@/lib/utils/api-error";
 import { useLocationStore } from "@/store/locationStore";
 import { useSellerOfferStore } from "@/store/sellerOfferStore";
 import { useSellerStore } from "@/store/sellerStore";
@@ -132,9 +133,7 @@ export function SellerOffersView() {
       closeConfirm();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to update offer. Please try again.",
+        apiErrorMessage(error, "Unable to update offer. Please try again."),
       );
     } finally {
       setMutating(false);

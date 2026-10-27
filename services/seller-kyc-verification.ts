@@ -92,7 +92,7 @@ export function verifiedByLine(
     : null;
   const by =
     verification.method === "MANUAL"
-      ? "Verified by the PetroTrade compliance team"
+      ? "Verified by the PolyStoreX compliance team"
       : verification.provider === "surepass"
         ? "Verified via Surepass"
         : "Verified";

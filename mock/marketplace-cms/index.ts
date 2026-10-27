@@ -43,9 +43,9 @@ export const DEFAULT_PAYMENT_TERMS: CatalogPaymentTerm[] = [
   },
   {
     id: "credit_15",
-    title: "Credit — PetroTrade Managed",
+    title: "Credit — PolyStoreX Managed",
     description:
-      "Customer credit eligibility, tenure, and charges are determined by PetroTrade.",
+      "Customer credit eligibility, tenure, and charges are determined by PolyStoreX.",
     enabled: true,
   },
 ];
@@ -188,7 +188,7 @@ export const catalogProductsMock: CatalogProduct[] = [
     etaLabel: "2–3 Days",
     creditEligible: true,
     highlights: [
-      "PetroTrade Verified",
+      "PolyStoreX Verified",
       "GST Invoice Available",
       "Fast Dispatch",
       "Credit Eligible",
@@ -261,7 +261,7 @@ export const catalogProductsMock: CatalogProduct[] = [
     etaLabel: "3–5 Days",
     creditEligible: true,
     highlights: [
-      "PetroTrade Verified",
+      "PolyStoreX Verified",
       "GST Invoice Available",
       "Fast Dispatch",
       "Credit Eligible",
@@ -324,7 +324,7 @@ export const catalogProductsMock: CatalogProduct[] = [
     etaLabel: "2–4 Days",
     creditEligible: true,
     highlights: [
-      "PetroTrade Verified",
+      "PolyStoreX Verified",
       "GST Invoice Available",
       "Fast Dispatch",
       "Credit Eligible",
@@ -382,7 +382,7 @@ export const catalogProductsMock: CatalogProduct[] = [
     etaLabel: "4–6 Days",
     creditEligible: true,
     highlights: [
-      "PetroTrade Verified",
+      "PolyStoreX Verified",
       "GST Invoice Available",
       "Fast Dispatch",
       "Credit Eligible",
@@ -390,9 +390,7 @@ export const catalogProductsMock: CatalogProduct[] = [
     ],
     qualityBadges: [...DEFAULT_QUALITY_BADGES],
     deliveryAvailable: true,
-    specifications: [
-      { label: "K Value", value: "67", standard: "ISO 1628" },
-    ],
+    specifications: [{ label: "K Value", value: "67", standard: "ISO 1628" }],
     sellingPrice: 78_600,
     marketPrice: 79_200,
     internalCost: 72_400,
@@ -437,7 +435,7 @@ export const catalogProductsMock: CatalogProduct[] = [
     etaLabel: "3–5 Days",
     creditEligible: true,
     highlights: [
-      "PetroTrade Verified",
+      "PolyStoreX Verified",
       "GST Invoice Available",
       "Fast Dispatch",
       "Credit Eligible",
@@ -495,7 +493,7 @@ export const catalogProductsMock: CatalogProduct[] = [
     etaLabel: "2–4 Days",
     creditEligible: false,
     highlights: [
-      "PetroTrade Verified",
+      "PolyStoreX Verified",
       "GST Invoice Available",
       "Fast Dispatch",
       "Advance Preferred",

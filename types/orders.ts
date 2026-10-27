@@ -335,8 +335,8 @@ export const ORDER_VALUE_RANGES: OrderValueRange[] = [
 
 export const PAYMENT_TERM_LABELS: Record<PaymentTerm, string> = {
   advance: "100% Advance",
-  credit_15: "Credit — PetroTrade Managed",
-  credit_30: "Credit — PetroTrade Managed",
+  credit_15: "Credit — PolyStoreX Managed",
+  credit_30: "Credit — PolyStoreX Managed",
   on_delivery: "On Delivery",
 };
 
@@ -439,7 +439,10 @@ export function getNextFlowAction(order: Order): {
     };
   }
   if (order.status === "processing" || order.status === "delayed") {
-    if (!isPaymentClearedForDispatch(order) && order.paymentTerm === "advance") {
+    if (
+      !isPaymentClearedForDispatch(order) &&
+      order.paymentTerm === "advance"
+    ) {
       return {
         action: "verify_payment",
         label: "Verify Payment",

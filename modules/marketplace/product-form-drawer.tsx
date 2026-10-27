@@ -324,10 +324,13 @@ function CurrencyInput({
   id,
   registration,
   placeholder,
+  min = 0,
 }: {
   id: string;
   registration: ReturnType<ReturnType<typeof useForm<FormValues>>["register"]>;
   placeholder: string;
+  /** Selling price must be > 0; optional cost fields may stay at 0. */
+  min?: number;
 }) {
   return (
     <div className="relative">
@@ -337,8 +340,9 @@ function CurrencyInput({
       <Input
         id={id}
         type="number"
-        min={0}
+        min={min}
         step="0.01"
+        inputMode="decimal"
         placeholder={placeholder}
         className="h-10 bg-white pl-7"
         {...registration}
@@ -379,8 +383,9 @@ function emptyForm(categories: CatalogCategory[]): FormValues {
     specifications: [{ label: "", value: "", standard: "" }],
     bulkPrices: [
       {
-        minQty: 25,
-        maxQty: "" as unknown as number,
+        // S-05: closed 1–10 default — never seed maxQty 0 / empty that renders "1-0 MT".
+        minQty: 1,
+        maxQty: 10,
         price: undefined as unknown as number,
       },
     ],
@@ -435,8 +440,8 @@ function productToForm(product: CatalogProduct): FormValues {
         }))
       : [
           {
-            minQty: product.moq,
-            maxQty: "" as unknown as number,
+            minQty: 1,
+            maxQty: product.moq && product.moq > 1 ? product.moq : 10,
             price: product.sellingPrice,
           },
         ],
@@ -494,7 +499,7 @@ function buildProductPayload(
     transportMode: values.transportMode || "Road Freight (FTL)",
     creditEligible: true,
     highlights: product?.highlights ?? [
-      "PetroTrade Verified",
+      "PolyStoreX Verified",
       "GST Invoice Available",
       "Fast Dispatch",
       "Quality Certified",
@@ -508,16 +513,24 @@ function buildProductPayload(
     specifications: values.specifications.filter(
       (row) => row.label.trim() && row.value.trim(),
     ),
-    bulkPrices: values.bulkPrices.map((tier) => ({
-      minQty: toFiniteNumber(tier.minQty, toFiniteNumber(values.moq, 25)),
-      maxQty:
-        tier.maxQty === "" ||
-        tier.maxQty == null ||
-        Number.isNaN(Number(tier.maxQty))
-          ? null
-          : Number(tier.maxQty),
-      price: toFiniteNumber(tier.price, toFiniteNumber(values.sellingPrice, 0)),
-    })),
+    bulkPrices: values.bulkPrices.map((tier) => {
+      const maxN = Number(tier.maxQty);
+      return {
+        minQty: toFiniteNumber(tier.minQty, toFiniteNumber(values.moq, 25)),
+        // Open-ended / invalid max must stay null — 0 rendered as "1-0 MT" (S-05).
+        maxQty:
+          tier.maxQty === "" ||
+          tier.maxQty == null ||
+          Number.isNaN(maxN) ||
+          maxN <= 0
+            ? null
+            : maxN,
+        price: toFiniteNumber(
+          tier.price,
+          toFiniteNumber(values.sellingPrice, 0),
+        ),
+      };
+    }),
     paymentTerms: values.paymentTerms,
     documents: values.documents.filter(
       (doc) => doc.name.trim() && doc.fileName.trim(),
@@ -1235,11 +1248,11 @@ export function ProductFormDrawer({
                 </Field>
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-4 sm:col-span-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">
-                    Credit — Managed by PetroTrade
+                    Credit — Managed by PolyStoreX
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500">
                     Customer credit eligibility and payment terms are determined
-                    by PetroTrade. Seller credit configuration is not required.
+                    by PolyStoreX. Seller credit configuration is not required.
                   </p>
                 </div>
               </div>
@@ -1433,6 +1446,7 @@ export function ProductFormDrawer({
                   <CurrencyInput
                     id="product-selling-price"
                     placeholder="e.g. 98500"
+                    min={0.01}
                     registration={form.register("sellingPrice")}
                   />
                 </Field>
@@ -1541,13 +1555,20 @@ export function ProductFormDrawer({
                 variant="outline"
                 size="sm"
                 className="gap-1.5"
-                onClick={() =>
+                onClick={() => {
+                  const rows = form.getValues("bulkPrices") ?? [];
+                  const last = rows[rows.length - 1];
+                  const lastMax = Number(last?.maxQty);
+                  const nextMin =
+                    Number.isFinite(lastMax) && lastMax > 0
+                      ? lastMax
+                      : Number(form.getValues("moq")) || 25;
                   bulkArray.append({
-                    minQty: Number(form.getValues("moq")) || 25,
+                    minQty: nextMin,
                     maxQty: "" as unknown as number,
                     price: Number(form.getValues("sellingPrice")) || 0,
-                  })
-                }
+                  });
+                }}
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add tier
@@ -1556,12 +1577,13 @@ export function ProductFormDrawer({
 
             <Section
               title="Payment options"
-              description="Cash terms can be offered on this listing. Credit is always managed by PetroTrade."
+              description="Cash terms can be offered on this listing. Credit is always managed by PolyStoreX."
               icon={<Tag className="h-4 w-4" />}
             >
               <div className="space-y-2.5">
                 {paymentTerms.map((term, index) => {
-                  const isCredit = term.id === "credit_15" || term.id === "credit_30";
+                  const isCredit =
+                    term.id === "credit_15" || term.id === "credit_30";
                   return (
                     <div
                       key={term.id}
@@ -1569,11 +1591,13 @@ export function ProductFormDrawer({
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-800">
-                          {isCredit ? "Credit — PetroTrade Managed" : term.title}
+                          {isCredit
+                            ? "Credit — PolyStoreX Managed"
+                            : term.title}
                         </p>
                         <p className="mt-0.5 text-xs text-slate-500">
                           {isCredit
-                            ? "Customer credit eligibility, tenure, and charges are determined by PetroTrade."
+                            ? "Customer credit eligibility, tenure, and charges are determined by PolyStoreX."
                             : term.description}
                         </p>
                       </div>
@@ -1585,7 +1609,10 @@ export function ProductFormDrawer({
                         <Switch
                           checked={term.enabled}
                           onCheckedChange={(checked) =>
-                            form.setValue(`paymentTerms.${index}.enabled`, checked)
+                            form.setValue(
+                              `paymentTerms.${index}.enabled`,
+                              checked,
+                            )
                           }
                         />
                       )}

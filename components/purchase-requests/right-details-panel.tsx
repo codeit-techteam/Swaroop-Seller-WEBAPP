@@ -98,7 +98,7 @@ export function RightDetailsPanel({
                 {request.productName}
               </h2>
               <p className="mt-1 text-sm text-slate-300">
-                Request from PetroTrade Procurement Team
+                Request from PolyStoreX Procurement Team
               </p>
             </div>
 

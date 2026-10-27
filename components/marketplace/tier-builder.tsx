@@ -25,10 +25,18 @@ interface PricingTierCardProps {
 }
 
 function formatTierRange(tier: PricingTier): string {
-  if (tier.maxQty === null) {
-    return `${tier.minQty}+ MT`;
+  const min = Number(tier.minQty);
+  const minLabel =
+    Number.isFinite(min) && min > 0 ? String(Math.trunc(min)) : "1";
+  // Treat null / 0 / negative as open-ended — never show "1-0 MT" (S-05).
+  if (tier.maxQty == null || Number(tier.maxQty) <= 0) {
+    return `${minLabel}+ MT`;
   }
-  return `${tier.minQty}-${tier.maxQty} MT`;
+  const max = Number(tier.maxQty);
+  if (!Number.isFinite(max) || max < Number(minLabel)) {
+    return `${minLabel}+ MT`;
+  }
+  return `${minLabel}-${Math.trunc(max)} MT`;
 }
 
 export function PricingTierCard({

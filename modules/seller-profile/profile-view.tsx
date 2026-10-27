@@ -82,7 +82,7 @@ export function SellerProfileView() {
           ]}
         />
         <p className="mt-3 text-xs text-slate-500">
-          Verified GST and PAN are locked. Contact PetroTrade support to request
+          Verified GST and PAN are locked. Contact PolyStoreX support to request
           re-verification.
         </p>
         <Button className="mt-3" variant="outline" asChild>

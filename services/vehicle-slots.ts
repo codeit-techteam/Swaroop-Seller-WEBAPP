@@ -159,7 +159,7 @@ export function vehicleSlotApiError(error: unknown, fallback: string): string {
       return "Please check the booking details and try again.";
     }
     if (!error.response) {
-      return "Unable to reach PetroTrade API. Confirm the backend is running.";
+      return "Unable to reach PolyStoreX API. Confirm the backend is running.";
     }
     if (
       typeof message === "string" &&

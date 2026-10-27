@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDown, LogOut, Package, PanelLeft } from "lucide-react";
+import { ChevronDown, LogOut, PanelLeft } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -95,12 +96,17 @@ export function Sidebar({ collapsed }: SidebarProps) {
     >
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-3">
         <Link href={ROUTES.DASHBOARD} className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#0B1F3A] text-white">
-            <Package className="h-4 w-4" />
-          </div>
+          <Image
+            src="/brand/polystorex-logo.png"
+            alt="PolyStoreX"
+            width={32}
+            height={32}
+            className="h-8 w-8 object-contain"
+            priority
+          />
           {!isCollapsed ? (
-            <p className="text-sm font-bold tracking-tight text-[#0B1F3A]">
-              PetroTrade
+            <p className="text-sm font-bold tracking-tight text-[#00338D]">
+              PolyStoreX
             </p>
           ) : null}
         </Link>
@@ -300,7 +306,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
               Confirm Logout
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center">
-              Log out of PetroTrade Seller Portal? You can sign back in with
+              Log out of PolyStoreX Seller Portal? You can sign back in with
               your mobile number.
             </AlertDialogDescription>
           </AlertDialogHeader>

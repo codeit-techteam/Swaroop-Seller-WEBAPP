@@ -141,7 +141,7 @@ export function PurchaseRequestsView() {
             Purchase Request Inbox
           </h1>
           <p className="max-w-2xl text-sm text-slate-500">
-            Manage incoming material enquiries allocated by PetroTrade
+            Manage incoming material enquiries allocated by PolyStoreX
             Procurement.
           </p>
         </div>

@@ -158,7 +158,7 @@ export function MarketplaceOffersView() {
             minQty: Number(minQty) || 1,
             startDate: new Date().toISOString().slice(0, 10),
             endDate: "2026-12-31",
-            terms: terms || "Standard PetroTrade promotion terms.",
+            terms: terms || "Standard PolyStoreX promotion terms.",
             bannerImage:
               products.find((item) => item.id === productId)?.images[0] ?? "",
             status,

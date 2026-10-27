@@ -204,7 +204,7 @@ function buildRequest(index: number): PriceRevisionRequest {
       priceMin,
       priceMax,
       explanation:
-        "Based on global indices and regional benchmark movement, PetroTrade recommends adjusting offer pricing to remain competitive while preserving margin integrity.",
+        "Based on global indices and regional benchmark movement, PolyStoreX recommends adjusting offer pricing to remain competitive while preserving margin integrity.",
       factors: [
         "Market demand softening in domestic segment",
         "Supply surplus from new plant capacity",

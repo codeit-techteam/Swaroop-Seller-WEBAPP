@@ -45,7 +45,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { offerFormSchema } from "@/lib/schemas/marketplace";
-import { PETROTRADE_CREDIT_NOTE } from "@/lib/seller/payment";
+import { POLYSTOREX_CREDIT_NOTE } from "@/lib/seller/payment";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { useLocationStore } from "@/store/locationStore";
 import { useOfferStore } from "@/store/offerStore";
@@ -589,7 +589,7 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
               <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Payment Terms
               </Label>
-              <p className="text-xs text-slate-500">{PETROTRADE_CREDIT_NOTE}</p>
+              <p className="text-xs text-slate-500">{POLYSTOREX_CREDIT_NOTE}</p>
               <div className="flex flex-wrap gap-2">
                 {paymentOptions.map((option) => {
                   const selected =

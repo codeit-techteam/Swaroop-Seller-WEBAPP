@@ -9,7 +9,7 @@ import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
 import { availableToSell, formatMt } from "@/lib/seller/format";
-import { getSellingPrice, PETROTRADE_CREDIT_NOTE } from "@/lib/seller/payment";
+import { getSellingPrice, POLYSTOREX_CREDIT_NOTE } from "@/lib/seller/payment";
 import { useSellerOfferStore } from "@/store/sellerOfferStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 
@@ -56,7 +56,9 @@ export function ProductDetailView() {
           ["Warehouse", product.warehouse || "—"],
           [
             "Selling Price",
-            getSellingPrice(product) > 0 ? `₹${getSellingPrice(product)}/MT` : "—",
+            getSellingPrice(product) > 0
+              ? `₹${getSellingPrice(product)}/MT`
+              : "—",
           ],
         ].map(([label, value]) => (
           <div
@@ -85,7 +87,7 @@ export function ProductDetailView() {
         <h2 className="mb-3 font-semibold">Commercial</h2>
         <p className="text-sm text-slate-600">
           Selling price ₹{getSellingPrice(product) || "—"}/MT. Payment is
-          platform-managed. {PETROTRADE_CREDIT_NOTE}
+          platform-managed. {POLYSTOREX_CREDIT_NOTE}
         </p>
       </section>
       {(product.bulkPricing?.length ?? 0) > 0 ? (
@@ -98,8 +100,9 @@ export function ProductDetailView() {
                 className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2 text-sm"
               >
                 <span>
-                  {tier.minQty}
-                  {tier.maxQty == null ? "+" : `-${tier.maxQty}`} MT
+                  {tier.maxQty == null || Number(tier.maxQty) <= 0
+                    ? `${tier.minQty}+ MT`
+                    : `${tier.minQty}-${tier.maxQty} MT`}
                   {tier.discountLabel ? ` · ${tier.discountLabel}` : ""}
                 </span>
                 <span className="font-medium">₹{tier.price}/MT</span>

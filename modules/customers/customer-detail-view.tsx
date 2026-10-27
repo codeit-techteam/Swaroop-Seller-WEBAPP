@@ -151,7 +151,7 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
             onClick={async () => {
               await sendNotification({
                 title: "Account notification",
-                message: `${customer.name}, your PetroTrade account has an update.`,
+                message: `${customer.name}, your PolyStoreX account has an update.`,
                 cta: "Open account",
                 targetScreen: "/profile",
                 channels: ["PUSH", "IN_APP"],
@@ -331,7 +331,11 @@ export function CustomerDetailView({ customerId }: { customerId: string }) {
             ])}
           />
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => setDocsOpen(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDocsOpen(true)}
+            >
               View documents
             </Button>
             <Button

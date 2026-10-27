@@ -69,7 +69,7 @@ export default function VerifyOtpPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
               <Package className="h-5 w-5" />
             </div>
-            <span className="text-lg font-semibold">PetroTrade Seller</span>
+            <span className="text-lg font-semibold">PolyStoreX Seller</span>
           </div>
           <div className="my-auto">
             <h1 className="text-3xl font-bold">Verify your number</h1>

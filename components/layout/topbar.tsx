@@ -36,8 +36,8 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
         <span className="sr-only">Toggle menu</span>
       </Button>
 
-      <p className="hidden shrink-0 text-sm font-bold text-[#0B1F3A] md:block">
-        PetroTrade
+      <p className="hidden shrink-0 text-sm font-bold text-[#00338D] md:block">
+        PolyStoreX
       </p>
 
       <SellerGlobalSearch />

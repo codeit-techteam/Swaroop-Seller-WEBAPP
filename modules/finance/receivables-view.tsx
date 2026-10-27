@@ -65,11 +65,7 @@ function CollectionTrack({ row }: { row: ReceivableRecord }) {
 export function ReceivablesView() {
   const receivables = useFinanceStore((s) => s.receivables);
   const searchFields = useMemo(
-    () => (row: ReceivableRecord) => [
-      row.invoiceId,
-      row.customer,
-      row.status,
-    ],
+    () => (row: ReceivableRecord) => [row.invoiceId, row.customer, row.status],
     [],
   );
   const table = useClientTable({ rows: receivables, searchFields });
@@ -105,7 +101,7 @@ export function ReceivablesView() {
     <OperationsShell
       className="space-y-6 py-6"
       title="Receivables"
-      subtitle="Track PetroTrade settlement status for fulfilled orders. Customer credit collection is managed by PetroTrade."
+      subtitle="Track PolyStoreX settlement status for fulfilled orders. Customer credit collection is managed by PolyStoreX."
       kpis={[
         {
           title: "Total Receivables",

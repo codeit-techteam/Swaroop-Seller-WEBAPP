@@ -442,7 +442,7 @@ export function AddGradeView() {
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 Enter the commercial selling price for this listing. Credit
-                payments are managed by PetroTrade. Seller credit configuration
+                payments are managed by PolyStoreX. Seller credit configuration
                 is not required.
               </p>
             </div>
@@ -460,10 +460,25 @@ export function AddGradeView() {
                         </span>
                         <Input
                           type="number"
-                          min={0}
+                          min={0.01}
                           step="0.01"
+                          inputMode="decimal"
                           className="pl-7"
-                          {...field}
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(event) => {
+                            const next = event.target.value;
+                            if (next === "") {
+                              field.onChange(0);
+                              return;
+                            }
+                            const parsed = Number(next);
+                            field.onChange(
+                              Number.isFinite(parsed) ? parsed : 0,
+                            );
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </div>
                     </FormControl>

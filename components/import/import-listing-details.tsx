@@ -6,8 +6,10 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   formatDate,
+  formatImportMissingSummary,
   formatPrice,
   formatQty,
+  importDraftCompleteness,
   importLabel,
   listingTitle,
   portLabel,
@@ -250,6 +252,7 @@ export function ImportListingRow({
   fetchedAt: number;
   showCounterparty?: boolean;
 }) {
+  const draft = importDraftCompleteness(l);
   return (
     <Link
       href={href}
@@ -265,7 +268,7 @@ export function ImportListingRow({
             {listingTitle(l)}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {l.status !== "DRAFT" ? (
             <ImportValidity
               validUntil={l.validity.validUntil}
@@ -274,6 +277,15 @@ export function ImportListingRow({
             />
           ) : null}
           <ImportStatusBadge status={l.status} />
+          {draft.incomplete ? (
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+              Incomplete
+            </span>
+          ) : l.status === "DRAFT" && l.completeness?.canPublish ? (
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+              Ready to publish
+            </span>
+          ) : null}
         </div>
       </div>
       <div className="mt-2 grid gap-x-6 gap-y-1 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-4">
@@ -301,6 +313,11 @@ export function ImportListingRow({
             : "—"}
         </span>
       </div>
+      {draft.incomplete && draft.missingLabels.length ? (
+        <p className="mt-2 text-xs text-amber-800">
+          Missing: {formatImportMissingSummary(draft.missingLabels)}
+        </p>
+      ) : null}
     </Link>
   );
 }

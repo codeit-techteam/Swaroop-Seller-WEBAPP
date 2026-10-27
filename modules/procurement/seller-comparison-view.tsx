@@ -5,7 +5,11 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 
 import { EmptyState } from "@/components/common";
-import { OperationsShell, OpsStatusBadge, OpsTable } from "@/components/operations";
+import {
+  OperationsShell,
+  OpsStatusBadge,
+  OpsTable,
+} from "@/components/operations";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -29,7 +33,9 @@ export function SellerComparisonView() {
   const { isSeller, allItems } = useWorkbench();
   const selectSeller = useProcurementStore((s) => s.selectSeller);
   const startNegotiation = useProcurementStore((s) => s.startNegotiation);
-  const prs = allItems.filter((item) => item.type === "PR" && item.offers.length);
+  const prs = allItems.filter(
+    (item) => item.type === "PR" && item.offers.length,
+  );
   const selectedId = params.get("pr") ?? prs[0]?.requestId ?? "";
   const item = findProcurementItem(allItems, selectedId);
   const [sort, setSort] = useState<SortKey>("price");
@@ -41,12 +47,14 @@ export function SellerComparisonView() {
     .filter((offer) => compliance === "ALL" || offer.compliance === compliance)
     .filter((offer) => {
       if (!item || availability === "ALL") return true;
-      if (availability === "FULL") return (offer.availableQty ?? offer.quantity) >= item.quantityMt;
+      if (availability === "FULL")
+        return (offer.availableQty ?? offer.quantity) >= item.quantityMt;
       return (offer.availableQty ?? offer.quantity) < item.quantityMt;
     })
     .sort((a, b) => {
       if (sort === "price") return a.unitPrice - b.unitPrice;
-      if (sort === "delivery") return (a.deliveryDays ?? 99) - (b.deliveryDays ?? 99);
+      if (sort === "delivery")
+        return (a.deliveryDays ?? 99) - (b.deliveryDays ?? 99);
       return (b.rating ?? 0) - (a.rating ?? 0);
     });
 
@@ -55,7 +63,7 @@ export function SellerComparisonView() {
       <OperationsShell title="Seller Comparison" subtitle="Admin only">
         <EmptyState
           title="Not available"
-          description="Seller comparison is an internal PetroTrade operations view."
+          description="Seller comparison is an internal PolyStoreX operations view."
         />
       </OperationsShell>
     );
@@ -69,7 +77,9 @@ export function SellerComparisonView() {
         <Select
           value={selectedId || "none"}
           onValueChange={(value) =>
-            router.replace(`${ROUTES.PROCUREMENT_SELLER_COMPARISON}?pr=${value}`)
+            router.replace(
+              `${ROUTES.PROCUREMENT_SELLER_COMPARISON}?pr=${value}`,
+            )
           }
         >
           <SelectTrigger className="h-9 w-[220px]">
@@ -99,13 +109,18 @@ export function SellerComparisonView() {
           statusOptions={["ALL"]}
           extraFilters={
             <>
-              <Select value={sort} onValueChange={(value) => setSort(value as SortKey)}>
+              <Select
+                value={sort}
+                onValueChange={(value) => setSort(value as SortKey)}
+              >
                 <SelectTrigger className="h-9 w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="price">Sort: lowest price</SelectItem>
-                  <SelectItem value="delivery">Sort: fastest delivery</SelectItem>
+                  <SelectItem value="delivery">
+                    Sort: fastest delivery
+                  </SelectItem>
                   <SelectItem value="rating">Sort: seller rating</SelectItem>
                 </SelectContent>
               </Select>
@@ -156,7 +171,9 @@ export function SellerComparisonView() {
         >
           {rows.map((offer) => (
             <TableRow key={offer.id}>
-              <TableCell className="font-medium">{offer.supplierName}</TableCell>
+              <TableCell className="font-medium">
+                {offer.supplierName}
+              </TableCell>
               <TableCell>₹{formatNumber(offer.unitPrice)}</TableCell>
               <TableCell>
                 {formatCompactInr(offer.unitPrice * item.quantityMt)}

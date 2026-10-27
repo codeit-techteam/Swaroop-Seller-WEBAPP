@@ -41,7 +41,7 @@ export const defaultBulkPricing = (base = 0): BulkPriceSlab[] => {
 };
 
 export const paymentTermsSummary = (_pricing?: PaymentTermPricing): string =>
-  "Platform-managed. Credit eligibility is determined by PetroTrade.";
+  "Platform-managed. Credit eligibility is determined by PolyStoreX.";
 
 const _sellerProductsSeed: SellerProduct[] = [
   {
@@ -177,7 +177,7 @@ const _sellerProductsSeed: SellerProduct[] = [
     moq: 20,
     notes: "Film grade high toughness.",
     offerStatus: "paused",
-    origin: "KSA",
+    origin: "Saudi Arabia",
     warehouse: "Hazira Port Terminal",
     createdAt: "2026-05-14T08:00:00.000Z",
     updatedAt: "2026-08-12T09:00:00.000Z",
@@ -253,7 +253,7 @@ const _sellerProductsSeed: SellerProduct[] = [
     locationId: "loc-chennai",
     moq: 20,
     notes: "Chennai stock of LLDPE film grade.",
-    origin: "KSA",
+    origin: "Saudi Arabia",
     basePrice: 104,
     currency: "INR",
     gstPercent: 18,

@@ -189,7 +189,7 @@ export function PriceRevisionDrawer({
                   </>
                 ) : (
                   <p className="text-center text-xs text-slate-500">
-                    Counter offer under admin review. Awaiting PetroTrade
+                    Counter offer under admin review. Awaiting PolyStoreX
                     decision.
                   </p>
                 )}

@@ -187,7 +187,7 @@ export const activityLogsMock: ActivityLog[] = [
   {
     id: "act-2",
     title: "Offer Verified",
-    description: "PetroTrade compliance bot verified Offer #OF-2291.",
+    description: "PolyStoreX compliance bot verified Offer #OF-2291.",
     time: "09:48 AM",
     status: "success",
   },

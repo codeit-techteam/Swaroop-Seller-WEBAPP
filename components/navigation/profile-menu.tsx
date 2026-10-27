@@ -105,7 +105,7 @@ export function ProfileMenu() {
               Confirm Logout
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center">
-              Log out of PetroTrade Seller Portal? Any unsaved changes will be
+              Log out of PolyStoreX Seller Portal? Any unsaved changes will be
               lost.
             </AlertDialogDescription>
           </AlertDialogHeader>

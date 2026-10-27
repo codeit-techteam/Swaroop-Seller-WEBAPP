@@ -298,7 +298,7 @@ export function CustomersView() {
                       onClick={async () => {
                         await sendNotification({
                           title: "Account update",
-                          message: `Hello ${row.name}, please review your PetroTrade account.`,
+                          message: `Hello ${row.name}, please review your PolyStoreX account.`,
                           cta: "Open profile",
                           targetScreen: "/profile",
                           channels: ["IN_APP", "PUSH"],

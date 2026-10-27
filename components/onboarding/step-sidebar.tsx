@@ -59,7 +59,7 @@ export function StepSidebar({ className }: StepSidebarProps) {
             <Fuel className="h-5 w-5 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold">PetroTrade</p>
+            <p className="text-sm font-semibold">PolyStoreX</p>
             <p className="text-xs text-sidebar-foreground/60">
               SELLER ONBOARDING
             </p>

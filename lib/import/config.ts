@@ -44,3 +44,30 @@ export function listingHref(side: ImportSide, id: string): string {
     ? IMPORT_ROUTES.mineDetail(id)
     : IMPORT_ROUTES.marketDetail(id);
 }
+
+/**
+ * Empty-state copy for the Import market list (I-07).
+ * Buy-request market must say "requests", never generic "listings".
+ */
+export function importMarketEmptyCopy(
+  marketSide: ImportSide = IMPORT_MARKET_SIDE,
+): {
+  title: string;
+  message: string;
+} {
+  if (marketSide === "BUY") {
+    return {
+      title: "No open buy requests",
+      message:
+        "No open buy requests — new requests appear here when they are published.",
+    };
+  }
+  return {
+    title: "No open sell offers",
+    message:
+      "No open sell offers — new offers appear here when sellers publish them.",
+  };
+}
+
+export const IMPORT_MARKET_EMPTY_FILTERED =
+  "No buy requests or sell offers match these filters. Try widening them.";

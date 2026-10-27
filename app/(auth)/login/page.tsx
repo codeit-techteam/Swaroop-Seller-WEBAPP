@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { CheckCircle2, Package } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -84,11 +85,16 @@ export default function SellerLoginPage() {
         <div className="absolute inset-0 bg-[#0B1F3A]" />
         <div className="relative z-10 flex flex-1 flex-col p-10 text-white">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
-              <Package className="h-5 w-5" />
-            </div>
+            <Image
+              src="/brand/polystorex-logo.png"
+              alt="PolyStoreX"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-lg bg-white object-contain p-0.5"
+              priority
+            />
             <div>
-              <p className="text-lg font-semibold">PetroTrade</p>
+              <p className="text-lg font-semibold">PolyStoreX</p>
             </div>
           </div>
           <div className="my-auto max-w-md">
@@ -191,7 +197,7 @@ export default function SellerLoginPage() {
                 Seller Manager login
               </p>
               <p className="text-xs text-slate-500">
-                Use the Login ID issued by PetroTrade Admin.
+                Use the Login ID issued by PolyStoreX Admin.
               </p>
               <Input
                 value={loginId}
@@ -226,7 +232,7 @@ export default function SellerLoginPage() {
           <button
             type="button"
             className="hover:text-slate-800"
-            onClick={() => void openContactSupport()}
+            onClick={() => void openContactSupport({ topic: "SELL_MATERIALS" })}
           >
             Support
           </button>

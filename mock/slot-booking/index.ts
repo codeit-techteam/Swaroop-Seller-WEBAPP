@@ -232,7 +232,7 @@ function createSlot(index: number): SlotBooking {
     },
     documents: buildDocuments(status, index),
     timeline: timelineForStatus(status),
-    qrCodeData: `PETROTRADE|SL-${slotNum}|PR-${prNum}|${warehouse.code}|BAY-${bay}`,
+    qrCodeData: `POLYSTOREX|SL-${slotNum}|PR-${prNum}|${warehouse.code}|BAY-${bay}`,
     isLate,
     createdAt: now,
     updatedAt: now,

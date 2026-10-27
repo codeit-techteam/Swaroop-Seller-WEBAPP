@@ -577,10 +577,20 @@ export function EditGradeView() {
                       </span>
                       <Input
                         type="number"
-                        min={0}
+                        min={0.01}
                         step="0.01"
+                        inputMode="decimal"
                         className="pl-7"
-                        {...field}
+                        value={field.value === 0 ? "" : field.value}
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          if (next === "") {
+                            field.onChange(0);
+                            return;
+                          }
+                          const parsed = Number(next);
+                          field.onChange(Number.isFinite(parsed) ? parsed : 0);
+                        }}
                         onBlur={(e) => {
                           field.onBlur();
                           const next = Number(e.target.value) || 0;
@@ -593,6 +603,8 @@ export function EditGradeView() {
                           );
                           if (next > 0) setLoadedBasePrice(next);
                         }}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </div>
                   </FormControl>

@@ -109,7 +109,7 @@ export function OnboardingShell({ children }: { children: React.ReactNode }) {
               <Package className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0B1F3A]">PetroTrade</p>
+              <p className="text-sm font-bold text-[#0B1F3A]">PolyStoreX</p>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1B6EF3]">
                 Seller Onboarding
               </p>

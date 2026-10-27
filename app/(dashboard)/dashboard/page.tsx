@@ -3,7 +3,7 @@ import { DashboardView } from "@/modules/dashboard";
 
 export const metadata = createRouteMetadata(
   "Seller Dashboard",
-  "What you need to do as a PetroTrade seller today",
+  "What you need to do as a PolyStoreX seller today",
 );
 
 export default function DashboardPage() {

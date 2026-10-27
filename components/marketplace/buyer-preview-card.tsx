@@ -18,13 +18,18 @@ const paymentLabels: Record<string, string> = {
   advance: "Advance",
   on_loading: "On Loading",
   on_delivery: "On Delivery",
-  credit_15: "Credit — PetroTrade Managed",
-  credit_30: "Credit — PetroTrade Managed",
+  credit_15: "Credit — PolyStoreX Managed",
+  credit_30: "Credit — PolyStoreX Managed",
 };
 
 function formatTierRange(tier: PricingTier): string {
-  if (tier.maxQty === null) return `${tier.minQty}+ MT`;
-  return `${tier.minQty}–${tier.maxQty} MT`;
+  const min = Number(tier.minQty);
+  const minLabel =
+    Number.isFinite(min) && min > 0 ? String(Math.trunc(min)) : "1";
+  if (tier.maxQty == null || Number(tier.maxQty) <= 0) {
+    return `${minLabel}+ MT`;
+  }
+  return `${minLabel}–${Math.trunc(Number(tier.maxQty))} MT`;
 }
 
 interface BuyerPreviewCardProps {

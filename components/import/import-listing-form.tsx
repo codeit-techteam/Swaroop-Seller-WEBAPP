@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
+import { ConfirmActionDialog } from "@/components/cx/confirm-action-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -301,6 +302,17 @@ function validateImportStep(
   return errors;
 }
 
+function validateImportPublish(
+  values: Values,
+  isBuy: boolean,
+): Record<string, string> {
+  const steps: StepId[] = ["product", "commercial", "shipping", "review"];
+  return Object.assign(
+    {},
+    ...steps.map((s) => validateImportStep(s, values, isBuy)),
+  );
+}
+
 /** `<input type="datetime-local">` value in the user's zone ↔ ISO instant. */
 function toLocalInput(iso?: string | null): string {
   if (!iso) return "";
@@ -378,6 +390,7 @@ function ListingForm({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [confirmPublishOpen, setConfirmPublishOpen] = useState(false);
 
   const savedRef = useRef<Values>(initialValues(initial, bundle));
   const versionRef = useRef<number>(initial?.version ?? 0);
@@ -518,6 +531,19 @@ function ListingForm({
   }
 
   async function handlePublish() {
+    const publishErrors = validateImportPublish(values, isBuy);
+    if (Object.keys(publishErrors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...publishErrors }));
+      const firstField = Object.keys(publishErrors)[0];
+      const firstStep = firstField ? FIELD_STEP[firstField] : undefined;
+      if (firstStep) setStep(firstStep);
+      toast.error(
+        `Please fix ${Object.keys(publishErrors).length} field${
+          Object.keys(publishErrors).length > 1 ? "s" : ""
+        } before publishing.`,
+      );
+      return;
+    }
     setPublishing(true);
     try {
       const ok = await save();
@@ -1460,21 +1486,43 @@ function ListingForm({
             ) : (
               <>
                 {stepIndex < STEPS.length - 1 ? (
-                  <Button
-                    type="button"
-                    variant={step === "review" ? "outline" : "default"}
-                    onClick={() => goToStep(stepIndex + 1)}
-                  >
+                  <Button type="button" onClick={() => goToStep(stepIndex + 1)}>
                     Next
                   </Button>
                 ) : null}
                 {step === "review" ? (
                   <Button
                     type="button"
-                    onClick={handlePublish}
-                    disabled={publishing || saveState === "conflict"}
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    onClick={() => {
+                      const publishErrors = validateImportPublish(
+                        values,
+                        isBuy,
+                      );
+                      if (Object.keys(publishErrors).length > 0) {
+                        setFieldErrors((prev) => ({
+                          ...prev,
+                          ...publishErrors,
+                        }));
+                        toast.error(
+                          "Complete required fields before publishing.",
+                        );
+                        return;
+                      }
+                      setConfirmPublishOpen(true);
+                    }}
+                    disabled={
+                      publishing ||
+                      saveState === "conflict" ||
+                      Object.keys(validateImportPublish(values, isBuy)).length >
+                        0
+                    }
                   >
-                    {publishing ? <Loader2 className="animate-spin" /> : null}
+                    {publishing ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
                     Publish {isBuy ? "buy request" : "sell offer"}
                   </Button>
                 ) : null}
@@ -1483,6 +1531,21 @@ function ListingForm({
           </div>
         </div>
       </div>
+      <ConfirmActionDialog
+        open={confirmPublishOpen}
+        title={isBuy ? "Submit buy request?" : "Publish this offer?"}
+        description={
+          isBuy
+            ? "This will publish your buy request to the import market."
+            : "This will publish your sell offer to matched buyers. You can pause it later if needed."
+        }
+        confirmLabel={isBuy ? "Submit" : "Publish offer"}
+        onCancel={() => setConfirmPublishOpen(false)}
+        onConfirm={() => {
+          setConfirmPublishOpen(false);
+          void handlePublish();
+        }}
+      />
     </div>
   );
 }

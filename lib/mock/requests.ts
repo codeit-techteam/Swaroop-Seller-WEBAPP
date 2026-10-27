@@ -29,7 +29,7 @@ export const sellerRequestsMock: SellerPurchaseRequest[] = [
     requestedPrice: 140,
     deliveryLocation: "Chennai",
     requestedDeliveryDate: "2026-09-10",
-    paymentTerms: "Credit — PetroTrade Managed",
+    paymentTerms: "Credit — PolyStoreX Managed",
     notes: "Need raffia grade with COA. Target loading at Chennai CFS.",
     status: "new",
     buyerId: "BUY-1104",

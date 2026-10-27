@@ -210,7 +210,7 @@ export function buildTimelineForStatus(
       stage: "request_created",
       title: "Request Created",
       description: "Platform initiated price revision",
-      actor: "PetroTrade Admin",
+      actor: "PolyStoreX Admin",
       timestamp: timestamps.createdAt,
     },
     {
@@ -233,8 +233,8 @@ export function buildTimelineForStatus(
       id: "tl-admin",
       stage: "admin_reviewed",
       title: "Admin Reviewed",
-      description: "PetroTrade admin evaluating counter",
-      actor: "PetroTrade Admin",
+      description: "PolyStoreX admin evaluating counter",
+      actor: "PolyStoreX Admin",
       timestamp: timestamps.adminReviewedAt,
     },
     {
@@ -242,7 +242,7 @@ export function buildTimelineForStatus(
       stage: "accepted",
       title: "Accepted",
       description: "Revision accepted — pricing updated",
-      actor: "PetroTrade Admin",
+      actor: "PolyStoreX Admin",
       timestamp: timestamps.acceptedAt,
     },
     {

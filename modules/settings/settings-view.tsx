@@ -10,7 +10,7 @@ export function SettingsView() {
   return (
     <OperationsShell
       title="Seller settings"
-      subtitle="Workspace preferences for the PetroTrade Seller Portal."
+      subtitle="Workspace preferences for the PolyStoreX Seller Portal."
     >
       <div className="rounded-xl border border-slate-200 bg-white p-5">
         <p className="text-sm font-semibold text-slate-900">

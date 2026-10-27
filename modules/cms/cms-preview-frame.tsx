@@ -29,7 +29,7 @@ export function CmsPreviewFrame() {
     >
       <div className="bg-[#0B1F3A] px-4 py-3 text-white">
         <p className="text-xs uppercase tracking-[0.16em] text-slate-300">
-          PetroTrade
+          PolyStoreX
         </p>
         <p className="text-sm font-semibold">
           Customer {device === "MOBILE" ? "APP" : "WEB"}

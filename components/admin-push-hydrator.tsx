@@ -16,8 +16,8 @@ export function AdminPushHydrator() {
       if (!cancelled && announce && added > 0) {
         toast.success(
           added === 1
-            ? "New notification from PetroTrade Admin"
-            : `${added} new notifications from PetroTrade Admin`,
+            ? "New notification from PolyStoreX Admin"
+            : `${added} new notifications from PolyStoreX Admin`,
         );
       }
     };

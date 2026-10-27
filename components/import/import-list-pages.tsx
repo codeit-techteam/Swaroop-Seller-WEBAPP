@@ -31,9 +31,11 @@ import {
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   IMPORT_COPY,
+  IMPORT_MARKET_EMPTY_FILTERED,
   IMPORT_MARKET_SIDE,
   IMPORT_OWN_SIDE,
   IMPORT_ROUTES,
+  importMarketEmptyCopy,
 } from "@/lib/import/config";
 import {
   DECIMAL_PRICE,
@@ -107,10 +109,24 @@ export function ImportOverviewPage() {
   const count = (statuses: string[]) =>
     statuses.reduce((sum, s) => sum + (mine?.listings[s] ?? 0), 0);
 
+  const draftTotal = mine?.drafts?.total ?? count(["DRAFT"]);
+  const readyDrafts = mine?.drafts?.readyToPublish ?? 0;
+  const incompleteDrafts =
+    mine?.drafts?.incomplete ?? Math.max(0, draftTotal - readyDrafts);
+  const draftHint =
+    draftTotal === 0
+      ? null
+      : readyDrafts > 0 && incompleteDrafts > 0
+        ? `${readyDrafts} ready · ${incompleteDrafts} need details`
+        : readyDrafts > 0
+          ? `${readyDrafts} ready to publish`
+          : `${incompleteDrafts} need details`;
+
   const tiles = [
     {
       label: "Drafts",
-      value: count(["DRAFT"]),
+      value: draftTotal,
+      hint: draftHint,
       href: `${IMPORT_ROUTES.mine}?tab=draft`,
     },
     {
@@ -122,16 +138,19 @@ export function ImportOverviewPage() {
         "NEGOTIATION",
         "PAUSED",
       ]),
+      hint: null as string | null,
       href: `${IMPORT_ROUTES.mine}?tab=live`,
     },
     {
       label: "Open negotiations",
       value: mine?.openNegotiations ?? 0,
+      hint: null as string | null,
       href: `${IMPORT_ROUTES.negotiations}?status=OPEN`,
     },
     {
       label: "Deals awaiting confirmation",
       value: mine?.pendingDeals ?? 0,
+      hint: null as string | null,
       href: `${IMPORT_ROUTES.deals}?status=PENDING_CONFIRMATION`,
     },
   ];
@@ -157,9 +176,14 @@ export function ImportOverviewPage() {
                 {summary.isLoading ? (
                   <Skeleton className="mt-2 h-8 w-12" />
                 ) : (
-                  <p className="mt-1 text-3xl font-semibold tracking-tight">
-                    {t.value}
-                  </p>
+                  <>
+                    <p className="mt-1 text-3xl font-semibold tracking-tight">
+                      {t.value}
+                    </p>
+                    {t.hint ? (
+                      <p className="mt-1 text-xs text-amber-800">{t.hint}</p>
+                    ) : null}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -687,11 +711,15 @@ export function ImportMarketPage() {
         />
       ) : !listings.data?.items.length ? (
         <EmptyList
-          title={`No ${IMPORT_COPY.marketPlural.toLowerCase()} found`}
+          title={
+            activeCount || debounced
+              ? `No matching ${IMPORT_COPY.marketPlural.toLowerCase()}`
+              : importMarketEmptyCopy(IMPORT_MARKET_SIDE).title
+          }
           description={
             activeCount || debounced
-              ? "Try widening your filters."
-              : `New ${IMPORT_COPY.marketPlural.toLowerCase()} appear here as soon as they are published.`
+              ? IMPORT_MARKET_EMPTY_FILTERED
+              : importMarketEmptyCopy(IMPORT_MARKET_SIDE).message
           }
         />
       ) : (

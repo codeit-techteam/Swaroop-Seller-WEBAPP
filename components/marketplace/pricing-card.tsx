@@ -4,7 +4,7 @@ import { Receipt } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PETROTRADE_CREDIT_NOTE } from "@/lib/seller/payment";
+import { POLYSTOREX_CREDIT_NOTE } from "@/lib/seller/payment";
 import type { ProductPricing } from "@/types/products";
 
 interface PricingCardProps {
@@ -18,7 +18,9 @@ export function PricingCard({ pricing, onChange, errors }: PricingCardProps) {
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-7">
       <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
         <Receipt className="h-4 w-4 text-[#0B1F3A]" />
-        <h3 className="text-sm font-semibold text-slate-800">Selling Price (₹/MT)</h3>
+        <h3 className="text-sm font-semibold text-slate-800">
+          Selling Price (₹/MT)
+        </h3>
       </div>
 
       <div className="space-y-2">
@@ -45,7 +47,7 @@ export function PricingCard({ pricing, onChange, errors }: PricingCardProps) {
             {errors.sellingPrice || errors["pricing.sellingPrice"]}
           </p>
         ) : null}
-        <p className="text-xs text-slate-500">{PETROTRADE_CREDIT_NOTE}</p>
+        <p className="text-xs text-slate-500">{POLYSTOREX_CREDIT_NOTE}</p>
       </div>
     </div>
   );

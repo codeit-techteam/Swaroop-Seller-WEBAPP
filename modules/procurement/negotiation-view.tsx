@@ -12,7 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { formatCompactInr, formatDateTime, formatNumber } from "@/lib/utils";
-import { findProcurementItem, sellerVisibleOffers } from "@/modules/procurement/selectors";
+import {
+  findProcurementItem,
+  sellerVisibleOffers,
+} from "@/modules/procurement/selectors";
 import { useWorkbench } from "@/modules/procurement/use-workbench";
 import { useProcurementStore } from "@/store/procurementStore";
 
@@ -26,8 +29,12 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
   const rejectOffer = useProcurementStore((s) => s.rejectOffer);
   const startNegotiation = useProcurementStore((s) => s.startNegotiation);
   const last = item?.negotiation[item.negotiation.length - 1];
-  const [unitPrice, setUnitPrice] = useState(String(last?.unitPrice ?? item?.unitPrice ?? ""));
-  const [quantity, setQuantity] = useState(String(last?.quantity ?? item?.quantityMt ?? ""));
+  const [unitPrice, setUnitPrice] = useState(
+    String(last?.unitPrice ?? item?.unitPrice ?? ""),
+  );
+  const [quantity, setQuantity] = useState(
+    String(last?.quantity ?? item?.quantityMt ?? ""),
+  );
   const [deliveryDate, setDeliveryDate] = useState(
     last?.deliveryDate ?? item?.requestedDeliveryDate ?? "",
   );
@@ -51,7 +58,12 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
     );
   }
 
-  if (isSeller && sellerId && !item.assignedSellers?.some((row) => row.supplierId === sellerId) && item.supplierId !== sellerId) {
+  if (
+    isSeller &&
+    sellerId &&
+    !item.assignedSellers?.some((row) => row.supplierId === sellerId) &&
+    item.supplierId !== sellerId
+  ) {
     return (
       <OperationsShell title="Negotiation" subtitle="Not assigned">
         <EmptyState title="This RFQ is not assigned to your company." />
@@ -60,13 +72,21 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
   }
 
   const ownOffers = sellerVisibleOffers(item, isSeller ? sellerId : undefined);
-  const initial = ownOffers[0]?.unitPrice ?? item.negotiation[0]?.unitPrice ?? item.unitPrice;
-  const currentTotal = Math.round((last?.unitPrice ?? item.unitPrice) * item.quantityMt);
+  const initial =
+    ownOffers[0]?.unitPrice ?? item.negotiation[0]?.unitPrice ?? item.unitPrice;
+  const currentTotal = Math.round(
+    (last?.unitPrice ?? item.unitPrice) * item.quantityMt,
+  );
 
   const submit = (asSeller: boolean) => {
     const price = Number(unitPrice);
     const qty = Number(quantity);
-    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(qty) || qty <= 0) {
+    if (
+      !Number.isFinite(price) ||
+      price <= 0 ||
+      !Number.isFinite(qty) ||
+      qty <= 0
+    ) {
       toast.error("Unit price and quantity must be numeric.");
       return;
     }
@@ -87,12 +107,14 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
   return (
     <OperationsShell
       title={`Negotiation · ${item.requestId}`}
-      subtitle={`${item.commodity} ${item.grade} · ${isSeller ? "PetroTrade commercial desk" : item.supplier}`}
+      subtitle={`${item.commodity} ${item.grade} · ${isSeller ? "PolyStoreX commercial desk" : item.supplier}`}
       actions={
         <>
           <OpsStatusBadge status={item.negotiationStatus ?? item.status} />
           <Button variant="outline" asChild>
-            <Link href={`${ROUTES.PROCUREMENT_PURCHASE_REQUESTS}/${item.requestId}`}>
+            <Link
+              href={`${ROUTES.PROCUREMENT_PURCHASE_REQUESTS}/${item.requestId}`}
+            >
               Back to PR
             </Link>
           </Button>
@@ -102,11 +124,15 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-4">
           <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900">Material information</h2>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Material information
+            </h2>
             <dl className="mt-3 grid gap-3 sm:grid-cols-4 text-sm">
               <div>
                 <dt className="text-slate-500">Buyer</dt>
-                <dd className="font-medium">{isSeller ? "PetroTrade (on behalf of customer)" : item.buyer}</dd>
+                <dd className="font-medium">
+                  {isSeller ? "PolyStoreX (on behalf of customer)" : item.buyer}
+                </dd>
               </div>
               <div>
                 <dt className="text-slate-500">Quantity</dt>
@@ -126,7 +152,9 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
           </section>
 
           <section className="rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900">Negotiation history</h2>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Negotiation history
+            </h2>
             <div className="mt-4 space-y-3">
               {item.negotiation.length === 0 ? (
                 <p className="text-sm text-slate-500">No messages yet.</p>
@@ -158,7 +186,9 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
         </div>
 
         <section className="h-fit rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Commercial panel</h2>
+          <h2 className="text-sm font-semibold text-slate-900">
+            Commercial panel
+          </h2>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-slate-500">Seller initial quote</dt>
@@ -166,7 +196,9 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
             </div>
             <div className="flex justify-between">
               <dt className="text-slate-500">Current negotiated price</dt>
-              <dd className="font-medium">₹{formatNumber(last?.unitPrice ?? item.unitPrice)}</dd>
+              <dd className="font-medium">
+                ₹{formatNumber(last?.unitPrice ?? item.unitPrice)}
+              </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-slate-500">Total value</dt>
@@ -176,27 +208,51 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
           <div className="mt-4 space-y-3">
             <div>
               <Label>Counter price / MT</Label>
-              <Input className="mt-1.5" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
+              <Input
+                className="mt-1.5"
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+              />
             </div>
             <div>
               <Label>Quantity</Label>
-              <Input className="mt-1.5" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+              <Input
+                className="mt-1.5"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+              />
             </div>
             <div>
               <Label>Delivery date</Label>
-              <Input className="mt-1.5" type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+              <Input
+                className="mt-1.5"
+                type="date"
+                value={deliveryDate}
+                onChange={(e) => setDeliveryDate(e.target.value)}
+              />
             </div>
             <div>
               <Label>Payment terms</Label>
-              <Input className="mt-1.5" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+              <Input
+                className="mt-1.5"
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms(e.target.value)}
+              />
             </div>
             <div>
               <Label>Message</Label>
-              <Textarea className="mt-1.5" value={message} onChange={(e) => setMessage(e.target.value)} />
+              <Textarea
+                className="mt-1.5"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
             </div>
             {isAdmin ? (
               <>
-                <Button className="w-full bg-[#1B6EF3] hover:bg-[#1558C8]" onClick={() => submit(false)}>
+                <Button
+                  className="w-full bg-[#1B6EF3] hover:bg-[#1558C8]"
+                  onClick={() => submit(false)}
+                >
                   Send Counter Offer
                 </Button>
                 <Button
@@ -223,7 +279,9 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
                   variant="ghost"
                   className="w-full text-red-600"
                   onClick={() => {
-                    const offerId = item.offers.find((row) => row.status !== "REJECTED")?.id;
+                    const offerId = item.offers.find(
+                      (row) => row.status !== "REJECTED",
+                    )?.id;
                     if (offerId) rejectOffer(item.requestId, offerId);
                     toast.success("Quote rejected.");
                   }}
@@ -233,7 +291,10 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
               </>
             ) : (
               <>
-                <Button className="w-full bg-[#1B6EF3] hover:bg-[#1558C8]" onClick={() => submit(true)}>
+                <Button
+                  className="w-full bg-[#1B6EF3] hover:bg-[#1558C8]"
+                  onClick={() => submit(true)}
+                >
                   Counter Offer
                 </Button>
                 <Button
@@ -249,7 +310,9 @@ export function ProcurementNegotiationView({ id }: { id: string }) {
                 <Button
                   variant="ghost"
                   className="w-full text-red-600"
-                  onClick={() => toast.success("Price rejected. Admin has been notified.")}
+                  onClick={() =>
+                    toast.success("Price rejected. Admin has been notified.")
+                  }
                 >
                   Reject
                 </Button>

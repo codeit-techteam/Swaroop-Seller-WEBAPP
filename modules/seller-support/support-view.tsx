@@ -228,7 +228,7 @@ export function SellerSupportView() {
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
           Need help with your orders, payments, shipment or account? Our
-          PetroTrade support team is here to help.
+          PolyStoreX support team is here to help.
         </p>
       </header>
 
@@ -556,7 +556,7 @@ export function SellerSupportView() {
                       <p className="flex justify-between gap-2 text-xs">
                         <span className="font-medium text-slate-800">
                           {m.sender === "AGENT"
-                            ? `${m.senderName} · PetroTrade Support`
+                            ? `${m.senderName} · PolyStoreX Support`
                             : m.sender === "REQUESTER"
                               ? "You"
                               : m.senderName}

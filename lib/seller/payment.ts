@@ -1,7 +1,7 @@
-export const PETROTRADE_CREDIT_LABEL = "Credit — PetroTrade Managed";
+export const POLYSTOREX_CREDIT_LABEL = "Credit — PolyStoreX Managed";
 
-export const PETROTRADE_CREDIT_NOTE =
-  "Customer credit eligibility and payment terms are determined by PetroTrade.";
+export const POLYSTOREX_CREDIT_NOTE =
+  "Customer credit eligibility and payment terms are determined by PolyStoreX.";
 
 const CREDIT_PAYMENT_IDS = new Set([
   "credit",
@@ -23,7 +23,7 @@ export function isPlatformCreditPayment(value?: string | null): boolean {
 
 export function sellerPaymentMethodLabel(value?: string | null): string {
   if (!value) return "—";
-  if (isPlatformCreditPayment(value)) return PETROTRADE_CREDIT_LABEL;
+  if (isPlatformCreditPayment(value)) return POLYSTOREX_CREDIT_LABEL;
   const normalized = value
     .trim()
     .toLowerCase()

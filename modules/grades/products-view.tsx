@@ -410,7 +410,7 @@ export function SellerProductsView() {
               <dt className="text-xs uppercase text-slate-500">Payment</dt>
               <dd className="font-medium">
                 Platform-managed. Credit eligibility is determined by
-                PetroTrade.
+                PolyStoreX.
               </dd>
             </div>
             <div>

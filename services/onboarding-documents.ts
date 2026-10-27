@@ -66,7 +66,7 @@ export function onboardingApiError(error: unknown, fallback: string): string {
     if (typeof message === "string" && message) return message;
     if (Array.isArray(message) && message[0]) return String(message[0]);
     if (!error.response) {
-      return "Unable to reach PetroTrade API. Confirm the backend is running.";
+      return "Unable to reach PolyStoreX API. Confirm the backend is running.";
     }
   }
   if (error instanceof Error && error.message === "STORAGE_UPLOAD_FAILED") {

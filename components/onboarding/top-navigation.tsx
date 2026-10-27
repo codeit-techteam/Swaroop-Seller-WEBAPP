@@ -42,7 +42,7 @@ export function TopNavigation({
             className={cn("flex items-center gap-2", !showBrand && "lg:hidden")}
           >
             <Fuel className="h-5 w-5 text-primary" />
-            <span className="font-semibold">PetroTrade</span>
+            <span className="font-semibold">PolyStoreX</span>
           </div>
         )}
       </div>

@@ -71,7 +71,7 @@ export function ProcurementWorkbenchView() {
       subtitle={
         isSeller
           ? "Assigned RFQs, negotiations, POs and dispatch for your company."
-          : "PetroTrade procurement control room — customer PRs through seller fulfilment."
+          : "PolyStoreX procurement control room — customer PRs through seller fulfilment."
       }
       kpis={[
         { title: "Pending Approvals", value: summary.pendingApprovals },

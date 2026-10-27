@@ -13,14 +13,18 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "PetroTrade Seller",
-    template: "%s | PetroTrade Seller",
+    default: "PolyStoreX Seller",
+    template: "%s | PolyStoreX Seller",
   },
   description:
-    "PetroTrade Seller Portal for grades, offers, orders and settlements",
+    "PolyStoreX Seller Portal for grades, offers, orders and settlements",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3003",
   ),
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
