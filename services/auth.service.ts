@@ -89,13 +89,25 @@ export const authService = {
 
   async verifyOtp(mobile: string, otp: string): Promise<AuthSessionPayload> {
     const phone = toE164IndianPhone(mobile);
-    const response = await apiClient.post("/auth/otp/verify", {
-      phone,
-      otp,
-      purpose: "LOGIN",
-      roleHint: "SELLER",
-    });
-    return (response.data?.data ?? response.data) as AuthSessionPayload;
+    const isDemoOtp =
+      otp === "123456" && phone.replace(/\D/g, "").slice(-10) === "8240890242";
+    try {
+      const response = await apiClient.post("/auth/otp/verify", {
+        phone,
+        otp,
+        purpose: "LOGIN",
+        roleHint: "SELLER",
+      });
+      return (response.data?.data ?? response.data) as AuthSessionPayload;
+    } catch (error) {
+      // Development phase: demo phone + 123456 → known password if fixed OTP is off.
+      if (!isDemoOtp) throw error;
+      try {
+        return await this.loginWithPassword(phone, "Test@12345");
+      } catch {
+        throw error;
+      }
+    }
   },
 
   async loginWithPassword(
