@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import { INDIAN_STATE_VALUES } from "@/lib/constants/india";
-import { gstSchema, panSchema, phoneSchema, pincodeSchema } from "@/lib/utils/validators";
+import {
+  gstSchema,
+  panSchema,
+  phoneSchema,
+  pincodeSchema,
+} from "@/lib/utils/validators";
 
 export const loginSchema = z.object({
   mobileNumber: z
@@ -9,6 +14,22 @@ export const loginSchema = z.object({
     .min(1, "Mobile number is required")
     .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
 });
+
+export const registerSchema = z.object({
+  fullName: z.string().trim().min(2, "Full name is required"),
+  companyName: z.string().trim().min(2, "Company name is required"),
+  mobileNumber: z
+    .string()
+    .min(1, "Mobile number is required")
+    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
+  gstNumber: z
+    .string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .pipe(gstSchema),
+});
+
+export type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export const otpSchema = z.object({
   otp: z

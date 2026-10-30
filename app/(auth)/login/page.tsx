@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -28,9 +29,8 @@ import {
 import { type LoginFormValues, loginSchema } from "@/lib/schemas/onboarding";
 import { useAuthStore } from "@/store/authStore";
 
-/** Show demo credentials while OTP SMS is not production-locked. */
-/** Show demo credentials during the development phase (until SMS is locked). */
-const SHOW_DEMO_OTP = process.env.NEXT_PUBLIC_DEMO_OTP !== "false";
+/** Local dev only — never enable in production. */
+const SHOW_DEMO_OTP = process.env.NEXT_PUBLIC_DEMO_OTP === "true";
 
 const features = [
   {
@@ -224,6 +224,21 @@ export default function SellerLoginPage() {
                 <span className="font-semibold text-slate-600">123456</span>
               </p>
             ) : null}
+            <div className="mt-6 border-t pt-6 text-center">
+              <p className="text-sm text-slate-500">
+                New to PolyStoreX Seller?
+              </p>
+              <Link
+                href={ROUTES.REGISTER}
+                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-md bg-slate-800 text-sm font-semibold text-white hover:bg-slate-700"
+              >
+                Sign Up
+              </Link>
+              <p className="mt-3 text-xs text-slate-400">
+                Fill your details, verify OTP, complete onboarding, then Admin
+                approves your seller account.
+              </p>
+            </div>
           </motion.div>
         </div>
         <footer className="flex justify-center gap-6 border-t px-8 py-4 text-xs text-slate-500">

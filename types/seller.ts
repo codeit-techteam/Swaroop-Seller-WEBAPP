@@ -155,6 +155,10 @@ export interface SellerProduct {
   paymentPricing?: PaymentTermPricing;
   bulkPricing?: BulkPriceSlab[];
   warehouse?: string;
+  /** Customer-facing delivery ETA (same value marketplace shows). */
+  deliveryTerms?: string;
+  /** Dispatch window shown on product details. */
+  dispatchWindow?: string;
   /** Backend inventory row id — required for stock adjustments */
   inventoryId?: string;
   /** Backend marketplace offer id */

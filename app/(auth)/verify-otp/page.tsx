@@ -31,9 +31,13 @@ export default function VerifyOtpPage() {
     defaultValues: { otp: "" },
   });
 
+  const otpPurpose = useAuthStore((s) => s.otpPurpose);
+
   useEffect(() => {
-    if (!pendingMobile) router.replace(ROUTES.LOGIN);
-  }, [pendingMobile, router]);
+    if (!pendingMobile) {
+      router.replace(otpPurpose === "SIGNUP" ? ROUTES.REGISTER : ROUTES.LOGIN);
+    }
+  }, [otpPurpose, pendingMobile, router]);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -53,10 +57,20 @@ export default function VerifyOtpPage() {
         toast.error(result.message ?? "Invalid OTP");
         return;
       }
-      toast.success("Logged in successfully");
+      toast.success(
+        result.isSignup
+          ? "Account created — complete onboarding for Admin review"
+          : "Logged in successfully",
+      );
       const done =
         result.onboardingComplete ?? useAuthStore.getState().onboardingComplete;
-      router.push(done ? ROUTES.DASHBOARD : ROUTES.ONBOARDING);
+      router.push(
+        done
+          ? ROUTES.DASHBOARD
+          : result.isSignup
+            ? ROUTES.ONBOARDING_COMPANY
+            : ROUTES.ONBOARDING,
+      );
     },
     [form, router, verifyOtp],
   );
@@ -87,16 +101,22 @@ export default function VerifyOtpPage() {
           className="mx-auto w-full max-w-md"
         >
           <Link
-            href={ROUTES.LOGIN}
+            href={otpPurpose === "SIGNUP" ? ROUTES.REGISTER : ROUTES.LOGIN}
             className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800"
           >
             <ArrowLeft className="h-4 w-4" />
-            Change Number
+            {otpPurpose === "SIGNUP" ? "Back to Sign Up" : "Change Number"}
           </Link>
           <h2 className="text-2xl font-bold">Enter OTP</h2>
           <p className="mt-2 text-sm text-slate-500">
             We&apos;ve sent an OTP to +91 {formattedMobile || "XXXXX XXXXX"}
           </p>
+          {otpPurpose === "SIGNUP" ? (
+            <p className="mt-2 text-xs text-slate-400">
+              After verification, complete onboarding so Admin can review your
+              seller application.
+            </p>
+          ) : null}
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
@@ -122,7 +142,11 @@ export default function VerifyOtpPage() {
                 size="lg"
                 disabled={isVerifying}
               >
-                {isVerifying ? "Verifying…" : "Verify & Login"}
+                {isVerifying
+                  ? "Verifying…"
+                  : otpPurpose === "SIGNUP"
+                    ? "Verify & Continue"
+                    : "Verify & Login"}
               </Button>
             </form>
           </Form>
@@ -130,15 +154,10 @@ export default function VerifyOtpPage() {
             type="button"
             disabled={countdown > 0}
             onClick={async () => {
-              const result = await sendOtp(pendingMobile);
+              const result = await sendOtp(pendingMobile, otpPurpose);
               setCountdown(RESEND_SECONDS);
               if (result.message) toast(result.message, { icon: "⚠️" });
-              else
-                toast.success(
-                  process.env.NEXT_PUBLIC_DEMO_OTP === "false"
-                    ? "OTP resent"
-                    : "OTP resent — use 123456 in development",
-                );
+              else toast.success("OTP resent");
             }}
             className="mt-4 text-sm font-medium text-[#1B6EF3] disabled:text-slate-400"
           >

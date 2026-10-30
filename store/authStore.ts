@@ -11,31 +11,48 @@ import {
   SESSION_EXPIRED_EVENT,
   TOKENS_ROTATED_EVENT,
 } from "@/services/apiClient";
-import { authErrorMessage, authService } from "@/services/auth.service";
+import {
+  authErrorMessage,
+  authService,
+  type SellerOtpPurpose,
+  type SellerSignupProfile,
+} from "@/services/auth.service";
+import { seedSellerSignupOnboarding } from "@/services/onboarding";
 import { useLocationStore } from "@/store/locationStore";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { useSellerStore } from "@/store/sellerStore";
 import type { AuthState, AuthTokens, User } from "@/types/auth";
-
-/** Demo OTP password bypass removed — production and local use real OTP verify only. */
 
 /** Placeholder until the API's user payload fills these in; never a real tenant. */
 function fallbackUser(email = ""): User {
   return { id: "", email, name: "Seller", role: "SELLER" };
 }
 
+export type SellerSignupDraft = SellerSignupProfile & {
+  mobile: string;
+};
+
 type VerifyOtpResult = {
   ok: boolean;
   message?: string;
   onboardingComplete?: boolean;
+  isSignup?: boolean;
 };
 
 interface SellerAuthState extends AuthState {
   onboardingComplete: boolean;
   pendingMobile: string;
+  otpPurpose: SellerOtpPurpose;
+  pendingSignup: SellerSignupDraft | null;
   hasHydrated: boolean;
   setPendingMobile: (mobile: string) => void;
-  sendOtp: (mobile: string) => Promise<{ ok: boolean; message?: string }>;
+  sendOtp: (
+    mobile: string,
+    purpose?: SellerOtpPurpose,
+  ) => Promise<{ ok: boolean; message?: string }>;
+  startSignup: (
+    draft: SellerSignupDraft,
+  ) => Promise<{ ok: boolean; message?: string }>;
   verifyOtp: (otp: string) => Promise<VerifyOtpResult>;
   loginWithCredentials: (
     identifier: string,
@@ -104,12 +121,19 @@ export const useAuthStore = create<SellerAuthState>()(
       isLoading: false,
       onboardingComplete: false,
       pendingMobile: "",
+      otpPurpose: "LOGIN",
+      pendingSignup: null,
       hasHydrated: false,
       setPendingMobile: (mobile) => set({ pendingMobile: mobile }),
-      sendOtp: async (mobile) => {
-        set({ isLoading: true, pendingMobile: mobile });
+      sendOtp: async (mobile, purpose = "LOGIN") => {
+        set({
+          isLoading: true,
+          pendingMobile: mobile,
+          otpPurpose: purpose,
+          pendingSignup: purpose === "LOGIN" ? null : get().pendingSignup,
+        });
         try {
-          await authService.sendOtp(mobile);
+          await authService.sendOtp(mobile, purpose);
           set({ isLoading: false });
           return { ok: true };
         } catch (error) {
@@ -124,9 +148,33 @@ export const useAuthStore = create<SellerAuthState>()(
           };
         }
       },
+      startSignup: async (draft) => {
+        set({
+          isLoading: true,
+          pendingMobile: draft.mobile,
+          otpPurpose: "SIGNUP",
+          pendingSignup: draft,
+        });
+        try {
+          await authService.sendOtp(draft.mobile, "SIGNUP");
+          set({ isLoading: false });
+          return { ok: true };
+        } catch (error) {
+          set({ isLoading: false });
+          if (isAxiosError(error) && error.response?.status === 429) {
+            return { ok: true };
+          }
+          return {
+            ok: false,
+            message: authErrorMessage(error, "Unable to start registration."),
+          };
+        }
+      },
       verifyOtp: async (otp) => {
         set({ isLoading: true });
         const mobile = get().pendingMobile;
+        const purpose = get().otpPurpose;
+        const signup = get().pendingSignup;
 
         if (!mobile) {
           set({ isLoading: false });
@@ -141,7 +189,18 @@ export const useAuthStore = create<SellerAuthState>()(
         }
 
         try {
-          const session = await authService.verifyOtp(mobile, otp);
+          const session = await authService.verifyOtp(
+            mobile,
+            otp,
+            purpose,
+            purpose === "SIGNUP" && signup
+              ? {
+                  fullName: signup.fullName,
+                  companyName: signup.companyName,
+                  gstNumber: signup.gstNumber,
+                }
+              : undefined,
+          );
           const user = authService.mapUser(
             session.user,
             fallbackUser(session.user?.email ?? ""),
@@ -153,8 +212,48 @@ export const useAuthStore = create<SellerAuthState>()(
             session.refreshToken ?? "",
             mobile,
           );
+
+          if (purpose === "SIGNUP" && signup) {
+            const onboarding = useOnboardingStore.getState();
+            onboarding.resetOnboarding();
+            onboarding.setMobileNumber(mobile);
+            onboarding.setOtpVerified(true);
+            onboarding.updateCompany({
+              companyName: signup.companyName ?? "",
+              legalName: signup.companyName ?? "",
+              contactName: signup.fullName ?? "",
+              gstNumber: signup.gstNumber ?? "",
+              panNumber:
+                signup.gstNumber && signup.gstNumber.length >= 12
+                  ? signup.gstNumber.slice(2, 12).toUpperCase()
+                  : "",
+              phone: mobile,
+            });
+            onboarding.updateGst({
+              gstNumber: (signup.gstNumber ?? "").toUpperCase(),
+              pan:
+                signup.gstNumber && signup.gstNumber.length >= 12
+                  ? signup.gstNumber.slice(2, 12).toUpperCase()
+                  : "",
+            });
+            await seedSellerSignupOnboarding({
+              fullName: signup.fullName ?? "",
+              companyName: signup.companyName ?? "",
+              gstNumber: signup.gstNumber ?? "",
+              mobile,
+            }).catch(() => undefined);
+            set({
+              pendingSignup: null,
+              otpPurpose: "LOGIN",
+              onboardingComplete: false,
+              isLoading: false,
+            });
+            return { ok: true, onboardingComplete: false, isSignup: true };
+          }
+
+          set({ pendingSignup: null, otpPurpose: "LOGIN" });
           const onboardingComplete = await resolveAndSetOnboarding(set, false);
-          return { ok: true, onboardingComplete };
+          return { ok: true, onboardingComplete, isSignup: false };
         } catch (error) {
           set({ isLoading: false });
           return {
@@ -234,6 +333,8 @@ export const useAuthStore = create<SellerAuthState>()(
           isAuthenticated: false,
           isLoading: false,
           pendingMobile: "",
+          otpPurpose: "LOGIN",
+          pendingSignup: null,
           onboardingComplete: false,
         });
       },
@@ -247,6 +348,8 @@ export const useAuthStore = create<SellerAuthState>()(
         isAuthenticated: state.isAuthenticated,
         onboardingComplete: state.onboardingComplete,
         pendingMobile: state.pendingMobile,
+        otpPurpose: state.otpPurpose,
+        pendingSignup: state.pendingSignup,
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.tokens?.accessToken) {

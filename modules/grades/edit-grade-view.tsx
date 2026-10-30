@@ -100,6 +100,8 @@ const schema = z.object({
   warehouse: z.string().min(1),
   reservedStock: z.coerce.number().min(0),
   notes: z.string().optional(),
+  deliveryTerms: z.string().min(1, "Delivery ETA is required"),
+  dispatchWindow: z.string().min(1, "Dispatch window is required"),
   sellingPrice: z.coerce
     .number({ invalid_type_error: "Price must be a number" })
     .finite()
@@ -148,6 +150,8 @@ export function EditGradeView() {
       reservedStock: 0,
       moq: 20,
       notes: "",
+      deliveryTerms: "2–3 Business Days",
+      dispatchWindow: "24 Hours",
       sellingPrice: 0,
     },
   });
@@ -183,6 +187,8 @@ export function EditGradeView() {
           reservedStock: product.reservedStock,
           moq: product.moq || 20,
           notes: product.notes ?? "",
+          deliveryTerms: product.deliveryTerms ?? "2–3 Business Days",
+          dispatchWindow: product.dispatchWindow ?? "24 Hours",
           sellingPrice: product.basePrice ?? 0,
         });
         setSelectedGrade(grade);
@@ -259,6 +265,8 @@ export function EditGradeView() {
           label: s.discountLabel,
         })),
         notes: values.notes,
+        deliveryTerms: values.deliveryTerms,
+        dispatchWindow: values.dispatchWindow,
         publishToMarketplace: wasPublished,
         gstPercent: values.gstPercent,
       });
@@ -501,6 +509,32 @@ export function EditGradeView() {
                   <FormLabel>Warehouse</FormLabel>
                   <FormControl>
                     <Input placeholder="Kolkata CFS Warehouse" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dispatchWindow"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dispatch within</FormLabel>
+                  <FormControl>
+                    <Input placeholder="24 Hours" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="deliveryTerms"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estimated delivery</FormLabel>
+                  <FormControl>
+                    <Input placeholder="2–3 Business Days" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

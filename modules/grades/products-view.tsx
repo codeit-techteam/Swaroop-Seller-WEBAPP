@@ -418,6 +418,20 @@ export function SellerProductsView() {
               <dd className="font-medium">{formatMt(detail.availableStock)}</dd>
             </div>
             <div>
+              <dt className="text-xs uppercase text-slate-500">
+                Dispatch within
+              </dt>
+              <dd className="font-medium">
+                {detail.dispatchWindow ?? "24 Hours"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">
+                Estimated delivery
+              </dt>
+              <dd className="font-medium">{detail.deliveryTerms ?? "—"}</dd>
+            </div>
+            <div>
               <dt className="text-xs uppercase text-slate-500">Updated</dt>
               <dd className="font-medium">
                 {formatDateTime(detail.updatedAt)}

@@ -113,6 +113,51 @@ export async function fetchSellerOnboarding(): Promise<SellerOnboardingRecord> {
   return response.data.data;
 }
 
+/** Seeds company / GST from the Sign Up form right after OTP verification. */
+export async function seedSellerSignupOnboarding(input: {
+  fullName: string;
+  companyName: string;
+  gstNumber: string;
+  mobile: string;
+}): Promise<void> {
+  const companyName = input.companyName.trim();
+  const gstin = input.gstNumber.trim().toUpperCase();
+  const phone = input.mobile.replace(/\D/g, "").slice(-10);
+  const pan = gstin.length >= 12 ? gstin.slice(2, 12) : undefined;
+  const payload = {
+    companyName,
+    phone: phone ? `+91${phone}` : undefined,
+    currentStep: "company",
+    companyData: {
+      name: companyName,
+      legalName: companyName,
+      contactName: input.fullName.trim(),
+      phone,
+    },
+    gstData: gstin ? { gstin, ...(pan ? { pan } : {}) } : undefined,
+    panData: pan ? { pan } : undefined,
+    metadata: { source: "SELLER_WEB", signup: true },
+  };
+
+  try {
+    await apiClient.post("/seller/onboarding", payload);
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 401) throw error;
+    if (isAxiosError(error) && error.response?.status === 403) throw error;
+    try {
+      await apiClient.patch("/seller/onboarding", {
+        currentStep: "company",
+        companyData: payload.companyData,
+        gstData: payload.gstData,
+        panData: payload.panData,
+        metadata: payload.metadata,
+      });
+    } catch {
+      // Company wizard can still collect details if seed fails.
+    }
+  }
+}
+
 export async function ensureSellerOnboardingDraft(
   state: OnboardingState,
 ): Promise<SellerOnboardingRecord> {

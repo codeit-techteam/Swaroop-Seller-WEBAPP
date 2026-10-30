@@ -177,6 +177,7 @@ type BackendSellerProduct = {
     quantity?: number | string;
     status?: string;
     deliveryTerms?: string | null;
+    metadata?: Record<string, unknown> | null;
     inventoryId?: string | null;
     priceTiers?: BackendPriceTier[];
   }>;
@@ -187,6 +188,33 @@ function mapStatus(status?: string): SellerProduct["offerStatus"] {
   if (status === "DRAFT" || status === "PENDING_REVIEW") return "draft";
   if (status === "PAUSED") return "paused";
   return "none";
+}
+
+function looksLikeDeliveryTiming(value?: string | null): boolean {
+  const v = (value ?? "").trim();
+  if (!v) return false;
+  if (/^(ex[\s-]?works|exw|fob|cif|for|dap|ddp|c&f)\b/i.test(v)) return false;
+  return /(\d+\s*[-–to]+\s*\d+|\d+)\s*(business\s*)?(day|days|hour|hours|hr|hrs|week|weeks)\b/i.test(
+    v,
+  );
+}
+
+/** Keep seller panel ETA in sync with marketplace calculated bands. */
+function estimateDeliveryTerms(locationHint?: string | null): string {
+  const hint = (locationHint ?? "").toLowerCase();
+  if (
+    /mumbai|pune|nashik|bhiwandi|gujarat|ahmedabad|vadodara|surat/.test(hint)
+  ) {
+    return "2–3 Business Days";
+  }
+  if (
+    /chennai|kolkata|howrah|delhi|noida|gurgaon|gurugram|hyderabad|bangalore|bengaluru|panipat/.test(
+      hint,
+    )
+  ) {
+    return "3–5 Business Days";
+  }
+  return "4–6 Business Days";
 }
 
 function mapProduct(item: BackendSellerProduct): SellerProduct {
@@ -204,6 +232,19 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     item.grade?.fullGradeName?.trim() ||
     item.grade?.displayName?.trim() ||
     item.name;
+  const warehouseLabel =
+    inventory?.warehouse?.name ||
+    inventory?.warehouse?.city ||
+    (typeof specs.warehouseLabel === "string" ? specs.warehouseLabel : "") ||
+    "";
+  const rawDeliveryTerms = offer?.deliveryTerms?.trim() || "";
+  const deliveryTerms = looksLikeDeliveryTiming(rawDeliveryTerms)
+    ? rawDeliveryTerms
+    : estimateDeliveryTerms(warehouseLabel || item.countryOfOrigin);
+  const dispatchWindow =
+    (typeof offer?.metadata?.dispatchWindow === "string" &&
+      offer.metadata.dispatchWindow.trim()) ||
+    "24 Hours";
   return {
     id: item.id,
     category: item.grade?.category?.name ?? item.grade?.name ?? "Grade",
@@ -232,15 +273,16 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     locationId: inventory?.warehouse?.id ?? "loc-default",
     moq: Number(offer?.moq ?? 0),
     origin: item.countryOfOrigin ?? "India",
-    warehouse:
-      inventory?.warehouse?.name ||
-      (typeof specs.warehouseLabel === "string" ? specs.warehouseLabel : "") ||
-      "",
+    warehouse: warehouseLabel,
     notes: typeof item.metadata?.notes === "string" ? item.metadata.notes : "",
     offerStatus: mapStatus(offer?.status ?? item.status),
     basePrice: Number(offer?.basePrice ?? 0),
     currency: "INR",
-    gstPercent: Number(item.metadata?.gstPercent ?? 18),
+    gstPercent: Number(
+      item.metadata?.gstPercent ?? offer?.metadata?.gstPercent ?? 18,
+    ),
+    deliveryTerms,
+    dispatchWindow,
     bulkPricing: tiers,
     inventoryId: inventory?.id ?? offer?.inventoryId ?? undefined,
     offerId: offer?.id ?? item.offerId,
@@ -298,6 +340,10 @@ export type CreateMarketplaceListingInput = {
   notes?: string;
   publishToMarketplace?: boolean;
   gstPercent?: number;
+  /** Customer-facing delivery ETA (synced to marketplace fulfilment). */
+  deliveryTerms?: string;
+  /** Dispatch window shown on product details (default 24 Hours). */
+  dispatchWindow?: string;
 };
 
 function listingBody(input: CreateMarketplaceListingInput) {
@@ -323,6 +369,8 @@ function listingBody(input: CreateMarketplaceListingInput) {
     priceTiers: input.priceTiers,
     notes: input.notes,
     publishToMarketplace: input.publishToMarketplace ?? true,
+    deliveryTerms: input.deliveryTerms,
+    dispatchWindow: input.dispatchWindow,
     technicalSpecs: {
       ...(input.application ? { application: input.application } : {}),
       ...(input.polymerType ? { polymerType: input.polymerType } : {}),

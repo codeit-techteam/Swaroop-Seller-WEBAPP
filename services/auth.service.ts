@@ -71,43 +71,51 @@ export function authErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+export type SellerOtpPurpose = "LOGIN" | "SIGNUP";
+
+export type SellerSignupProfile = {
+  fullName?: string;
+  companyName?: string;
+  gstNumber?: string;
+};
+
 export const authService = {
-  async sendOtp(mobile: string) {
+  async sendOtp(mobile: string, purpose: SellerOtpPurpose = "LOGIN") {
     const phone = toE164IndianPhone(mobile);
     const response = await apiClient.post("/auth/otp/send", {
       phone,
-      purpose: "LOGIN",
+      purpose,
     });
     const data = response.data?.data ?? response.data;
     return {
       sent: true as const,
       mobile,
       phone,
-      demoOtp: (data?.devOtp as string | undefined) ?? "123456",
+      devOtp: data?.devOtp as string | undefined,
     };
   },
 
-  async verifyOtp(mobile: string, otp: string): Promise<AuthSessionPayload> {
+  async verifyOtp(
+    mobile: string,
+    otp: string,
+    purpose: SellerOtpPurpose = "LOGIN",
+    signup?: SellerSignupProfile,
+  ): Promise<AuthSessionPayload> {
     const phone = toE164IndianPhone(mobile);
-    const isDemoOtp =
-      otp === "123456" && phone.replace(/\D/g, "").slice(-10) === "8240890242";
-    try {
-      const response = await apiClient.post("/auth/otp/verify", {
-        phone,
-        otp,
-        purpose: "LOGIN",
-        roleHint: "SELLER",
-      });
-      return (response.data?.data ?? response.data) as AuthSessionPayload;
-    } catch (error) {
-      // Development phase: demo phone + 123456 → known password if fixed OTP is off.
-      if (!isDemoOtp) throw error;
-      try {
-        return await this.loginWithPassword(phone, "Test@12345");
-      } catch {
-        throw error;
-      }
-    }
+    const response = await apiClient.post("/auth/otp/verify", {
+      phone,
+      otp,
+      purpose,
+      roleHint: "SELLER",
+      ...(signup?.fullName ? { firstName: signup.fullName.trim() } : {}),
+      ...(signup?.companyName
+        ? { companyName: signup.companyName.trim() }
+        : {}),
+      ...(signup?.gstNumber
+        ? { gstin: signup.gstNumber.trim().toUpperCase() }
+        : {}),
+    });
+    return (response.data?.data ?? response.data) as AuthSessionPayload;
   },
 
   async loginWithPassword(
