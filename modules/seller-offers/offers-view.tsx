@@ -199,7 +199,7 @@ export function SellerOffersView() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Summary label="Active Offers" value={summary.active} />
         <Summary
-          label="Pending Purchase Requests"
+          label="Pending Purchase"
           value={summary.pendingPurchaseRequests}
         />
         <Summary label="Expiring Soon" value={summary.expiring} />

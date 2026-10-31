@@ -181,27 +181,32 @@ export function DashboardView() {
         <KpiCard
           label="Active Offers"
           value={String(activeOffers)}
+          href={ROUTES.OFFERS}
           icon={Tag}
         />
         <KpiCard
           label="Purchase Requests"
           value={String(pendingRequests)}
           hint="Awaiting response"
+          href={ROUTES.PURCHASE_REQUESTS}
           icon={ClipboardList}
         />
         <KpiCard
           label="Active Orders"
           value={String(activeOrders)}
+          href={ROUTES.ORDERS}
           icon={ShoppingCart}
         />
         <KpiCard
           label="Pending Dispatch"
           value={String(pendingDispatch)}
+          href={ROUTES.DISPATCH}
           icon={Truck}
         />
         <KpiCard
           label="Outstanding Settlement"
           value={formatInrShort(receivable)}
+          href={ROUTES.SETTLEMENTS}
           icon={Banknote}
         />
       </div>

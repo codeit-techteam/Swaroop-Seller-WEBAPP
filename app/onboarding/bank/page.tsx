@@ -42,7 +42,7 @@ export default function OnboardingBankPage() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit((values) => {
-          updateBank({ ...values, isVerified: true });
+          updateBank({ ...values, isVerified: false });
           markStepComplete("bank");
           setCurrentStep("documents");
           toast.success("Bank details saved");

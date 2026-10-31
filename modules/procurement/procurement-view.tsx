@@ -88,7 +88,7 @@ export function ProcurementWorkbenchView() {
           suffix: "Cr",
           decimals: 1,
         },
-        { title: "Pending PRs", value: summary.pendingPrs },
+        { title: "Pending Purchase", value: summary.pendingPrs },
         { title: "Completed", value: summary.completed },
       ]}
     >

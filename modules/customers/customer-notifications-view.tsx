@@ -118,7 +118,7 @@ export function CustomerNotificationsView() {
                 <SelectItem value="SPECIFIC">Specific customer</SelectItem>
                 <SelectItem value="ACTIVE_ORDERS">Active orders</SelectItem>
                 <SelectItem value="PENDING_PAYMENT">Pending payment</SelectItem>
-                <SelectItem value="PENDING_PR">Pending PR</SelectItem>
+                <SelectItem value="PENDING_PR">Pending Purchase</SelectItem>
                 <SelectItem value="CITY">City</SelectItem>
                 <SelectItem value="SEGMENT">Segment</SelectItem>
               </SelectContent>
