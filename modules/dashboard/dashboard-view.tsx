@@ -185,7 +185,7 @@ export function DashboardView() {
           icon={Tag}
         />
         <KpiCard
-          label="Purchase Requests"
+          label="Pending Purchase"
           value={String(pendingRequests)}
           hint="Awaiting response"
           href={ROUTES.PURCHASE_REQUESTS}
