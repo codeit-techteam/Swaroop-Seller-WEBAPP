@@ -2,12 +2,13 @@ const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "https://swaroop-backend-xzwkz.ondigitalocean.app/api/v1";
 
-/** Live marketing site with production /terms, /privacy, /contact. */
-const LIVE_WEBSITE_ORIGIN = "https://swaroop-website-mocha.vercel.app";
+/** Official site. /terms, /privacy and /contact are live on this host. */
+const LIVE_WEBSITE_ORIGIN = "https://polystorex.com";
 const BROKEN_WEBSITE_HOSTS = new Set([
   "petrotrade.in",
   "www.petrotrade.in",
   "swaroop-website.vercel.app",
+  "swaroop-website-mocha.vercel.app",
 ]);
 const LIVE_TERMS_URL = `${LIVE_WEBSITE_ORIGIN}/terms`;
 const LIVE_PRIVACY_URL = `${LIVE_WEBSITE_ORIGIN}/privacy`;
