@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/constants";
-import { formatMt, formatPricePerKg, hoursLeft } from "@/lib/seller/format";
+import { formatMt, formatPricePerMt, hoursLeft } from "@/lib/seller/format";
 import { formatDateTime } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/utils/api-error";
 import { useLocationStore } from "@/store/locationStore";
@@ -386,7 +386,7 @@ function OfferCard({
         </p>
         <h2 className="mt-1 text-lg font-semibold">{offer.gradeName}</h2>
         <p className="mt-2 text-2xl font-semibold text-[#1B6EF3]">
-          {formatPricePerKg(offer.price)}
+          {formatPricePerMt(offer.price)}
         </p>
         <dl className="mt-3 space-y-1 text-sm text-slate-600">
           <div>Available: {formatMt(offer.availableQty)}</div>

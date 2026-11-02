@@ -1,10 +1,12 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 
 import { SearchSelect, type SelectOption } from "@/components/import/import-ui";
 import { Label } from "@/components/ui/label";
+import { useCanRequestGrade } from "@/hooks/use-can-request-grade";
 import {
   fetchSellerGradeFacets,
   searchSellerGrades,
@@ -12,6 +14,7 @@ import {
   sellerGradeLabel,
   type SellerGradeOption,
 } from "@/services/catalog";
+import { newGradeRequestPath } from "@/services/grade-requests";
 
 const gradeCategoryId = (grade: SellerGradeOption | null) =>
   grade?.category?.id ?? grade?.categoryId ?? "";
@@ -43,6 +46,7 @@ export function GradeMasterPicker({
     () => selectedGrade?.gradeGroup ?? "",
   );
   const gradeResults = useRef(new Map<string, SellerGradeOption>());
+  const canRequestGrade = useCanRequestGrade();
 
   const facets = useQuery({
     queryKey: ["seller", "grade-facets", categoryId],
@@ -188,10 +192,35 @@ export function GradeMasterPicker({
             load={loadGrades}
             onChange={changeGrade}
             invalid={Boolean(error)}
+            emptyAction={
+              canRequestGrade
+                ? (search) => (
+                    <Link
+                      href={newGradeRequestPath(search)}
+                      className="font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      {search
+                        ? `Can't find “${search}”? Request new grade`
+                        : "Can't find your grade? Request new grade"}
+                    </Link>
+                  )
+                : undefined
+            }
           />
           {error ? <p className="text-xs text-red-600">{error}</p> : null}
         </div>
       </div>
+      {canRequestGrade ? (
+        <p className="text-xs text-slate-500">
+          Can&apos;t find your grade in the Grade Master?{" "}
+          <Link
+            href={newGradeRequestPath()}
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Request new grade
+          </Link>
+        </p>
+      ) : null}
       {notice}
       {selectedGrade ? (
         <dl className="grid gap-x-6 gap-y-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-4">

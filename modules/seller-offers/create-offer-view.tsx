@@ -207,10 +207,22 @@ export function CreateOfferView() {
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Price (₹/kg)</FormLabel>
+                  <FormLabel>Price (₹/MT)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.1" {...field} />
+                    <Input type="number" step="0.01" min={0.01} {...field} />
                   </FormControl>
+                  {Number(form.watch("price")) > 0 &&
+                  Number(form.watch("price")) < 1250 ? (
+                    <p className="text-xs text-amber-700">
+                      This material price is below typical platform freight
+                      (₹1,250/MT). Confirm the value is ₹/MT before publishing —
+                      it will be flagged for admin review.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-500">
+                      Enter the material selling price in ₹ per metric ton.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

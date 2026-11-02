@@ -61,6 +61,8 @@ export const ROUTES = {
   PRODUCTS: "/products",
   PRODUCTS_NEW: "/products/new",
   PRODUCTS_EDIT: "/products",
+  GRADE_REQUESTS: "/grade-requests",
+  GRADE_REQUESTS_NEW: "/grade-requests/new",
   INVENTORY: "/inventory",
   INVENTORY_ADD_PRODUCT: "/products/new",
   OFFERS: "/offers",

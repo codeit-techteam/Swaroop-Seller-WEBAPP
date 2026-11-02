@@ -3,6 +3,7 @@ import {
   BarChart3,
   CalendarClock,
   ClipboardList,
+  FilePlus2,
   FileText,
   Handshake,
   Headset,
@@ -80,6 +81,13 @@ export const NAV_SECTIONS: NavSection[] = [
         href: ROUTES.INVENTORY,
         icon: Warehouse,
         permission: "inventory.view",
+      },
+      {
+        label: "Grade Requests",
+        href: ROUTES.GRADE_REQUESTS,
+        icon: FilePlus2,
+        // Backend gates /seller/grade-requests with procurement.view/manage.
+        permission: "procurement.view",
       },
       {
         label: "My Offers",

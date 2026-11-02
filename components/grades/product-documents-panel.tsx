@@ -1,10 +1,18 @@
 "use client";
 
-import { Download, FileText, Loader2, Trash2, Upload } from "lucide-react";
+import {
+  BadgeCheck,
+  Download,
+  FileText,
+  Loader2,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  fetchSellerProductGradeTds,
+  type SellerGradeTdsResponse,
+} from "@/services/grade-tds";
 import {
   archiveProductDocument,
   downloadProductDocument,
@@ -32,6 +44,11 @@ function formatBytes(value?: string | null) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatLabel(value?: string | null) {
+  if (!value) return "—";
+  return value.toUpperCase();
 }
 
 type Props = {
@@ -54,7 +71,9 @@ export function ProductDocumentsPanel({
   onPendingChange,
 }: Props) {
   const [docs, setDocs] = useState<SellerProductDocument[]>([]);
+  const [gradeTds, setGradeTds] = useState<SellerGradeTdsResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [gradeTdsLoading, setGradeTdsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [documentType, setDocumentType] = useState<ProductDocumentType>("TDS");
   const [title, setTitle] = useState("Technical Data Sheet");
@@ -75,10 +94,31 @@ export function ProductDocumentsPanel({
     }
   }, [productId]);
 
+  const refreshGradeTds = useCallback(async () => {
+    if (!productId) {
+      setGradeTds(null);
+      return;
+    }
+    setGradeTdsLoading(true);
+    try {
+      setGradeTds(await fetchSellerProductGradeTds(productId));
+    } catch {
+      // Platform library is optional — keep seller uploads usable if lookup fails.
+      setGradeTds(null);
+    } finally {
+      setGradeTdsLoading(false);
+    }
+  }, [productId]);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load docs on mount/id change
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load platform TDS on mount/id change
+    void refreshGradeTds();
+  }, [refreshGradeTds]);
 
   useEffect(() => {
     const opt = PRODUCT_DOCUMENT_TYPE_OPTIONS.find(
@@ -180,15 +220,117 @@ export function ProductDocumentsPanel({
     }
   };
 
+  const platformProductName =
+    gradeTds?.product?.name ?? gradeTds?.grade?.name ?? null;
+  const platformManufacturer =
+    gradeTds?.product?.manufacturer ??
+    gradeTds?.grade?.manufacturer ??
+    gradeTds?.items[0]?.manufacturer ??
+    null;
+
   return (
     <section className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+      {productId ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <BadgeCheck className="h-4 w-4 shrink-0 text-emerald-700" />
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Platform TDS (verified)
+                </h3>
+              </div>
+              <p className="mt-1 text-xs text-slate-600">
+                Customers see this verified technical data sheet on the grade
+                page. Read-only platform library — not your uploads.
+              </p>
+            </div>
+            {gradeTdsLoading ? (
+              <Badge variant="secondary" className="gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Checking…
+              </Badge>
+            ) : (
+              <Badge
+                variant="secondary"
+                className={
+                  gradeTds?.available
+                    ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+                    : "border-slate-200 bg-white text-slate-600"
+                }
+              >
+                {gradeTds?.available ? "Available" : "Unavailable"}
+              </Badge>
+            )}
+          </div>
+
+          {!gradeTdsLoading ? (
+            <dl className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+              <div>
+                <dt className="font-medium text-slate-500">Product</dt>
+                <dd className="mt-0.5 text-slate-800">
+                  {platformProductName ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-slate-500">Manufacturer</dt>
+                <dd className="mt-0.5 text-slate-800">
+                  {platformManufacturer ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-slate-500">File format</dt>
+                <dd className="mt-0.5 text-slate-800">
+                  {gradeTds?.items[0]
+                    ? formatLabel(gradeTds.items[0].format)
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
+          ) : null}
+
+          {!gradeTdsLoading && gradeTds?.items.length ? (
+            <ul className="mt-3 space-y-1.5">
+              {gradeTds.items.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center gap-2 rounded-md border border-emerald-100 bg-white/80 px-2.5 py-2 text-xs text-slate-700"
+                >
+                  <FileText className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {item.title}
+                  </span>
+                  <span className="shrink-0 text-slate-500">
+                    {formatLabel(item.format)}
+                    {item.fileName ? ` · ${item.fileName}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {!gradeTdsLoading && !gradeTds?.available ? (
+            <p className="mt-2 text-xs text-slate-500">
+              {gradeTds?.message ??
+                "No verified platform TDS is linked to this product yet."}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white/70 px-3 py-2.5 text-xs text-slate-500">
+          Platform TDS status appears after the product is saved and linked to a
+          catalogue grade.
+        </div>
+      )}
+
       <div>
         <h3 className="text-sm font-semibold text-slate-900">
-          Product Documents (optional)
+          Your uploads (optional)
         </h3>
         <p className="mt-0.5 text-xs text-slate-500">
           Upload TDS and/or MSDS if available. Both are optional — you can save
-          the grade without documents and add them later.
+          the grade without documents and add them later. These are separate
+          from the verified platform library above.
         </p>
       </div>
 

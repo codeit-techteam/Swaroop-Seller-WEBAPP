@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/common/page-header";
 import { SellerStatusBadge } from "@/components/status/seller-status-badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
-import { formatMt, formatPricePerKg } from "@/lib/seller/format";
+import { formatMt, formatPricePerMt } from "@/lib/seller/format";
 import { useSellerOfferStore } from "@/store/sellerOfferStore";
 
 export function OfferDetailView() {
@@ -51,7 +51,7 @@ export function OfferDetailView() {
         actions={<SellerStatusBadge status={offer.status} />}
       />
       <div className="grid gap-4 md:grid-cols-3">
-        <Info label="Price" value={formatPricePerKg(offer.price)} />
+        <Info label="Price" value={formatPricePerMt(offer.price)} />
         <Info label="Available" value={formatMt(offer.availableQty)} />
         <Info label="MOQ" value={formatMt(offer.moq)} />
         <Info label="GST" value={`${offer.gstPercent}%`} />
@@ -64,7 +64,7 @@ export function OfferDetailView() {
           {offer.bulkPricing.map((slab) => (
             <p key={slab.id} className="text-sm">
               {slab.minQty}–{slab.maxQty ?? "∞"} MT ·{" "}
-              {formatPricePerKg(slab.price)}
+              {formatPricePerMt(slab.price)}
             </p>
           ))}
         </section>

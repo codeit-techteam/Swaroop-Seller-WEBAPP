@@ -19,6 +19,17 @@ export function formatPricePerKg(value: number): string {
   return `₹${formatted}/kg`;
 }
 
+/** Offer.basePrice and listing sellingPrice are always ₹/MT. */
+export function formatPricePerMt(value: number): string {
+  const formatted = Number.isInteger(value)
+    ? value.toLocaleString("en-IN")
+    : value.toLocaleString("en-IN", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      });
+  return `₹${formatted}/MT`;
+}
+
 export function formatMt(value: number): string {
   return `${formatNumber(value)} MT`;
 }

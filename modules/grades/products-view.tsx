@@ -2,6 +2,7 @@
 
 import {
   Eye,
+  FilePlus2,
   MoreHorizontal,
   Package,
   Pencil,
@@ -35,11 +36,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCanRequestGrade } from "@/hooks/use-can-request-grade";
 import { ROUTES } from "@/lib/constants";
 import {
   availableToSell,
   formatMt,
-  formatPricePerKg,
+  formatPricePerMt,
 } from "@/lib/seller/format";
 import { getSellingPrice } from "@/lib/seller/payment";
 import { formatDateTime } from "@/lib/utils";
@@ -54,6 +56,7 @@ export function SellerProductsView() {
   const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const loading = useSellerProductStore((s) => s.loading);
   const loadError = useSellerProductStore((s) => s.loadError);
+  const canRequestGrade = useCanRequestGrade();
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -129,11 +132,20 @@ export function SellerProductsView() {
         title="My Products / Grades"
         description="Industrial grades represented by specifications and stock — no product images."
         actions={
-          <Button asChild>
-            <Link href={ROUTES.PRODUCTS_NEW}>
-              <Plus className="mr-1 h-4 w-4" /> Add Grade
-            </Link>
-          </Button>
+          <>
+            {canRequestGrade ? (
+              <Button asChild variant="outline">
+                <Link href={ROUTES.GRADE_REQUESTS_NEW}>
+                  <FilePlus2 className="mr-1 h-4 w-4" /> Request new grade
+                </Link>
+              </Button>
+            ) : null}
+            <Button asChild>
+              <Link href={ROUTES.PRODUCTS_NEW}>
+                <Plus className="mr-1 h-4 w-4" /> Add Grade
+              </Link>
+            </Button>
+          </>
         }
       />
       {loadError ? (
@@ -183,9 +195,18 @@ export function SellerProductsView() {
           title="No grades at this location"
           description="Add a grade to start creating offers."
           action={
-            <Button asChild>
-              <Link href={ROUTES.PRODUCTS_NEW}>Add Grade</Link>
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button asChild>
+                <Link href={ROUTES.PRODUCTS_NEW}>Add Grade</Link>
+              </Button>
+              {canRequestGrade ? (
+                <Button asChild variant="outline">
+                  <Link href={ROUTES.GRADE_REQUESTS_NEW}>
+                    Request new grade
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
           }
         />
       ) : (
@@ -234,9 +255,9 @@ export function SellerProductsView() {
                   </td>
                   <td className="px-4 py-3">
                     {priceFor(product.id)
-                      ? formatPricePerKg(priceFor(product.id) ?? 0)
+                      ? formatPricePerMt(priceFor(product.id) ?? 0)
                       : getSellingPrice(product)
-                        ? formatPricePerKg(getSellingPrice(product))
+                        ? formatPricePerMt(getSellingPrice(product))
                         : "—"}
                   </td>
                   <td className="px-4 py-3">

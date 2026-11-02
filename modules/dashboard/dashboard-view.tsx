@@ -23,7 +23,7 @@ import { ROUTES } from "@/lib/constants";
 import {
   formatInrShort,
   formatMt,
-  formatPricePerKg,
+  formatPricePerMt,
   greetingForHour,
   hoursLeft,
 } from "@/lib/seller/format";
@@ -251,7 +251,7 @@ export function DashboardView() {
                 {offer.gradeName}
               </p>
               <p className="mt-2 text-lg font-semibold text-[#1B6EF3]">
-                {formatPricePerKg(offer.price)}
+                {formatPricePerMt(offer.price)}
               </p>
               <div className="mt-3">
                 <SellerStatusBadge status={offer.status} />
@@ -389,7 +389,7 @@ export function DashboardView() {
                     <p className="text-sm font-semibold">{offer.gradeName}</p>
                     <p className="text-xs text-slate-500">
                       {hoursLeft(offer.validUntil)} hours left ·{" "}
-                      {formatPricePerKg(offer.price)}
+                      {formatPricePerMt(offer.price)}
                     </p>
                   </div>
                   <SellerStatusBadge status={offer.status} />

@@ -369,6 +369,7 @@ export function SearchSelect({
   invalid,
   allowClear = true,
   id,
+  emptyAction,
 }: {
   value: string | null | undefined;
   selectedLabel?: string | null;
@@ -381,6 +382,8 @@ export function SearchSelect({
   invalid?: boolean;
   allowClear?: boolean;
   id?: string;
+  /** Rendered under "No results." (e.g. a "Request new grade" link) with the current search text. */
+  emptyAction?: (search: string) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -458,6 +461,15 @@ export function SearchSelect({
             ) : (
               <CommandEmpty>No results.</CommandEmpty>
             )}
+            {emptyAction &&
+            !(load && remote.isPending) &&
+            !remote.isFetching &&
+            !remote.isError &&
+            list.length === 0 ? (
+              <div className="border-t px-3 py-2 text-xs">
+                {emptyAction(search.trim())}
+              </div>
+            ) : null}
             {allowClear && value ? (
               <CommandItem
                 value="__clear"
