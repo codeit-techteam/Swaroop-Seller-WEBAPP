@@ -7,6 +7,13 @@ type Envelope<T> = {
   meta?: { total: number };
 };
 
+export type SellerGradeCatalogSpecs = {
+  mfi?: string;
+  density?: string;
+  casNumber?: string;
+  defaultPackaging?: string;
+};
+
 export type SellerGradeOption = {
   id: string;
   code: string;
@@ -17,6 +24,13 @@ export type SellerGradeOption = {
   gradeGroup?: string | null;
   manufacturer?: string | null;
   fullGradeName?: string | null;
+  hsnCode?: string | null;
+  /** Application master links from Grade Master. */
+  applications?: Array<{ id?: string; code?: string; name?: string }>;
+  /** Free-text / resolved application labels for seller prefill. */
+  applicationNames?: string[];
+  features?: string[];
+  catalogSpecs?: SellerGradeCatalogSpecs | null;
   categoryId?: string;
   category?: {
     id: string;
@@ -25,6 +39,18 @@ export type SellerGradeOption = {
     displayName?: string | null;
   } | null;
 };
+
+/** First Grade Master application label for listing prefill. */
+export function sellerGradeApplication(grade: SellerGradeOption): string {
+  const fromNames = (grade.applicationNames ?? [])
+    .map((name) => name.trim())
+    .find(Boolean);
+  if (fromNames) return fromNames;
+  const fromLinks = (grade.applications ?? [])
+    .map((app) => app.name?.trim() || app.code?.trim() || "")
+    .find(Boolean);
+  return fromLinks ?? "";
+}
 
 export const sellerGradeLabel = (grade: SellerGradeOption) =>
   grade.fullGradeName?.trim() ||

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -42,10 +42,12 @@ import { slabsOverlap } from "@/lib/seller/format";
 import { apiErrorMessage, buildSellerListingCode } from "@/lib/utils";
 import {
   createSellerListing,
+  sellerGradeApplication,
   sellerGradeCategoryName,
   sellerGradeLabel,
   type SellerGradeOption,
 } from "@/services/catalog";
+import { fetchGradeTdsAvailability } from "@/services/grade-tds";
 import { uploadProductDocument } from "@/services/product-documents";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 import { useSellerStore } from "@/store/sellerStore";
@@ -93,6 +95,7 @@ export function AddGradeView() {
     null,
   );
   const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
+  const [gradeTdsNote, setGradeTdsNote] = useState<string | null>(null);
   const overlap = useMemo(() => slabsOverlap(slabs), [slabs]);
 
   const form = useForm<Values>({
@@ -119,6 +122,54 @@ export function AddGradeView() {
       sellingPrice: 0,
     },
   });
+
+  useEffect(() => {
+    const gradeId = selectedGrade?.id;
+    if (!gradeId) return;
+    let cancelled = false;
+    void fetchGradeTdsAvailability(gradeId).then((tds) => {
+      if (cancelled) return;
+      setGradeTdsNote(
+        tds.available
+          ? `Platform TDS available (${tds.count} document${tds.count === 1 ? "" : "s"}). Customers see verified Grade Master TDS.`
+          : "No verified platform TDS on this grade yet — Admin can upload in TDS Library.",
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGrade?.id]);
+
+  function applyGradeDefaults(grade: SellerGradeOption | null) {
+    setSelectedGrade(grade);
+    setGradeTdsNote(grade ? "Checking…" : null);
+    form.setValue("gradeId", grade?.id ?? "", {
+      shouldValidate: form.formState.isSubmitted,
+    });
+    form.setValue("gradeName", grade ? sellerGradeLabel(grade) : "");
+    form.setValue("gradeCode", grade ? buildSellerListingCode(grade.code) : "");
+    if (!grade) return;
+
+    const application = sellerGradeApplication(grade);
+    if (application && !form.getValues("application").trim()) {
+      form.setValue("application", application, { shouldDirty: true });
+    }
+    const specs = grade.catalogSpecs ?? {};
+    if (specs.mfi && !form.getValues("mfi").trim()) {
+      form.setValue("mfi", specs.mfi, { shouldDirty: true });
+    }
+    if (specs.density && !form.getValues("density")?.trim()) {
+      form.setValue("density", specs.density, { shouldDirty: true });
+    }
+    if (specs.defaultPackaging) {
+      const currentPackaging = form.getValues("packagingType");
+      if (!currentPackaging || currentPackaging === DEFAULT_PACKAGING_TYPE) {
+        form.setValue("packagingType", specs.defaultPackaging, {
+          shouldDirty: true,
+        });
+      }
+    }
+  }
 
   const save = async (values: Values, asDraft: boolean) => {
     if (overlap) {
@@ -213,19 +264,38 @@ export function AddGradeView() {
           <GradeMasterPicker
             selectedGrade={selectedGrade}
             error={form.formState.errors.gradeId?.message}
-            onSelect={(grade) => {
-              setSelectedGrade(grade);
-              form.setValue("gradeId", grade?.id ?? "", {
-                shouldValidate: form.formState.isSubmitted,
-              });
-              form.setValue("gradeName", grade ? sellerGradeLabel(grade) : "");
-              // Seller Product.code is unique per org — never reuse bare Grade Master code.
-              form.setValue(
-                "gradeCode",
-                grade ? buildSellerListingCode(grade.code) : "",
-              );
-            }}
+            onSelect={applyGradeDefaults}
           />
+          {selectedGrade ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+              <p className="font-medium text-slate-900">
+                Grade Master defaults
+              </p>
+              <dl className="mt-2 grid gap-1 text-[12px] sm:grid-cols-2">
+                <div>
+                  <dt className="text-slate-500">Manufacturer</dt>
+                  <dd>{selectedGrade.manufacturer || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Grade Group</dt>
+                  <dd>{selectedGrade.gradeGroup || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">HSN</dt>
+                  <dd className="font-mono">{selectedGrade.hsnCode || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Platform TDS</dt>
+                  <dd>{gradeTdsNote ?? "Checking…"}</dd>
+                </div>
+              </dl>
+              <p className="mt-2 text-[11px] text-slate-500">
+                Application, MFI, density and packaging are prefilled when Grade
+                Master has catalog defaults. Price, MOQ, stock and warehouse
+                stay seller-owned.
+              </p>
+            </div>
+          ) : null}
           <div className="grid gap-4 md:grid-cols-2">
             <FormField
               control={form.control}

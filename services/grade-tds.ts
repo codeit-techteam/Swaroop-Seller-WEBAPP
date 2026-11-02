@@ -56,3 +56,32 @@ export async function fetchSellerProductGradeTds(
     }
   );
 }
+
+type PublicGradeTdsPayload = {
+  available?: boolean;
+  items?: Array<{ id: string; title?: string; verificationStatus?: string }>;
+  message?: string | null;
+};
+
+/** Guest-safe TDS availability for a Grade Master id (add-listing prefill). */
+export async function fetchGradeTdsAvailability(gradeId: string): Promise<{
+  available: boolean;
+  count: number;
+  message?: string | null;
+}> {
+  try {
+    const response = await apiClient.get<Envelope<PublicGradeTdsPayload>>(
+      `/public/marketplace/grades/${gradeId}/tds`,
+    );
+    const data = response.data.data;
+    const items = data?.items ?? [];
+    const available = Boolean(data?.available ?? items.length > 0);
+    return {
+      available,
+      count: items.length,
+      message: data?.message ?? null,
+    };
+  } catch {
+    return { available: false, count: 0, message: null };
+  }
+}

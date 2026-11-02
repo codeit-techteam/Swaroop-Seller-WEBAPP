@@ -43,6 +43,7 @@ import { apiErrorMessage } from "@/lib/utils";
 import {
   fetchSellerGrade,
   fetchSellerProduct,
+  sellerGradeApplication,
   sellerGradeCategoryName,
   sellerGradeLabel,
   type SellerGradeOption,
@@ -351,8 +352,47 @@ export function EditGradeView() {
                 shouldValidate: form.formState.isSubmitted,
               });
               form.setValue("gradeName", grade ? sellerGradeLabel(grade) : "");
+              if (!grade) return;
+              const application = sellerGradeApplication(grade);
+              if (application && !form.getValues("application").trim()) {
+                form.setValue("application", application, {
+                  shouldDirty: true,
+                });
+              }
+              const specs = grade.catalogSpecs ?? {};
+              if (specs.mfi && !form.getValues("mfi").trim()) {
+                form.setValue("mfi", specs.mfi, { shouldDirty: true });
+              }
+              if (specs.density && !form.getValues("density")?.trim()) {
+                form.setValue("density", specs.density, { shouldDirty: true });
+              }
+              if (
+                specs.defaultPackaging &&
+                (!form.getValues("packagingType") ||
+                  form.getValues("packagingType") === DEFAULT_PACKAGING_TYPE)
+              ) {
+                form.setValue("packagingType", specs.defaultPackaging, {
+                  shouldDirty: true,
+                });
+              }
             }}
           />
+          {selectedGrade ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-[12px] text-slate-700">
+              <p className="font-medium text-slate-900">Grade Master</p>
+              <p className="mt-1">
+                HSN{" "}
+                <span className="font-mono">
+                  {selectedGrade.hsnCode || "—"}
+                </span>
+                {" · "}
+                {selectedGrade.manufacturer || "—"}
+                {selectedGrade.gradeGroup
+                  ? ` · ${selectedGrade.gradeGroup}`
+                  : ""}
+              </p>
+            </div>
+          ) : null}
           <div className="grid gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
