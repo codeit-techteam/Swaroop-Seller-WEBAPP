@@ -11,7 +11,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_API_BASE_URL=https://swaroop-backend-xzwkz.ondigitalocean.app/api/v1
 ARG NEXT_PUBLIC_APP_URL=https://swaroop-seller.ondigitalocean.app
-ARG NEXT_PUBLIC_APP_NAME=PetroTrade Seller
+ARG NEXT_PUBLIC_APP_NAME=PolyStoreX Seller
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME

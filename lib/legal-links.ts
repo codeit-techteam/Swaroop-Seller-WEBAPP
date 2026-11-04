@@ -20,8 +20,14 @@ export type LegalLinks = {
   privacyUrl: string | null;
   supportUrl: string | null;
   supportEmail: string | null;
+  supportPhone: string | null;
+  supportWhatsapp: string | null;
   missing: string[];
 };
+
+const FALLBACK_SUPPORT_EMAIL = "it@polystorex.com";
+const FALLBACK_SUPPORT_PHONE = "+91 99626 20101";
+const FALLBACK_SUPPORT_WHATSAPP = "https://wa.me/919962620101";
 
 export type ContactSupportOptions = {
   /** Pre-select topic on the marketing /contact form (e.g. SELL_MATERIALS). */
@@ -97,7 +103,10 @@ export async function fetchLegalLinks(): Promise<LegalLinks> {
           resolvePublicWebsiteUrl(data.privacyUrl) ?? LIVE_PRIVACY_URL,
         supportUrl:
           resolvePublicWebsiteUrl(data.supportUrl) ?? LIVE_SUPPORT_URL,
-        supportEmail: data.supportEmail ?? null,
+        supportEmail: data.supportEmail?.trim() || FALLBACK_SUPPORT_EMAIL,
+        supportPhone: data.supportPhone?.trim() || FALLBACK_SUPPORT_PHONE,
+        supportWhatsapp:
+          data.supportWhatsapp?.trim() || FALLBACK_SUPPORT_WHATSAPP,
         missing: Array.isArray(data.missing) ? data.missing : [],
       };
       return cached;
@@ -107,7 +116,9 @@ export async function fetchLegalLinks(): Promise<LegalLinks> {
         termsUrl: LIVE_TERMS_URL,
         privacyUrl: LIVE_PRIVACY_URL,
         supportUrl: LIVE_SUPPORT_URL,
-        supportEmail: null,
+        supportEmail: FALLBACK_SUPPORT_EMAIL,
+        supportPhone: FALLBACK_SUPPORT_PHONE,
+        supportWhatsapp: FALLBACK_SUPPORT_WHATSAPP,
         missing: [],
       };
     } finally {

@@ -17,7 +17,7 @@ services:
         value: https://swaroop-backend-xzwkz.ondigitalocean.app/api/v1
         scope: RUN_AND_BUILD_TIME
       - key: NEXT_PUBLIC_APP_NAME
-        value: PetroTrade Seller
+        value: PolyStoreX Seller
         scope: RUN_AND_BUILD_TIME
       - key: NODE_ENV
         value: production
