@@ -70,12 +70,14 @@ export function OtpInput({
           }}
           type="text"
           inputMode="numeric"
+          autoComplete={index === 0 ? "one-time-code" : "off"}
           maxLength={1}
           disabled={disabled}
           value={digits[index]?.trim() ?? ""}
           onChange={(e) => handleChange(index, e.target.value)}
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
+          aria-label={`Digit ${index + 1} of ${length}`}
           className={cn(
             "h-14 w-14 text-center text-xl font-semibold",
             index === value.length && "ring-2 ring-primary",

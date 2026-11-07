@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Package } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -31,6 +31,7 @@ export default function VerifyOtpPage() {
   const resendOtp = useAuthStore((s) => s.resendOtp);
   const [countdown, setCountdown] = useState(RESEND_SECONDS);
   const [isVerifying, setIsVerifying] = useState(false);
+  const verifyingRef = useRef(false);
 
   const form = useForm<OtpFormValues>({
     resolver: zodResolver(otpSchema),
@@ -53,12 +54,15 @@ export default function VerifyOtpPage() {
 
   const maskedMobile = maskMobile(pendingMobile);
 
-  const onSubmit = useCallback(
-    async (values: OtpFormValues) => {
+  const submitOtp = useCallback(
+    async (otp: string) => {
+      if (otp.length !== 6 || verifyingRef.current) return;
+      verifyingRef.current = true;
       setIsVerifying(true);
-      const result = await verifyOtp(values.otp);
-      setIsVerifying(false);
+      const result = await verifyOtp(otp);
       if (!result.ok) {
+        setIsVerifying(false);
+        verifyingRef.current = false;
         form.setError("otp", { message: result.message });
         toast.error(result.message ?? "Invalid OTP");
         return;
@@ -126,7 +130,12 @@ export default function VerifyOtpPage() {
           ) : null}
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void form.handleSubmit((values) => submitOtp(values.otp))(
+                  event,
+                );
+              }}
               className="mt-8 space-y-6"
             >
               <FormField
@@ -136,7 +145,12 @@ export default function VerifyOtpPage() {
                   <FormItem>
                     <OtpInput
                       value={field.value}
-                      onChange={field.onChange}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        if (value.length === 6) {
+                          void submitOtp(value);
+                        }
+                      }}
                       disabled={isVerifying}
                     />
                     <FormMessage />
