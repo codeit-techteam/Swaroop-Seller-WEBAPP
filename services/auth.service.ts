@@ -71,6 +71,36 @@ export function authErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+export function isOtpRateLimited(error: unknown): boolean {
+  return (
+    isAxiosError<{ code?: string }>(error) &&
+    error.response?.data?.code === "AUTH_OTP_RATE_LIMITED"
+  );
+}
+
+export function otpRetryAfterSeconds(error: unknown): number | undefined {
+  if (
+    !isAxiosError<{
+      details?: { retryAfterSeconds?: number };
+    }>(error)
+  ) {
+    return undefined;
+  }
+  const retry = error.response?.data?.details?.retryAfterSeconds;
+  return typeof retry === "number" && retry > 0 ? Math.ceil(retry) : undefined;
+}
+
+export type SellerOtpSendResult = {
+  sent: true;
+  mobile: string;
+  phone: string;
+  smsDispatched?: boolean;
+  correlationId?: string;
+  devOtp?: string;
+  resendCooldownSeconds?: number;
+  expiresInSeconds?: number;
+};
+
 export type SellerOtpPurpose = "LOGIN" | "SIGNUP";
 
 export type SellerSignupProfile = {
@@ -80,17 +110,36 @@ export type SellerSignupProfile = {
 };
 
 export const authService = {
-  async sendOtp(mobile: string, purpose: SellerOtpPurpose = "LOGIN") {
+  async sendOtp(
+    mobile: string,
+    purpose: SellerOtpPurpose = "LOGIN",
+  ): Promise<SellerOtpSendResult> {
     const phone = toE164IndianPhone(mobile);
     const response = await apiClient.post("/auth/otp/send", {
       phone,
       purpose,
     });
     const data = response.data?.data ?? response.data;
+    if (
+      data?.smsDispatched === false &&
+      process.env.NODE_ENV === "production"
+    ) {
+      throw new Error(
+        "SMS could not be dispatched. Please try again in a moment.",
+      );
+    }
     return {
       sent: true as const,
       mobile,
       phone,
+      smsDispatched:
+        typeof data?.smsDispatched === "boolean"
+          ? data.smsDispatched
+          : undefined,
+      correlationId:
+        typeof data?.correlationId === "string"
+          ? data.correlationId
+          : undefined,
       devOtp: data?.devOtp as string | undefined,
       resendCooldownSeconds:
         typeof data?.resendCooldownSeconds === "number"
@@ -103,17 +152,36 @@ export const authService = {
     };
   },
 
-  async resendOtp(mobile: string, purpose: SellerOtpPurpose = "LOGIN") {
+  async resendOtp(
+    mobile: string,
+    purpose: SellerOtpPurpose = "LOGIN",
+  ): Promise<SellerOtpSendResult> {
     const phone = toE164IndianPhone(mobile);
     const response = await apiClient.post("/auth/otp/resend", {
       phone,
       purpose,
     });
     const data = response.data?.data ?? response.data;
+    if (
+      data?.smsDispatched === false &&
+      process.env.NODE_ENV === "production"
+    ) {
+      throw new Error(
+        "SMS could not be dispatched. Please try again in a moment.",
+      );
+    }
     return {
       sent: true as const,
       mobile,
       phone,
+      smsDispatched:
+        typeof data?.smsDispatched === "boolean"
+          ? data.smsDispatched
+          : undefined,
+      correlationId:
+        typeof data?.correlationId === "string"
+          ? data.correlationId
+          : undefined,
       resendCooldownSeconds:
         typeof data?.resendCooldownSeconds === "number"
           ? data.resendCooldownSeconds

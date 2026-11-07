@@ -1,4 +1,3 @@
-import { isAxiosError } from "axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -14,6 +13,8 @@ import {
 import {
   authErrorMessage,
   authService,
+  isOtpRateLimited,
+  otpRetryAfterSeconds,
   type SellerOtpPurpose,
   type SellerSignupProfile,
 } from "@/services/auth.service";
@@ -49,15 +50,24 @@ interface SellerAuthState extends AuthState {
   sendOtp: (
     mobile: string,
     purpose?: SellerOtpPurpose,
-  ) => Promise<{ ok: boolean; message?: string }>;
+  ) => Promise<{
+    ok: boolean;
+    message?: string;
+    alreadySent?: boolean;
+    resendCooldownSeconds?: number;
+  }>;
   resendOtp: () => Promise<{
     ok: boolean;
     message?: string;
+    alreadySent?: boolean;
     resendCooldownSeconds?: number;
   }>;
-  startSignup: (
-    draft: SellerSignupDraft,
-  ) => Promise<{ ok: boolean; message?: string }>;
+  startSignup: (draft: SellerSignupDraft) => Promise<{
+    ok: boolean;
+    message?: string;
+    alreadySent?: boolean;
+    resendCooldownSeconds?: number;
+  }>;
   verifyOtp: (otp: string) => Promise<VerifyOtpResult>;
   loginWithCredentials: (
     identifier: string,
@@ -138,14 +148,21 @@ export const useAuthStore = create<SellerAuthState>()(
           pendingSignup: purpose === "LOGIN" ? null : get().pendingSignup,
         });
         try {
-          await authService.sendOtp(mobile, purpose);
+          const result = await authService.sendOtp(mobile, purpose);
           set({ isLoading: false });
-          return { ok: true };
+          return {
+            ok: true,
+            resendCooldownSeconds: result.resendCooldownSeconds,
+          };
         } catch (error) {
           set({ isLoading: false });
-          // A 429 means an OTP was issued moments ago and is still valid.
-          if (isAxiosError(error) && error.response?.status === 429) {
-            return { ok: true };
+          if (isOtpRateLimited(error)) {
+            return {
+              ok: true,
+              alreadySent: true,
+              resendCooldownSeconds: otpRetryAfterSeconds(error),
+              message: "An OTP was already sent. Enter the code from your SMS.",
+            };
           }
           return {
             ok: false,
@@ -172,8 +189,13 @@ export const useAuthStore = create<SellerAuthState>()(
           };
         } catch (error) {
           set({ isLoading: false });
-          if (isAxiosError(error) && error.response?.status === 429) {
-            return { ok: true as const };
+          if (isOtpRateLimited(error)) {
+            return {
+              ok: true as const,
+              alreadySent: true,
+              resendCooldownSeconds: otpRetryAfterSeconds(error),
+              message: "An OTP was already sent. Enter the code from your SMS.",
+            };
           }
           return {
             ok: false as const,
@@ -189,13 +211,21 @@ export const useAuthStore = create<SellerAuthState>()(
           pendingSignup: draft,
         });
         try {
-          await authService.sendOtp(draft.mobile, "SIGNUP");
+          const result = await authService.sendOtp(draft.mobile, "SIGNUP");
           set({ isLoading: false });
-          return { ok: true };
+          return {
+            ok: true,
+            resendCooldownSeconds: result.resendCooldownSeconds,
+          };
         } catch (error) {
           set({ isLoading: false });
-          if (isAxiosError(error) && error.response?.status === 429) {
-            return { ok: true };
+          if (isOtpRateLimited(error)) {
+            return {
+              ok: true,
+              alreadySent: true,
+              resendCooldownSeconds: otpRetryAfterSeconds(error),
+              message: "An OTP was already sent. Enter the code from your SMS.",
+            };
           }
           return {
             ok: false,

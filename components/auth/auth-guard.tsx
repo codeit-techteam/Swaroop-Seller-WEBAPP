@@ -59,10 +59,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!statusReady) return;
-    if (user?.mustChangePassword) {
-      router.replace(ROUTES.CHANGE_PASSWORD);
-      return;
-    }
+    // Seller auth is mobile OTP only — do not force password change flows.
     const assignedManager = user?.role === "SELLER_MANAGER";
     if (
       !onboardingComplete &&
@@ -78,7 +75,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     onboardingComplete,
     pathname,
     router,
-    user?.mustChangePassword,
     user?.role,
   ]);
 
