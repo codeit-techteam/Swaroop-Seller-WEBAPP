@@ -16,13 +16,19 @@ import { ROUTES } from "@/lib/constants";
 import { type OtpFormValues, otpSchema } from "@/lib/schemas/onboarding";
 import { useAuthStore } from "@/store/authStore";
 
-const RESEND_SECONDS = 45;
+const RESEND_SECONDS = 60;
+
+function maskMobile(mobile: string): string {
+  const digits = mobile.replace(/\D/g, "").slice(-10);
+  if (digits.length !== 10) return "+91 ******XXXX";
+  return `+91 ******${digits.slice(-4)}`;
+}
 
 export default function VerifyOtpPage() {
   const router = useRouter();
   const pendingMobile = useAuthStore((s) => s.pendingMobile);
   const verifyOtp = useAuthStore((s) => s.verifyOtp);
-  const sendOtp = useAuthStore((s) => s.sendOtp);
+  const resendOtp = useAuthStore((s) => s.resendOtp);
   const [countdown, setCountdown] = useState(RESEND_SECONDS);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -45,7 +51,7 @@ export default function VerifyOtpPage() {
     return () => window.clearInterval(timer);
   }, [countdown]);
 
-  const formattedMobile = pendingMobile.replace(/(\d{5})(\d{5})/, "$1 $2");
+  const maskedMobile = maskMobile(pendingMobile);
 
   const onSubmit = useCallback(
     async (values: OtpFormValues) => {
@@ -109,7 +115,8 @@ export default function VerifyOtpPage() {
           </Link>
           <h2 className="text-2xl font-bold">Enter OTP</h2>
           <p className="mt-2 text-sm text-slate-500">
-            We&apos;ve sent an OTP to +91 {formattedMobile || "XXXXX XXXXX"}
+            Enter the 6-digit verification code sent to{" "}
+            {maskedMobile || "+91 ******XXXX"}
           </p>
           {otpPurpose === "SIGNUP" ? (
             <p className="mt-2 text-xs text-slate-400">
@@ -154,10 +161,13 @@ export default function VerifyOtpPage() {
             type="button"
             disabled={countdown > 0}
             onClick={async () => {
-              const result = await sendOtp(pendingMobile, otpPurpose);
-              setCountdown(RESEND_SECONDS);
-              if (result.message) toast(result.message, { icon: "⚠️" });
-              else toast.success("OTP resent");
+              const result = await resendOtp();
+              setCountdown(result.resendCooldownSeconds ?? RESEND_SECONDS);
+              if (!result.ok && result.message) {
+                toast.error(result.message);
+                return;
+              }
+              toast.success("OTP resent");
             }}
             className="mt-4 text-sm font-medium text-[#1B6EF3] disabled:text-slate-400"
           >

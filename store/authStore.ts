@@ -50,6 +50,11 @@ interface SellerAuthState extends AuthState {
     mobile: string,
     purpose?: SellerOtpPurpose,
   ) => Promise<{ ok: boolean; message?: string }>;
+  resendOtp: () => Promise<{
+    ok: boolean;
+    message?: string;
+    resendCooldownSeconds?: number;
+  }>;
   startSignup: (
     draft: SellerSignupDraft,
   ) => Promise<{ ok: boolean; message?: string }>;
@@ -145,6 +150,34 @@ export const useAuthStore = create<SellerAuthState>()(
           return {
             ok: false,
             message: authErrorMessage(error, "Unable to send OTP."),
+          };
+        }
+      },
+      resendOtp: async () => {
+        const mobile = get().pendingMobile;
+        const purpose = get().otpPurpose;
+        if (!mobile) {
+          return {
+            ok: false,
+            message: "Start login again to receive a new OTP.",
+          };
+        }
+        set({ isLoading: true });
+        try {
+          const result = await authService.resendOtp(mobile, purpose);
+          set({ isLoading: false });
+          return {
+            ok: true as const,
+            resendCooldownSeconds: result.resendCooldownSeconds,
+          };
+        } catch (error) {
+          set({ isLoading: false });
+          if (isAxiosError(error) && error.response?.status === 429) {
+            return { ok: true as const };
+          }
+          return {
+            ok: false as const,
+            message: authErrorMessage(error, "Unable to resend OTP."),
           };
         }
       },

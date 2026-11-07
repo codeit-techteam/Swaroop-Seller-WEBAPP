@@ -92,6 +92,36 @@ export const authService = {
       mobile,
       phone,
       devOtp: data?.devOtp as string | undefined,
+      resendCooldownSeconds:
+        typeof data?.resendCooldownSeconds === "number"
+          ? data.resendCooldownSeconds
+          : undefined,
+      expiresInSeconds:
+        typeof data?.expiresInSeconds === "number"
+          ? data.expiresInSeconds
+          : undefined,
+    };
+  },
+
+  async resendOtp(mobile: string, purpose: SellerOtpPurpose = "LOGIN") {
+    const phone = toE164IndianPhone(mobile);
+    const response = await apiClient.post("/auth/otp/resend", {
+      phone,
+      purpose,
+    });
+    const data = response.data?.data ?? response.data;
+    return {
+      sent: true as const,
+      mobile,
+      phone,
+      resendCooldownSeconds:
+        typeof data?.resendCooldownSeconds === "number"
+          ? data.resendCooldownSeconds
+          : undefined,
+      expiresInSeconds:
+        typeof data?.expiresInSeconds === "number"
+          ? data.expiresInSeconds
+          : undefined,
     };
   },
 
