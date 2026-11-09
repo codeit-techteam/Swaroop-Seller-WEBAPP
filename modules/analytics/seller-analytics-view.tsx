@@ -128,13 +128,15 @@ function AnalyticsSkeleton() {
 export function SellerAnalyticsView() {
   const snapshot = useAnalyticsStore((s) => s.snapshot);
   const isLoading = useAnalyticsStore((s) => s.isLoading);
+  const isEmpty = useAnalyticsStore((s) => s.isEmpty);
+  const loadError = useAnalyticsStore((s) => s.loadError);
   const revenuePeriod = useAnalyticsStore((s) => s.revenuePeriod);
   const bootstrap = useAnalyticsStore((s) => s.bootstrap);
   const setRevenuePeriod = useAnalyticsStore((s) => s.setRevenuePeriod);
   const refresh = useAnalyticsStore((s) => s.refresh);
 
   useEffect(() => {
-    bootstrap();
+    void bootstrap();
   }, [bootstrap]);
 
   const chartData = useMemo(() => {
@@ -175,11 +177,27 @@ export function SellerAnalyticsView() {
             with the seller mobile app.
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={() => refresh()}>
+        <Button type="button" variant="outline" onClick={() => void refresh()}>
           <RefreshCw className="mr-1.5 h-4 w-4" />
           Refresh
         </Button>
       </div>
+
+      {loadError ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {loadError}
+        </div>
+      ) : null}
+      {isEmpty ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <p className="font-medium text-slate-900">No analytics data yet</p>
+          <p className="mt-1 text-slate-600">
+            Live KPIs appear after you publish offers, fulfil orders, and
+            receive settlements. Figures below are real counts from your account
+            — not demo data.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricTile

@@ -68,16 +68,24 @@ export function SellerProfileView() {
         </p>
         <Grid
           rows={[
-            ["GSTIN", account?.gstin ?? seller.gst],
+            ["GSTIN", (account?.gstin ?? seller.gst)?.trim() || "Not added"],
             ["GST state", account?.gstState ?? "—"],
             [
               "GST verification",
-              account?.gstVerified ? "Verified" : "Pending verification",
+              account?.gstVerified && (account?.gstin ?? seller.gst)?.trim()
+                ? "Verified"
+                : (account?.gstin ?? seller.gst)?.trim()
+                  ? "Pending verification"
+                  : "Not added",
             ],
-            ["PAN", account?.pan ?? seller.pan],
+            ["PAN", (account?.pan ?? seller.pan)?.trim() || "Not added"],
             [
               "PAN verification",
-              account?.panVerified ? "Verified" : "Pending verification",
+              account?.panVerified && (account?.pan ?? seller.pan)?.trim()
+                ? "Verified"
+                : (account?.pan ?? seller.pan)?.trim()
+                  ? "Pending verification"
+                  : "Not added",
             ],
           ]}
         />

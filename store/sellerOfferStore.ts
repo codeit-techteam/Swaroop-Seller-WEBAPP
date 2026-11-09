@@ -339,7 +339,32 @@ export const useSellerOfferStore = create<SellerOfferState>()(
         });
       },
       getById: (id) => get().offers.find((offer) => offer.id === id),
-      getSummary: () => {
+      getSummary: (locationId) => {
+        // When a warehouse location is selected, derive KPIs from the same
+        // scoped offer list the UI renders — never show org-wide "63 live"
+        // against an empty location-filtered list.
+        if (locationId) {
+          const scoped = get().offers.filter(
+            (offer) => !offer.locationId || offer.locationId === locationId,
+          );
+          const now = Date.now();
+          const soonMs = 48 * 60 * 60 * 1000;
+          return {
+            active: scoped.filter((o) => o.status === "active").length,
+            draft: scoped.filter((o) => o.status === "draft").length,
+            paused: scoped.filter((o) => o.status === "paused").length,
+            expiring: scoped.filter((o) => {
+              if (o.status !== "active" || !o.validUntil) return false;
+              const until = new Date(o.validUntil).getTime();
+              return until > now && until <= now + soonMs;
+            }).length,
+            pendingPurchaseRequests: (get().summary ?? emptySummary)
+              .pendingPurchaseRequests,
+            soldOut: scoped.filter(
+              (o) => o.status === "active" && Number(o.availableQty ?? 0) <= 0,
+            ).length,
+          };
+        }
         const summary = get().summary ?? emptySummary;
         return {
           active: summary.active,

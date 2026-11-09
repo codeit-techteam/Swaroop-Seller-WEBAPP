@@ -18,6 +18,7 @@ interface FooterNavigationProps {
   showContinue?: boolean;
   showSaveDraft?: boolean;
   continueDisabled?: boolean;
+  continueDisabledReason?: string;
   isLoading?: boolean;
   continueType?: "button" | "submit";
   showProgress?: boolean;
@@ -35,6 +36,7 @@ export function FooterNavigation({
   showContinue = true,
   showSaveDraft = true,
   continueDisabled = false,
+  continueDisabledReason,
   isLoading = false,
   continueType = "button",
   showProgress = true,
@@ -84,15 +86,27 @@ export function FooterNavigation({
             </div>
           ) : null}
           {showContinue ? (
-            <Button
-              onClick={continueType === "button" ? onContinue : undefined}
-              disabled={continueDisabled || isLoading}
-              type={continueType}
-              className="min-w-[140px]"
-            >
-              {isLoading ? "Processing..." : continueLabel}
-              {!isLoading ? <ArrowRight className="h-4 w-4" /> : null}
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                onClick={continueType === "button" ? onContinue : undefined}
+                disabled={continueDisabled || isLoading}
+                type={continueType}
+                className="min-w-[140px]"
+                title={
+                  continueDisabled && continueDisabledReason
+                    ? continueDisabledReason
+                    : undefined
+                }
+              >
+                {isLoading ? "Processing..." : continueLabel}
+                {!isLoading ? <ArrowRight className="h-4 w-4" /> : null}
+              </Button>
+              {continueDisabled && continueDisabledReason ? (
+                <p className="max-w-[240px] text-right text-[11px] text-amber-700">
+                  {continueDisabledReason}
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </div>
       </div>

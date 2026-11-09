@@ -147,17 +147,12 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
     (productId: string) => {
       const product = products.find((p) => p.id === productId);
       if (!product) return;
-      const warehouse = locations.find((w) => w.id === product.locationId);
       setFormData({
         productId: product.id,
         productName: product.gradeName,
         productGrade: product.gradeCode,
         productSubtext: product.polymerType,
         category: product.category,
-        warehouseId: product.locationId,
-        warehouseName: warehouse
-          ? `${warehouse.name} (${warehouse.city})`
-          : (product.origin ?? ""),
         availableInventoryMt: product.availableStock,
         basePrice: product.basePrice ?? 0,
         allocationMt: Math.min(100, product.availableStock),
@@ -385,22 +380,40 @@ export function CreateOfferView({ editId }: CreateOfferViewProps) {
                   Warehouse Location
                 </Label>
                 <Select
-                  value={formData.warehouseId}
+                  value={formData.warehouseId || undefined}
                   onValueChange={handleWarehouseChange}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select warehouse" />
+                  <SelectTrigger
+                    className={
+                      !formData.warehouseId
+                        ? "border-amber-300 ring-1 ring-amber-100"
+                        : undefined
+                    }
+                  >
+                    <SelectValue placeholder="Select warehouse (required)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locations.map((wh) => (
-                      <SelectItem key={wh.id} value={wh.id}>
-                        {wh.name} ({wh.city})
-                      </SelectItem>
-                    ))}
+                    {locations.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-slate-500">
+                        No operating locations yet. Add one under Profile →
+                        Locations before creating an offer.
+                      </div>
+                    ) : (
+                      locations.map((wh) => (
+                        <SelectItem key={wh.id} value={wh.id}>
+                          {wh.name} ({wh.city})
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 {errors.warehouseId ? (
                   <p className="text-xs text-red-500">{errors.warehouseId}</p>
+                ) : !formData.warehouseId ? (
+                  <p className="text-xs text-amber-700">
+                    Warehouse is required. Choose where stock for this offer
+                    will ship from — we do not pick one for you.
+                  </p>
                 ) : null}
               </div>
 

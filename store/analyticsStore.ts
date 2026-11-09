@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { sellerAnalyticsSnapshotMock } from "@/mock/analytics";
+import {
+  emptySellerAnalyticsSnapshot,
+  loadSellerAnalyticsFromApi,
+} from "@/services/seller-analytics";
 import type {
   AnalyticsSummary,
   RevenueFilterPeriod,
@@ -13,9 +16,11 @@ interface AnalyticsState {
   snapshot: SellerAnalyticsSnapshot | null;
   revenuePeriod: RevenueFilterPeriod;
   isLoading: boolean;
-  bootstrap: () => void;
+  isEmpty: boolean;
+  loadError: string | null;
+  bootstrap: () => Promise<void>;
   setRevenuePeriod: (period: RevenueFilterPeriod) => void;
-  refresh: () => void;
+  refresh: () => Promise<void>;
 }
 
 export const useAnalyticsStore = create<AnalyticsState>()(
@@ -25,42 +30,56 @@ export const useAnalyticsStore = create<AnalyticsState>()(
       snapshot: null,
       revenuePeriod: "7d",
       isLoading: true,
-      bootstrap: () => {
-        if (get().snapshot) {
+      isEmpty: false,
+      loadError: null,
+      bootstrap: async () => {
+        if (get().snapshot && !get().loadError) {
           set({ isLoading: false });
           return;
         }
-        set({ isLoading: true });
-        window.setTimeout(() => {
+        set({ isLoading: true, loadError: null });
+        try {
+          const loaded = await loadSellerAnalyticsFromApi();
           set({
-            snapshot: sellerAnalyticsSnapshotMock,
-            summary: {
-              revenue: 3.8,
-              orders: sellerAnalyticsSnapshotMock.orders.completed,
-              conversionRate: 5.4,
-              averageOrderValue: 2.96,
-            },
+            snapshot: loaded.snapshot,
+            summary: loaded.summary,
+            isEmpty: loaded.isEmpty,
+            loadError: loaded.loadError,
             isLoading: false,
           });
-        }, 350);
+        } catch {
+          set({
+            snapshot: emptySellerAnalyticsSnapshot(),
+            summary: {
+              revenue: 0,
+              orders: 0,
+              conversionRate: 0,
+              averageOrderValue: 0,
+            },
+            isEmpty: true,
+            loadError: "Unable to load analytics. Showing empty metrics.",
+            isLoading: false,
+          });
+        }
       },
       setRevenuePeriod: (period) => set({ revenuePeriod: period }),
-      refresh: () => {
-        set({ isLoading: true });
-        window.setTimeout(() => {
-          const base = get().snapshot ?? sellerAnalyticsSnapshotMock;
-          const jitter = 24 + Math.random() * 2;
+      refresh: async () => {
+        set({ isLoading: true, loadError: null });
+        try {
+          const loaded = await loadSellerAnalyticsFromApi();
           set({
-            snapshot: {
-              ...base,
-              revenue: {
-                ...base.revenue,
-                today: `₹${jitter.toFixed(1)}L`,
-              },
-            },
+            snapshot: loaded.snapshot,
+            summary: loaded.summary,
+            isEmpty: loaded.isEmpty,
+            loadError: loaded.loadError,
             isLoading: false,
           });
-        }, 500);
+        } catch {
+          set({
+            isLoading: false,
+            loadError: "Refresh failed. Try again in a moment.",
+          });
+        }
       },
     }),
     { name: "analytics-store" },

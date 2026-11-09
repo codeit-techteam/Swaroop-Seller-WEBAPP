@@ -244,21 +244,27 @@ function GstInformationCard({
   details: SellerVerificationDetails;
   identity: IdentityState;
 }) {
-  const gstLabel = isVerificationAccepted(identity.gstStatus)
-    ? identity.gstStatus === "verified"
+  const gstin = details.gstin?.trim() || "";
+  const pan = details.pan?.trim() || "";
+  const gstLabel = !gstin
+    ? "Not added"
+    : identity.gstStatus === "verified"
       ? "Verified"
-      : "Manual review"
-    : "Pending verification";
-  const panLabel = isVerificationAccepted(identity.panStatus)
-    ? identity.panStatus === "verified"
+      : isVerificationAccepted(identity.gstStatus)
+        ? "Manual review"
+        : "Pending verification";
+  const panLabel = !pan
+    ? "Not added"
+    : identity.panStatus === "verified"
       ? "Verified"
-      : "Manual review"
-    : "Pending verification";
+      : isVerificationAccepted(identity.panStatus)
+        ? "Manual review"
+        : "Pending verification";
   const rows: [string, string][] = [
-    ["GSTIN", details.gstin || "—"],
+    ["GSTIN", gstin || "Not added"],
     ["GST state", identity.gstDetails?.state || "—"],
     ["GST verification", gstLabel],
-    ["PAN", details.pan || "—"],
+    ["PAN", pan || "Not added"],
     ["PAN verification", panLabel],
   ];
   return (

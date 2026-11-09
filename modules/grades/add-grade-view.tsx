@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -49,6 +50,7 @@ import {
 } from "@/services/catalog";
 import { fetchGradeTdsAvailability } from "@/services/grade-tds";
 import { uploadProductDocument } from "@/services/product-documents";
+import { useLocationStore } from "@/store/locationStore";
 import { useSellerProductStore } from "@/store/sellerProductStore";
 import { useSellerStore } from "@/store/sellerStore";
 import type { BulkPriceSlab } from "@/types/seller";
@@ -73,7 +75,9 @@ const schema = z.object({
   origin: z.string().min(2, "Origin is required"),
   currency: z.string().min(1),
   gstPercent: z.coerce.number().min(0),
-  warehouse: z.string().min(1),
+  warehouse: z
+    .string()
+    .min(1, "Select an operating warehouse for this listing"),
   reservedStock: z.coerce.number().min(0),
   notes: z.string().optional(),
   deliveryTerms: z.string().min(1, "Delivery ETA is required"),
@@ -88,6 +92,9 @@ type Values = z.infer<typeof schema>;
 
 export function AddGradeView() {
   const router = useRouter();
+  const locations = useLocationStore((s) => s.locations);
+  const hydrateLocations = useLocationStore((s) => s.hydrate);
+  const locationLoadError = useLocationStore((s) => s.loadError);
   const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const addActivity = useSellerStore((s) => s.addActivity);
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
@@ -122,6 +129,10 @@ export function AddGradeView() {
       sellingPrice: 0,
     },
   });
+
+  useEffect(() => {
+    void hydrateLocations();
+  }, [hydrateLocations]);
 
   useEffect(() => {
     const gradeId = selectedGrade?.id;
@@ -474,11 +485,57 @@ export function AddGradeView() {
               control={form.control}
               name="warehouse"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Warehouse</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Chennai CFS Warehouse" {...field} />
-                  </FormControl>
+                <FormItem className="md:col-span-2">
+                  <FormLabel>
+                    Operating warehouse <span className="text-red-500">*</span>
+                  </FormLabel>
+                  {locations.length === 0 ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                      <p className="font-medium">
+                        No warehouse on your account yet
+                      </p>
+                      <p className="mt-1 text-xs text-amber-800">
+                        {locationLoadError ??
+                          "Add an operating location before you can publish stock from a warehouse."}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        asChild
+                      >
+                        <Link href={ROUTES.PROFILE_LOCATIONS}>
+                          Add operating location
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select warehouse" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {locations.map((wh) => (
+                          <SelectItem
+                            key={wh.id}
+                            value={`${wh.name} (${wh.city})`}
+                          >
+                            {wh.name} ({wh.city})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <p className="text-[11px] text-slate-500">
+                    Buyers see dispatch geography only — pick where material
+                    will ship from. We never auto-assign a warehouse.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

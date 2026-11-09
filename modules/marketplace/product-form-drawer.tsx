@@ -774,8 +774,31 @@ export function ProductFormDrawer({
     if (prev) setTab(prev.id);
   };
 
-  const goNext = () => {
+  const tabFieldGroups: Partial<Record<FormTabId, (keyof FormValues)[]>> = {
+    details: [
+      "name",
+      "grade",
+      "material",
+      "brand",
+      "categoryId",
+      "description",
+      "packaging",
+      "unit",
+      "moq",
+      "location",
+      "etaLabel",
+    ],
+    specs: ["imageUrl"],
+    pricing: ["sellingPrice"],
+  };
+
+  const goNext = async () => {
     if (isLastTab) return;
+    const fields = tabFieldGroups[tab];
+    if (fields?.length) {
+      const valid = await form.trigger(fields);
+      if (!valid) return;
+    }
     const next = FORM_TABS[tabIndex + 1];
     if (next) setTab(next.id);
   };
@@ -935,15 +958,23 @@ export function ProductFormDrawer({
             </Button>
           )}
           {!isLastTab && !previewOpen ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="gap-1.5 bg-slate-100 text-slate-800 hover:bg-slate-200"
-              onClick={goNext}
-            >
-              Continue
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                type="button"
+                variant="secondary"
+                className="gap-1.5 bg-slate-100 text-slate-800 hover:bg-slate-200"
+                onClick={() => void goNext()}
+              >
+                Continue
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              {tab === "details" && !form.watch("location")?.trim() ? (
+                <p className="max-w-[220px] text-right text-[11px] text-amber-700">
+                  Warehouse is required on this step — select or enter a
+                  location to continue.
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </>
       }

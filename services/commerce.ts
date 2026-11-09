@@ -443,9 +443,14 @@ export async function fetchSellerOffers(
   );
 }
 
-export async function fetchSellerOfferSummary(): Promise<SellerOfferSummary> {
+export async function fetchSellerOfferSummary(opts?: {
+  warehouseId?: string;
+}): Promise<SellerOfferSummary> {
   const response = await apiClient.get<Envelope<SellerOfferSummary>>(
     "/seller/offers/summary",
+    {
+      params: opts?.warehouseId ? { warehouseId: opts.warehouseId } : undefined,
+    },
   );
   const data = response.data.data;
   return {

@@ -122,7 +122,7 @@ export function ProductDetailView() {
             {offers.map((offer) => (
               <div key={offer.id} className="flex items-center justify-between">
                 <span>
-                  ₹{offer.price}/kg · {formatMt(offer.availableQty)}
+                  ₹{offer.price}/MT · {formatMt(offer.availableQty)}
                 </span>
                 <SellerStatusBadge status={offer.status} />
               </div>
