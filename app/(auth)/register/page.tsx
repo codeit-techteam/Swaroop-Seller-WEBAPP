@@ -63,17 +63,14 @@ export default function SellerRegisterPage() {
       <div className="relative hidden w-1/2 overflow-hidden lg:flex lg:flex-col">
         <div className="absolute inset-0 bg-[#0B1F3A]" />
         <div className="relative z-10 flex flex-1 flex-col p-10 text-white">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/brand/polystorex-logo.png"
-              alt="PolyStoreX"
-              width={40}
-              height={40}
-              className="h-10 w-10 rounded-lg bg-white object-contain p-0.5"
-              priority
-            />
-            <p className="text-lg font-semibold">PolyStoreX</p>
-          </div>
+          <Image
+            src="/brand/polystorex-logo-transparent.png"
+            alt="PolyStoreX"
+            width={848}
+            height={372}
+            className="h-16 w-auto max-w-full self-start"
+            priority
+          />
           <div className="my-auto max-w-md">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -97,22 +94,19 @@ export default function SellerRegisterPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mx-auto w-full max-w-md"
           >
-            <div className="mb-2 flex justify-center lg:hidden">
+            <div className="mb-4 flex justify-center lg:hidden">
               <Image
-                src="/brand/polystorex-logo.png"
+                src="/brand/polystorex-logo-light-bg.png"
                 alt="PolyStoreX"
-                width={48}
-                height={48}
-                className="h-12 w-12 rounded-full object-contain"
+                width={928}
+                height={436}
+                className="h-16 w-auto max-w-full self-start"
                 priority
               />
             </div>
             <h2 className="text-center text-2xl font-bold text-slate-900 lg:text-left">
-              PolyStoreX
-            </h2>
-            <p className="mt-1 text-center text-sm text-slate-500 lg:text-left">
               Create a Seller Enterprise Account
-            </p>
+            </h2>
 
             <Form {...form}>
               <form

@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, CircleHelp, Fuel } from "lucide-react";
+import { Bell, CircleHelp } from "lucide-react";
+import Image from "next/image";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -38,12 +39,13 @@ export function TopNavigation({
             ) : null}
           </>
         ) : (
-          <div
-            className={cn("flex items-center gap-2", !showBrand && "lg:hidden")}
-          >
-            <Fuel className="h-5 w-5 text-primary" />
-            <span className="font-semibold">PolyStoreX</span>
-          </div>
+          <Image
+            src="/brand/polystorex-logo-light-bg.png"
+            alt="PolyStoreX"
+            width={928}
+            height={436}
+            className={cn("h-10 w-auto", !showBrand && "lg:hidden")}
+          />
         )}
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Package } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -104,16 +104,18 @@ export function OnboardingShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[#F4F7F9]">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href={ROUTES.ONBOARDING} className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#0B1F3A] text-white">
-              <Package className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-[#0B1F3A]">PolyStoreX</p>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1B6EF3]">
-                Seller Onboarding
-              </p>
-            </div>
+          <Link href={ROUTES.ONBOARDING} className="flex items-center gap-3">
+            <Image
+              src="/brand/polystorex-logo-light-bg.png"
+              alt="PolyStoreX"
+              width={928}
+              height={436}
+              className="h-11 w-auto"
+              priority
+            />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1B6EF3]">
+              Seller Onboarding
+            </p>
           </Link>
           <p className="text-sm text-slate-500">
             Step {currentIndex + 1} of {ONBOARDING_STEPS.length}

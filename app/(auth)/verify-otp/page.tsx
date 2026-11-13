@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { ArrowLeft, Package } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -89,12 +90,14 @@ export default function VerifyOtpPage() {
     <div className="flex min-h-screen">
       <div className="relative hidden w-2/5 overflow-hidden bg-[#0B1F3A] lg:flex lg:flex-col">
         <div className="relative z-10 flex flex-1 flex-col p-10 text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
-              <Package className="h-5 w-5" />
-            </div>
-            <span className="text-lg font-semibold">PolyStoreX Seller</span>
-          </div>
+          <Image
+            src="/brand/polystorex-logo-transparent.png"
+            alt="PolyStoreX"
+            width={848}
+            height={372}
+            className="h-16 w-auto max-w-full self-start"
+            priority
+          />
           <div className="my-auto">
             <h1 className="text-3xl font-bold">Verify your number</h1>
             <p className="mt-3 max-w-sm text-white/70">
@@ -110,6 +113,14 @@ export default function VerifyOtpPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mx-auto w-full max-w-md"
         >
+          <Image
+            src="/brand/polystorex-logo-light-bg.png"
+            alt="PolyStoreX"
+            width={928}
+            height={436}
+            className="mb-6 h-14 w-auto max-w-full self-start lg:hidden"
+            priority
+          />
           <Link
             href={otpPurpose === "SIGNUP" ? ROUTES.REGISTER : ROUTES.LOGIN}
             className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800"

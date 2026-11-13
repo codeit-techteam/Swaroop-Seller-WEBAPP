@@ -95,20 +95,28 @@ export function Sidebar({ collapsed }: SidebarProps) {
       )}
     >
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-3">
-        <Link href={ROUTES.DASHBOARD} className="flex items-center gap-2.5">
-          <Image
-            src="/brand/polystorex-logo.png"
-            alt="PolyStoreX"
-            width={32}
-            height={32}
-            className="h-8 w-8 object-contain"
-            priority
-          />
-          {!isCollapsed ? (
-            <p className="text-sm font-bold tracking-tight text-[#00338D]">
-              PolyStoreX
-            </p>
-          ) : null}
+        <Link href={ROUTES.DASHBOARD} className="flex min-w-0 items-center">
+          {isCollapsed ? (
+            <span className="inline-flex rounded-md bg-black p-1">
+              <Image
+                src="/brand/polystorex-symbol.png"
+                alt="PolyStoreX"
+                width={216}
+                height={169}
+                className="h-7 w-auto"
+                priority
+              />
+            </span>
+          ) : (
+            <Image
+              src="/brand/polystorex-logo-light-bg.png"
+              alt="PolyStoreX"
+              width={928}
+              height={436}
+              className="h-10 w-auto"
+              priority
+            />
+          )}
         </Link>
         {!isCollapsed ? (
           <button

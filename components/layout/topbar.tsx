@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, Menu } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { LocationSelector } from "@/components/header/location-selector";
@@ -36,9 +37,13 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
         <span className="sr-only">Toggle menu</span>
       </Button>
 
-      <p className="hidden shrink-0 text-sm font-bold text-[#00338D] md:block">
-        PolyStoreX
-      </p>
+      <Image
+        src="/brand/polystorex-logo-light-bg.png"
+        alt="PolyStoreX"
+        width={928}
+        height={436}
+        className="hidden h-9 w-auto shrink-0 md:block"
+      />
 
       <SellerGlobalSearch />
 

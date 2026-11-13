@@ -10,6 +10,7 @@ import {
   MapPin,
   ShieldCheck,
 } from "lucide-react";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
 import { ONBOARDING_STEPS } from "@/lib/constants/onboarding";
@@ -53,18 +54,18 @@ export function StepSidebar({ className }: StepSidebarProps) {
         className,
       )}
     >
-      <div className="border-b border-sidebar-muted px-6 py-5">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-accent">
-            <Fuel className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">PolyStoreX</p>
-            <p className="text-xs text-sidebar-foreground/60">
-              SELLER ONBOARDING
-            </p>
-          </div>
-        </div>
+      <div className="border-b border-sidebar-muted px-5 py-4">
+        <Image
+          src="/brand/polystorex-logo-transparent.png"
+          alt="PolyStoreX"
+          width={848}
+          height={372}
+          className="h-12 w-auto"
+          priority
+        />
+        <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/60">
+          Seller onboarding
+        </p>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">

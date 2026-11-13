@@ -78,19 +78,14 @@ export default function SellerLoginPage() {
       <div className="relative hidden w-1/2 overflow-hidden lg:flex lg:flex-col">
         <div className="absolute inset-0 bg-[#0B1F3A]" />
         <div className="relative z-10 flex flex-1 flex-col p-10 text-white">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/brand/polystorex-logo.png"
-              alt="PolyStoreX"
-              width={40}
-              height={40}
-              className="h-10 w-10 rounded-lg bg-white object-contain p-0.5"
-              priority
-            />
-            <div>
-              <p className="text-lg font-semibold">PolyStoreX</p>
-            </div>
-          </div>
+          <Image
+            src="/brand/polystorex-logo-transparent.png"
+            alt="PolyStoreX"
+            width={848}
+            height={372}
+            className="h-16 w-auto max-w-full self-start"
+            priority
+          />
           <div className="my-auto max-w-md">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -133,6 +128,14 @@ export default function SellerLoginPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mx-auto w-full max-w-md"
           >
+            <Image
+              src="/brand/polystorex-logo-light-bg.png"
+              alt="PolyStoreX"
+              width={928}
+              height={436}
+              className="mb-6 h-14 w-auto max-w-full self-start lg:hidden"
+              priority
+            />
             <h2 className="text-2xl font-bold text-slate-900">Seller Login</h2>
             <p className="mt-2 text-sm text-slate-500">
               Mobile OTP only — enter your registered number to receive a
