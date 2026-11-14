@@ -105,7 +105,7 @@ export function CreditInsuranceView() {
       <OperationsShell
         className="space-y-6 py-6"
         title="Credit Insurance"
-        subtitle="PetroTrade-managed buyer cover. Sellers do not underwrite or collect customer credit."
+        subtitle="PolyStoreX-managed buyer cover. Sellers do not underwrite or collect customer credit."
         kpis={[
           {
             title: "Platform Cover",
@@ -130,8 +130,7 @@ export function CreditInsuranceView() {
             title: "At Risk",
             value: insights.atRisk,
             decimals: 0,
-            valueClassName:
-              insights.atRisk > 0 ? "text-amber-600" : undefined,
+            valueClassName: insights.atRisk > 0 ? "text-amber-600" : undefined,
           },
         ]}
       >
