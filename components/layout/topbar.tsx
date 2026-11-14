@@ -38,7 +38,7 @@ export function Topbar({ onMenuClick, className }: TopbarProps) {
       </Button>
 
       <Image
-        src="/brand/polystorex-logo-light-bg.png"
+        src="/brand/polystorex-logo-on-light.png"
         alt="PolyStoreX"
         width={928}
         height={436}

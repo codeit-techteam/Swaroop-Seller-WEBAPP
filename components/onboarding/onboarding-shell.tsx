@@ -106,7 +106,7 @@ export function OnboardingShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link href={ROUTES.ONBOARDING} className="flex items-center gap-3">
             <Image
-              src="/brand/polystorex-logo-light-bg.png"
+              src="/brand/polystorex-logo-on-light.png"
               alt="PolyStoreX"
               width={928}
               height={436}

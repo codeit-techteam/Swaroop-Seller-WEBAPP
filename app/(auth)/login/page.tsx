@@ -129,7 +129,7 @@ export default function SellerLoginPage() {
             className="mx-auto w-full max-w-md"
           >
             <Image
-              src="/brand/polystorex-logo-light-bg.png"
+              src="/brand/polystorex-logo-on-light.png"
               alt="PolyStoreX"
               width={928}
               height={436}

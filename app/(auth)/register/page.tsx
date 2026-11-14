@@ -96,7 +96,7 @@ export default function SellerRegisterPage() {
           >
             <div className="mb-4 flex justify-center lg:hidden">
               <Image
-                src="/brand/polystorex-logo-light-bg.png"
+                src="/brand/polystorex-logo-on-light.png"
                 alt="PolyStoreX"
                 width={928}
                 height={436}
