@@ -26,8 +26,8 @@ export type LegalLinks = {
 };
 
 const FALLBACK_SUPPORT_EMAIL = "it@polystorex.com";
-const FALLBACK_SUPPORT_PHONE = "+91 99626 20101";
-const FALLBACK_SUPPORT_WHATSAPP = "https://wa.me/919962620101";
+const FALLBACK_SUPPORT_PHONE = "+91 82484 00787";
+const FALLBACK_SUPPORT_WHATSAPP = "https://wa.me/918248400787";
 
 export type ContactSupportOptions = {
   /** Pre-select topic on the marketing /contact form (e.g. SELL_MATERIALS). */
