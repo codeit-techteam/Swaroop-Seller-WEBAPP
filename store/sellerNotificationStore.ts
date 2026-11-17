@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-import { sellerNotificationsMock } from "@/lib/mock/notifications";
+import { isSampleAdminPush } from "@/lib/sample-admin-pushes";
 import type { NotificationCategory, SellerNotification } from "@/types/seller";
 
 interface SellerNotificationState {
@@ -18,7 +18,7 @@ interface SellerNotificationState {
 export const useSellerNotificationStore = create<SellerNotificationState>()(
   devtools(
     (set, get) => ({
-      notifications: sellerNotificationsMock,
+      notifications: [],
       filter: "all",
       markRead: (id) =>
         set((state) => ({
@@ -35,12 +35,19 @@ export const useSellerNotificationStore = create<SellerNotificationState>()(
         })),
       setFilter: (filter) => set({ filter }),
       ingestAdminPushes: (items) => {
-        const existing = new Set(get().notifications.map((item) => item.id));
-        const incoming = items.filter((item) => !existing.has(item.id));
-        if (incoming.length === 0) return 0;
-        set((state) => ({
-          notifications: [...incoming, ...state.notifications],
-        }));
+        const kept = get().notifications.filter(
+          (item) => !isSampleAdminPush(item),
+        );
+        const existing = new Set(kept.map((item) => item.id));
+        const incoming = items.filter(
+          (item) => !existing.has(item.id) && !isSampleAdminPush(item),
+        );
+        if (incoming.length === 0) {
+          if (kept.length !== get().notifications.length)
+            set({ notifications: kept });
+          return 0;
+        }
+        set({ notifications: [...incoming, ...kept] });
         return incoming.length;
       },
       getFiltered: () => {

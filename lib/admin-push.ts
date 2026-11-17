@@ -1,4 +1,5 @@
 import { ADMIN_API_URL } from "@/lib/constants";
+import { isSampleAdminPush } from "@/lib/sample-admin-pushes";
 import { useSellerNotificationStore } from "@/store/sellerNotificationStore";
 import type { NotificationCategory, SellerNotification } from "@/types/seller";
 
@@ -27,7 +28,9 @@ const CATEGORY_MAP: Record<string, NotificationCategory> = {
   SYSTEM: "requests",
 };
 
-export function adminPushToSellerNotification(item: AdminPushPayload): SellerNotification {
+export function adminPushToSellerNotification(
+  item: AdminPushPayload,
+): SellerNotification {
   return {
     id: item.id,
     title: item.title,
@@ -51,7 +54,9 @@ export async function fetchAdminSellerPushes(): Promise<AdminPushPayload[]> {
 
 export async function hydrateAdminPushInbox() {
   try {
-    const items = await fetchAdminSellerPushes();
+    const items = (await fetchAdminSellerPushes()).filter(
+      (item) => !isSampleAdminPush(item),
+    );
     if (items.length === 0) return 0;
     const mapped = items.map(adminPushToSellerNotification);
     return useSellerNotificationStore.getState().ingestAdminPushes(mapped);

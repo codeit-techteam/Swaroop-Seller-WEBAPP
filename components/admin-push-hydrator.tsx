@@ -4,11 +4,15 @@ import { useEffect } from "react";
 import toast from "react-hot-toast";
 
 import { hydrateAdminPushInbox } from "@/lib/admin-push";
+import { useAuthStore } from "@/store/authStore";
 
 const POLL_MS = 20_000;
 
 export function AdminPushHydrator() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   useEffect(() => {
+    if (!isAuthenticated) return;
     let cancelled = false;
 
     const pull = async (announce: boolean) => {
@@ -31,7 +35,7 @@ export function AdminPushHydrator() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return null;
 }

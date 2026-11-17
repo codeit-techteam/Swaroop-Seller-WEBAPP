@@ -15,30 +15,47 @@
 /.next/
 /out/
 
-# production
+# production build
 /build
-
-# misc
-.DS_Store
-*.pem
+/dist
+*.tsbuildinfo
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
-# env files
+# local secrets — commit .env.example only
 .env
-.env*.local
+.env.*
+!.env.example
+*.env
+.envrc
 
-# vercel
+# certificates and key material
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+credentials.json
+*-credentials.json
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+
+# deploy tooling
 .vercel
+.turbo
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# IDE
+# IDE / OS / agent
 .idea
 .vscode
+.cursor
+.expo
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
