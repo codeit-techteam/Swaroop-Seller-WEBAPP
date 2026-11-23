@@ -41,8 +41,11 @@ import {
 } from "@/lib/constants/products";
 import { slabsOverlap } from "@/lib/seller/format";
 import {
+  convertPerKgToPerMt,
+  looksLikePricePerKg,
   MARKETPLACE_FREIGHT_FLOOR_PER_MT,
   needsMarketplacePriceReview,
+  normalizeSellerPricePerMt,
 } from "@/lib/seller/marketplace-price";
 import { apiErrorMessage, buildSellerListingCode } from "@/lib/utils";
 import {
@@ -207,8 +210,22 @@ export function AddGradeView() {
       return;
     }
 
-    const pendingReview =
-      !asDraft && needsMarketplacePriceReview(values.sellingPrice);
+    const normalized = normalizeSellerPricePerMt(values.sellingPrice);
+    const sellingPrice = normalized.pricePerMt;
+    const pendingReview = !asDraft && needsMarketplacePriceReview(sellingPrice);
+    if (normalized.convertedFromPerKg) {
+      form.setValue("sellingPrice", sellingPrice, { shouldDirty: true });
+      setSlabs((current) =>
+        current.map((slab) =>
+          looksLikePricePerKg(slab.price)
+            ? { ...slab, price: convertPerKgToPerMt(slab.price) }
+            : slab,
+        ),
+      );
+      toast.success(
+        `Converted ₹${normalized.original.toLocaleString("en-IN")}/kg → ₹${sellingPrice.toLocaleString("en-IN")}/MT`,
+      );
+    }
 
     let createdProductId: string | null = null;
     try {
@@ -228,13 +245,18 @@ export function AddGradeView() {
         availableStock: values.availableStock,
         reservedStock: values.reservedStock,
         moq: values.moq,
-        sellingPrice: values.sellingPrice,
-        priceTiers: slabs.map((s) => ({
-          minQty: s.minQty,
-          maxQty: s.maxQty,
-          price: s.price,
-          label: s.discountLabel,
-        })),
+        sellingPrice,
+        priceTiers: slabs.map((s) => {
+          const tierPrice = looksLikePricePerKg(s.price)
+            ? convertPerKgToPerMt(s.price)
+            : s.price;
+          return {
+            minQty: s.minQty,
+            maxQty: s.maxQty,
+            price: normalized.convertedFromPerKg ? tierPrice : s.price,
+            label: s.discountLabel,
+          };
+        }),
         notes: values.notes,
         deliveryTerms: values.deliveryTerms,
         dispatchWindow: values.dispatchWindow,
@@ -278,7 +300,7 @@ export function AddGradeView() {
       asDraft
         ? "Draft saved"
         : pendingReview
-          ? "Grade added. It shows on Customer App and Web after Admin approves the offer."
+          ? `Grade saved, but price is still below ₹${MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString("en-IN")}/MT — Customer App/Web will not show it until the price is raised.`
           : "Grade added — now live on Customer App and Web marketplace",
     );
     router.push(ROUTES.PRODUCTS);
@@ -665,19 +687,48 @@ export function AddGradeView() {
                       </div>
                     </FormControl>
                     {needsMarketplacePriceReview(Number(field.value) || 0) ? (
-                      <p className="text-xs text-amber-700">
-                        Below platform freight (₹
-                        {MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString(
-                          "en-IN",
-                        )}
-                        /MT). You can still add this grade. It stays pending
-                        until Admin approves the offer, then it appears on
-                        Customer App and Web.
-                      </p>
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-amber-700">
+                          {looksLikePricePerKg(Number(field.value) || 0)
+                            ? `₹${Number(field.value).toLocaleString("en-IN")} looks like ₹/kg. Live Customer App/Web need ₹/MT (floor ₹${MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString("en-IN")}/MT).`
+                            : `Below platform freight (₹${MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString("en-IN")}/MT). Customer App/Web hide offers under this floor.`}
+                        </p>
+                        {looksLikePricePerKg(Number(field.value) || 0) ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              const next = convertPerKgToPerMt(
+                                Number(field.value) || 0,
+                              );
+                              field.onChange(next);
+                              setSlabs((current) =>
+                                current.map((slab) =>
+                                  looksLikePricePerKg(slab.price)
+                                    ? {
+                                        ...slab,
+                                        price: convertPerKgToPerMt(slab.price),
+                                      }
+                                    : slab,
+                                ),
+                              );
+                            }}
+                          >
+                            Convert to ₹
+                            {convertPerKgToPerMt(
+                              Number(field.value) || 0,
+                            ).toLocaleString("en-IN")}
+                            /MT
+                          </Button>
+                        ) : null}
+                      </div>
                     ) : (
                       <p className="text-xs text-slate-500">
-                        Enter material selling price in ₹ per metric ton. Live
-                        marketplace requires at least ₹
+                        Enter material selling price in ₹ per metric ton (e.g.
+                        ₹90/kg → ₹90,000/MT). Live marketplace requires at least
+                        ₹
                         {MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString(
                           "en-IN",
                         )}
