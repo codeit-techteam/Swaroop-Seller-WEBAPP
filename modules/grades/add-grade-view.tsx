@@ -55,38 +55,48 @@ import { useSellerProductStore } from "@/store/sellerProductStore";
 import { useSellerStore } from "@/store/sellerStore";
 import type { BulkPriceSlab } from "@/types/seller";
 
-const schema = z.object({
-  gradeId: z.string().min(1, "Select a grade from the Grade Master"),
-  gradeName: z.string().min(1, "Select a grade from the Grade Master"),
-  gradeCode: z.string().min(1, "Grade code is required"),
-  application: z.string().min(2, "Required"),
-  mfi: z.string().min(1, "Required"),
-  density: z.string().optional(),
-  packagingType: z.string().min(1, "Required"),
-  unit: z.enum(["MT", "kg"]),
-  availableStock: z.coerce
-    .number({ invalid_type_error: "Stock must be a number" })
-    .finite()
-    .min(0, "Stock cannot be negative"),
-  moq: z.coerce
-    .number({ invalid_type_error: "MOQ must be a number" })
-    .finite()
-    .min(0.001, "MOQ must be greater than zero"),
-  origin: z.string().min(2, "Origin is required"),
-  currency: z.string().min(1),
-  gstPercent: z.coerce.number().min(0),
-  warehouse: z
-    .string()
-    .min(1, "Select an operating warehouse for this listing"),
-  reservedStock: z.coerce.number().min(0),
-  notes: z.string().optional(),
-  deliveryTerms: z.string().min(1, "Delivery ETA is required"),
-  dispatchWindow: z.string().min(1, "Dispatch window is required"),
-  sellingPrice: z.coerce
-    .number({ invalid_type_error: "Price must be a number" })
-    .finite()
-    .min(0.01, "Selling price must be greater than zero"),
-});
+const schema = z
+  .object({
+    gradeId: z.string().min(1, "Select a grade from the Grade Master"),
+    gradeName: z.string().min(1, "Select a grade from the Grade Master"),
+    gradeCode: z.string().min(1, "Grade code is required"),
+    application: z.string().min(2, "Required"),
+    mfi: z.string().min(1, "Required"),
+    density: z.string().optional(),
+    packagingType: z.string().min(1, "Required"),
+    unit: z.enum(["MT", "kg"]),
+    availableStock: z.coerce
+      .number({ invalid_type_error: "Stock must be a number" })
+      .finite()
+      .min(0.001, "Available stock must be greater than zero to publish"),
+    moq: z.coerce
+      .number({ invalid_type_error: "MOQ must be a number" })
+      .finite()
+      .min(0.001, "MOQ must be greater than zero"),
+    origin: z.string().min(2, "Origin is required"),
+    currency: z.string().min(1),
+    gstPercent: z.coerce.number().min(0),
+    warehouse: z
+      .string()
+      .min(1, "Select an operating warehouse for this listing"),
+    reservedStock: z.coerce.number().min(0),
+    notes: z.string().optional(),
+    deliveryTerms: z.string().min(1, "Delivery ETA is required"),
+    dispatchWindow: z.string().min(1, "Dispatch window is required"),
+    sellingPrice: z.coerce
+      .number({ invalid_type_error: "Price must be a number" })
+      .finite()
+      .min(0.01, "Selling price must be greater than zero"),
+  })
+  .superRefine((values, ctx) => {
+    if (values.moq > values.availableStock) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["moq"],
+        message: "MOQ cannot exceed available stock",
+      });
+    }
+  });
 
 type Values = z.infer<typeof schema>;
 
@@ -116,13 +126,13 @@ export function AddGradeView() {
       density: "",
       packagingType: DEFAULT_PACKAGING_TYPE,
       unit: "MT",
-      availableStock: 0,
+      availableStock: 20,
       origin: "India",
       currency: "INR",
       gstPercent: 18,
       warehouse: "",
       reservedStock: 0,
-      moq: 20,
+      moq: 1,
       notes: "",
       deliveryTerms: "2–3 Business Days",
       dispatchWindow: "24 Hours",

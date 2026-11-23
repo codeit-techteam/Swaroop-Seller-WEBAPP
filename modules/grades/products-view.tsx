@@ -97,13 +97,21 @@ export function SellerProductsView() {
           !product.locationId,
       )
       .filter((product) => category === "all" || product.category === category)
-      .filter(
-        (product) =>
-          !query ||
-          product.gradeName.toLowerCase().includes(query) ||
-          product.category.toLowerCase().includes(query) ||
-          product.manufacturer.toLowerCase().includes(query),
-      )
+      .filter((product) => {
+        if (!query) return true;
+        const haystack = [
+          product.gradeName,
+          product.gradeCode,
+          product.category,
+          product.manufacturer,
+          product.polymerType,
+          product.application,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query);
+      })
       .sort((a, b) =>
         sort === "stock"
           ? b.availableStock - a.availableStock

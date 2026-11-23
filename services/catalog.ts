@@ -254,10 +254,12 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     price: Number(t.price ?? 0),
   }));
 
+  // Prefer seller listing title (product.name) so My Products matches Admin Catalog / Customer cards.
   const gradeLabel =
+    item.name?.trim() ||
     item.grade?.fullGradeName?.trim() ||
     item.grade?.displayName?.trim() ||
-    item.name;
+    item.code;
   const warehouseLabel =
     inventory?.warehouse?.name ||
     inventory?.warehouse?.city ||
