@@ -171,7 +171,10 @@ export const useSellerOfferStore = create<SellerOfferState>()(
             moq: values.moq,
             basePrice: values.price,
             unit: values.unit || product.unit || "MT",
-            warehouseId: locationId || undefined,
+            warehouseId:
+              product.locationId && product.locationId !== "loc-default"
+                ? product.locationId
+                : locationId || undefined,
             inventoryId: product.inventoryId,
             // Server calculates validFrom/validUntil from hours (do not trust browser clock).
             validityHours: values.validityHours,

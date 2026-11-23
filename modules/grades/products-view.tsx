@@ -276,7 +276,8 @@ export function SellerProductsView() {
                     />
                     {product.needsPriceReview ? (
                       <p className="mt-1 max-w-[10rem] text-[11px] leading-snug text-amber-700">
-                        Below marketplace floor — not visible to buyers
+                        Waiting for admin approval — not on Customer App or Web
+                        yet
                       </p>
                     ) : null}
                   </td>

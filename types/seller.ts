@@ -7,7 +7,8 @@ export type VerificationStatus =
 
 export type OfferStatus = "draft" | "active" | "paused" | "expired";
 
-export type ProductOfferStatus = "none" | "active" | "draft" | "paused";
+export type ProductOfferStatus =
+  "none" | "active" | "draft" | "paused" | "pending";
 
 export type PurchaseRequestStatus =
   "new" | "under_review" | "accepted" | "counter_sent" | "rejected" | "expired";

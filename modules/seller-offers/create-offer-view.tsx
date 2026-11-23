@@ -74,9 +74,19 @@ export function CreateOfferView() {
   const fetchProducts = useSellerProductStore((s) => s.fetchProducts);
   const createOffer = useSellerOfferStore((s) => s.createOffer);
   const addActivity = useSellerStore((s) => s.addActivity);
-  const grades = products.filter(
-    (item) => !locationId || !item.locationId || item.locationId === locationId,
-  );
+  const grades = useMemo(() => {
+    const atCurrentLocation = (item: (typeof products)[number]) =>
+      !locationId || !item.locationId || item.locationId === locationId;
+    return products
+      .filter((item) => Boolean(item.id))
+      .slice()
+      .sort((a, b) => {
+        const locationRank =
+          Number(!atCurrentLocation(a)) - Number(!atCurrentLocation(b));
+        if (locationRank !== 0) return locationRank;
+        return a.gradeName.localeCompare(b.gradeName);
+      });
+  }, [locationId, products]);
   const [slabs, setSlabs] = useState<BulkPriceSlab[]>([]);
   const overlap = useMemo(() => slabsOverlap(slabs), [slabs]);
 
@@ -145,7 +155,12 @@ export function CreateOfferView() {
     <PageContainer className="max-w-3xl">
       <PageHeader
         title="Add New Offer"
-        description={`Publishing against ${location?.name ?? "current location"}`}
+        description={`Publishing against ${
+          grades.find((grade) => grade.id === form.watch("productId"))
+            ?.warehouse ||
+          location?.name ||
+          "current location"
+        }`}
       />
       <Form {...form}>
         <form
@@ -159,8 +174,19 @@ export function CreateOfferView() {
               <FormItem>
                 <FormLabel>Choose a Grade</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    const selected = grades.find((grade) => grade.id === value);
+                    if (selected?.warehouse) {
+                      form.setValue("deliveryLocation", selected.warehouse, {
+                        shouldValidate: true,
+                      });
+                    }
+                    if (selected?.unit) {
+                      form.setValue("unit", selected.unit);
+                    }
+                  }}
+                  value={field.value || undefined}
                   disabled={productsLoading || grades.length === 0}
                 >
                   <FormControl>
@@ -172,10 +198,11 @@ export function CreateOfferView() {
                       />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="max-h-80">
                     {grades.map((grade) => (
                       <SelectItem key={grade.id} value={grade.id}>
-                        {grade.category} · {grade.gradeName}
+                        {grade.category} - {grade.gradeName}
+                        {grade.warehouse ? ` · ${grade.warehouse}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -194,7 +221,7 @@ export function CreateOfferView() {
                 ) : null}
                 {!productsLoading && !productsError && grades.length === 0 ? (
                   <p className="text-sm text-slate-500">
-                    No grades available for this location. Add a product first.
+                    No grades yet. Add a product first.
                   </p>
                 ) : null}
                 <FormMessage />

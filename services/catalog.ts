@@ -5,7 +5,12 @@ import type { BulkPriceSlab, SellerProduct } from "@/types/seller";
 type Envelope<T> = {
   success: boolean;
   data: T;
-  meta?: { total: number };
+  meta?: {
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+  };
 };
 
 export type SellerGradeCatalogSpecs = {
@@ -212,7 +217,8 @@ type BackendSellerProduct = {
 
 function mapStatus(status?: string): SellerProduct["offerStatus"] {
   if (status === "ACTIVE") return "active";
-  if (status === "DRAFT" || status === "PENDING_REVIEW") return "draft";
+  if (status === "PENDING_REVIEW") return "pending";
+  if (status === "DRAFT") return "draft";
   if (status === "PAUSED") return "paused";
   return "none";
 }
@@ -291,12 +297,15 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     "24 Hours";
   const offerStatus = mapStatus(offer?.status);
   const basePrice = Number(offer?.basePrice ?? 0);
-  const needsPriceReview =
-    offer?.metadata?.needsPriceReview === true ||
-    (basePrice > 0 && basePrice < MARKETPLACE_FREIGHT_FLOOR_PER_MT);
   const productStatus = (item.status ?? "").toUpperCase();
-  const marketplaceLive =
-    offerStatus === "active" && productStatus === "ACTIVE" && !needsPriceReview;
+  const adminApproved = offer?.metadata?.adminPriceApproved === true;
+  const offerIsLive = offerStatus === "active" && productStatus === "ACTIVE";
+  const needsPriceReview =
+    !offerIsLive &&
+    !adminApproved &&
+    (offer?.metadata?.needsPriceReview === true ||
+      (basePrice > 0 && basePrice < MARKETPLACE_FREIGHT_FLOOR_PER_MT));
+  const marketplaceLive = offerIsLive;
   return {
     id: item.id,
     category: item.grade?.category?.name ?? item.grade?.name ?? "Grade",
@@ -358,11 +367,24 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
 }
 
 export async function fetchSellerProducts(): Promise<SellerProduct[]> {
-  const response = await apiClient.get<Envelope<BackendSellerProduct[]>>(
+  const pageSize = 100;
+  const first = await apiClient.get<Envelope<BackendSellerProduct[]>>(
     `/seller/products`,
-    { params: { page: 1, limit: 100 } },
+    { params: { page: 1, limit: pageSize } },
   );
-  return (response.data.data ?? []).map(mapProduct);
+  const rows = [...(first.data.data ?? [])];
+  const totalPages = Math.min(first.data.meta?.totalPages ?? 1, 20);
+  if (totalPages > 1) {
+    const rest = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) =>
+        apiClient.get<Envelope<BackendSellerProduct[]>>(`/seller/products`, {
+          params: { page: index + 2, limit: pageSize },
+        }),
+      ),
+    );
+    for (const page of rest) rows.push(...(page.data.data ?? []));
+  }
+  return rows.map(mapProduct);
 }
 
 export async function fetchSellerProduct(id: string): Promise<SellerProduct> {

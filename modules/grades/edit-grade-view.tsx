@@ -41,7 +41,6 @@ import {
 import { slabsOverlap } from "@/lib/seller/format";
 import {
   MARKETPLACE_FREIGHT_FLOOR_PER_MT,
-  marketplacePriceReviewMessage,
   needsMarketplacePriceReview,
 } from "@/lib/seller/marketplace-price";
 import { apiErrorMessage } from "@/lib/utils";
@@ -233,10 +232,7 @@ export function EditGradeView() {
       toast.error("Select a grade from the Grade Master.");
       return;
     }
-    if (wasPublished && needsMarketplacePriceReview(values.sellingPrice)) {
-      toast.error(marketplacePriceReviewMessage(values.sellingPrice));
-      return;
-    }
+    const pendingReview = needsMarketplacePriceReview(values.sellingPrice);
 
     try {
       const syncedSlabs = syncSlabsToSellingPrice(
@@ -303,7 +299,11 @@ export function EditGradeView() {
       }
 
       await fetchProducts();
-      toast.success("Grade updated — price synced to marketplace");
+      toast.success(
+        wasPublished && pendingReview
+          ? "Grade saved. Customer App and Web update after Admin approves this price."
+          : "Grade updated — price synced to marketplace",
+      );
       router.push(ROUTES.PRODUCTS);
     } catch (error) {
       toast.error(apiErrorMessage(error, "Unable to update grade."));
@@ -695,8 +695,8 @@ export function EditGradeView() {
                     <p className="text-xs text-amber-700">
                       Below platform freight (₹
                       {MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString("en-IN")}
-                      /MT). Live Customer App/Web listings require a realistic
-                      ₹/MT price at or above this floor.
+                      /MT). Saving keeps the grade. Customer App and Web show it
+                      after Admin approves the offer.
                     </p>
                   ) : (
                     <p className="text-xs text-slate-500">

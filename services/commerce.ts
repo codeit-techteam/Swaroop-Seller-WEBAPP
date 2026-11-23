@@ -115,7 +115,13 @@ type BackendOffer = {
   warehouseId?: string | null;
   version?: number;
   product?: { id?: string; name?: string };
-  grade?: { code?: string; name?: string; displayName?: string | null };
+  grade?: {
+    code?: string;
+    name?: string;
+    displayName?: string | null;
+    fullGradeName?: string | null;
+    category?: { name?: string | null; code?: string | null } | null;
+  };
   warehouse?: {
     id?: string;
     name?: string;
@@ -170,11 +176,16 @@ export function mapSellerOffer(
     locationId: warehouseId,
     productId: item.productId ?? item.product?.id ?? item.id,
     referenceNumber: item.referenceNumber,
-    category: item.grade?.name ?? "Grade",
-    gradeName:
-      item.product?.name ??
+    category:
+      item.grade?.category?.name ??
       item.grade?.displayName ??
       item.grade?.name ??
+      "Grade",
+    gradeName:
+      item.grade?.fullGradeName?.trim() ||
+      item.product?.name?.trim() ||
+      item.grade?.displayName?.trim() ||
+      item.grade?.name ||
       "Offer",
     manufacturer: "PRIVATE",
     price: num(item.basePrice),
@@ -367,8 +378,11 @@ export function mapSellerOrder(item: BackendPo, locationId = ""): SellerOrder {
   const orderId =
     item.poNumber ?? item.orderNumber ?? item.referenceNumber ?? item.id;
   const gradeName =
-    item.grade?.name ?? item.gradeName ?? item.productName ?? orderId;
-  const productName = item.product?.name ?? item.productName ?? gradeName;
+    item.grade?.name?.trim() ||
+    item.gradeName?.trim() ||
+    item.product?.name?.trim() ||
+    item.productName?.trim() ||
+    orderId;
   const expectedDispatchDate = item.expectedDispatchDate
     ? iso(item.expectedDispatchDate)
     : item.dispatch?.plannedDispatchDate
@@ -381,7 +395,7 @@ export function mapSellerOrder(item: BackendPo, locationId = ""): SellerOrder {
     orderId,
     productId: item.product?.id ?? item.id,
     category: item.grade?.code ?? item.gradeName ?? "Grade",
-    gradeName: productName,
+    gradeName,
     quantityMt: qty,
     unit: item.unit ?? "MT",
     pricePerKg: unitPrice > 0 ? unitPrice : qty > 0 ? value / (qty * 1000) : 0,
