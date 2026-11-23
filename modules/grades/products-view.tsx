@@ -88,14 +88,9 @@ export function SellerProductsView() {
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
+    // Show all org listings (Admin Catalog parity). Prefer the selected
+    // warehouse first so Kolkata CURRENT still reads as the primary set.
     return products
-      .filter(
-        (product) =>
-          !locationId ||
-          product.locationId === locationId ||
-          product.locationId === "loc-default" ||
-          !product.locationId,
-      )
       .filter((product) => category === "all" || product.category === category)
       .filter((product) => {
         if (!query) return true;
@@ -112,11 +107,26 @@ export function SellerProductsView() {
           .toLowerCase();
         return haystack.includes(query);
       })
-      .sort((a, b) =>
-        sort === "stock"
+      .sort((a, b) => {
+        if (locationId) {
+          const aHere =
+            a.locationId === locationId ||
+            a.locationId === "loc-default" ||
+            !a.locationId
+              ? 0
+              : 1;
+          const bHere =
+            b.locationId === locationId ||
+            b.locationId === "loc-default" ||
+            !b.locationId
+              ? 0
+              : 1;
+          if (aHere !== bHere) return aHere - bHere;
+        }
+        return sort === "stock"
           ? b.availableStock - a.availableStock
-          : b.updatedAt.localeCompare(a.updatedAt),
-      );
+          : b.updatedAt.localeCompare(a.updatedAt);
+      });
   }, [category, locationId, products, search, sort]);
 
   const selected = products.find((item) => item.id === selectedProductId);
@@ -259,7 +269,16 @@ export function SellerProductsView() {
                   </td>
                   <td className="px-4 py-3">{product.unit}</td>
                   <td className="px-4 py-3">
-                    <SellerStatusBadge status={product.offerStatus} />
+                    <SellerStatusBadge
+                      status={
+                        product.marketplaceLive ? "active" : product.offerStatus
+                      }
+                    />
+                    {product.needsPriceReview ? (
+                      <p className="mt-1 max-w-[10rem] text-[11px] leading-snug text-amber-700">
+                        Below marketplace floor — not visible to buyers
+                      </p>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">
                     {priceFor(product.id)
@@ -274,9 +293,7 @@ export function SellerProductsView() {
                   </td>
                   <td className="px-4 py-3">
                     <SellerStatusBadge
-                      status={
-                        product.offerStatus === "active" ? "active" : "inactive"
-                      }
+                      status={product.marketplaceLive ? "active" : "inactive"}
                     />
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">

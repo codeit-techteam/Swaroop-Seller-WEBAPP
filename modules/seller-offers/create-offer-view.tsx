@@ -215,8 +215,8 @@ export function CreateOfferView() {
                   Number(form.watch("price")) < 1250 ? (
                     <p className="text-xs text-amber-700">
                       This material price is below typical platform freight
-                      (₹1,250/MT). Confirm the value is ₹/MT before publishing —
-                      it will be flagged for admin review.
+                      (₹1,250/MT). Customer App/Web Live Listings will hide it
+                      until you enter a realistic ₹/MT price.
                     </p>
                   ) : (
                     <p className="text-xs text-slate-500">

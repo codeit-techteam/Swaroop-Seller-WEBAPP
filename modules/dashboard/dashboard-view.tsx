@@ -49,6 +49,7 @@ export function DashboardView() {
   const productsLoading = useSellerProductStore((s) => s.loading);
   const productsError = useSellerProductStore((s) => s.loadError);
   const offers = useSellerOfferStore((s) => s.offers);
+  const hydrateOffers = useSellerOfferStore((s) => s.hydrate);
   const requests = useSellerRequestStore((s) => s.requests);
   const hydrateRequests = useSellerRequestStore((s) => s.hydrate);
   const orders = useSellerOrderStore((s) => s.orders);
@@ -63,27 +64,23 @@ export function DashboardView() {
 
   useEffect(() => {
     void fetchProducts();
+    void hydrateOffers();
     void hydrateRequests();
     void hydrateOrders({ page: 1, limit: 20 });
-  }, [fetchProducts, hydrateOrders, hydrateRequests, locationId]);
+  }, [
+    fetchProducts,
+    hydrateOffers,
+    hydrateOrders,
+    hydrateRequests,
+    locationId,
+  ]);
 
   const ready = !productsLoading;
 
-  // Align KPI with the Products tab filter (selected warehouse / loc-default).
-  const locationScopedProducts = useMemo(
-    () =>
-      products.filter(
-        (product) =>
-          !locationId ||
-          product.locationId === locationId ||
-          product.locationId === "loc-default" ||
-          !product.locationId,
-      ),
-    [locationId, products],
-  );
-  const myProductGrades = locationScopedProducts.length;
-  const liveProductGrades = locationScopedProducts.filter(
-    (item) => item.offerStatus === "active",
+  // Org-wide product KPIs (same set as My Products / Admin Catalog).
+  const myProductGrades = products.length;
+  const liveProductGrades = products.filter(
+    (item) => item.marketplaceLive ?? item.offerStatus === "active",
   ).length;
   const scopedOffers = useMemo(
     () => offers.filter((item) => item.locationId === locationId),
@@ -101,9 +98,11 @@ export function DashboardView() {
     [dispatches, locationId],
   );
 
-  const activeOffers = scopedOffers.filter(
+  const activeOffersFromStore = scopedOffers.filter(
     (item) => item.status === "active",
   ).length;
+  // Fall back to listing embed so KPI stays truthful before/without offer hydrate.
+  const activeOffers = Math.max(activeOffersFromStore, liveProductGrades);
   const pendingRequests = scopedRequests.filter(
     (item) => item.status === "new" || item.status === "under_review",
   ).length;

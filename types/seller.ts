@@ -147,6 +147,12 @@ export interface SellerProduct {
   moq: number;
   notes: string;
   offerStatus: ProductOfferStatus;
+  /** Backend ProductStatus (ACTIVE, DRAFT, PAUSED, …). */
+  productStatus?: string;
+  /** True when Customer App/Web Live Listings can show this listing. */
+  marketplaceLive?: boolean;
+  needsPriceReview?: boolean;
+  priceReviewReason?: string;
   origin?: string;
   basePrice?: number;
   currency?: string;

@@ -39,6 +39,11 @@ import {
   packagingOptions,
 } from "@/lib/constants/products";
 import { slabsOverlap } from "@/lib/seller/format";
+import {
+  MARKETPLACE_FREIGHT_FLOOR_PER_MT,
+  marketplacePriceReviewMessage,
+  needsMarketplacePriceReview,
+} from "@/lib/seller/marketplace-price";
 import { apiErrorMessage } from "@/lib/utils";
 import {
   fetchSellerGrade,
@@ -226,6 +231,10 @@ export function EditGradeView() {
     }
     if (!values.gradeId) {
       toast.error("Select a grade from the Grade Master.");
+      return;
+    }
+    if (wasPublished && needsMarketplacePriceReview(values.sellingPrice)) {
+      toast.error(marketplacePriceReviewMessage(values.sellingPrice));
       return;
     }
 
@@ -682,6 +691,18 @@ export function EditGradeView() {
                       />
                     </div>
                   </FormControl>
+                  {needsMarketplacePriceReview(Number(field.value) || 0) ? (
+                    <p className="text-xs text-amber-700">
+                      Below platform freight (₹
+                      {MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString("en-IN")}
+                      /MT). Live Customer App/Web listings require a realistic
+                      ₹/MT price at or above this floor.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-500">
+                      Material selling price in ₹ per metric ton.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

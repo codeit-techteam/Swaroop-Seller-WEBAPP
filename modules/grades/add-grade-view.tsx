@@ -40,6 +40,11 @@ import {
   packagingOptions,
 } from "@/lib/constants/products";
 import { slabsOverlap } from "@/lib/seller/format";
+import {
+  MARKETPLACE_FREIGHT_FLOOR_PER_MT,
+  marketplacePriceReviewMessage,
+  needsMarketplacePriceReview,
+} from "@/lib/seller/marketplace-price";
 import { apiErrorMessage, buildSellerListingCode } from "@/lib/utils";
 import {
   createSellerListing,
@@ -203,6 +208,11 @@ export function AddGradeView() {
       return;
     }
 
+    if (!asDraft && needsMarketplacePriceReview(values.sellingPrice)) {
+      toast.error(marketplacePriceReviewMessage(values.sellingPrice));
+      return;
+    }
+
     let createdProductId: string | null = null;
     try {
       const created = await createSellerListing({
@@ -264,10 +274,14 @@ export function AddGradeView() {
     await fetchProducts();
     addActivity({
       type: "offer",
-      title: asDraft ? "Grade saved as draft" : "Grade added",
+      title: asDraft ? "Grade saved as draft" : "Grade live on marketplace",
       description: values.gradeName,
     });
-    toast.success(asDraft ? "Draft saved" : "Grade added");
+    toast.success(
+      asDraft
+        ? "Draft saved"
+        : "Grade added — now live on Customer App and Web marketplace",
+    );
     router.push(ROUTES.PRODUCTS);
   };
 
@@ -651,6 +665,26 @@ export function AddGradeView() {
                         />
                       </div>
                     </FormControl>
+                    {needsMarketplacePriceReview(Number(field.value) || 0) ? (
+                      <p className="text-xs text-amber-700">
+                        Below platform freight (₹
+                        {MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString(
+                          "en-IN",
+                        )}
+                        /MT). Publishing is blocked until you enter a realistic
+                        ₹/MT price — otherwise Customer App/Web will not show
+                        this grade.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-500">
+                        Enter material selling price in ₹ per metric ton. Live
+                        marketplace requires at least ₹
+                        {MARKETPLACE_FREIGHT_FLOOR_PER_MT.toLocaleString(
+                          "en-IN",
+                        )}
+                        /MT.
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

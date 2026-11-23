@@ -1,3 +1,4 @@
+import { MARKETPLACE_FREIGHT_FLOOR_PER_MT } from "@/lib/seller/marketplace-price";
 import { apiClient } from "@/services/apiClient";
 import type { BulkPriceSlab, SellerProduct } from "@/types/seller";
 
@@ -216,6 +217,21 @@ function mapStatus(status?: string): SellerProduct["offerStatus"] {
   return "none";
 }
 
+type BackendSellerOffer = NonNullable<BackendSellerProduct["offers"]>[number];
+
+/** Prefer the buyable marketplace offer over a newer draft/review sibling. */
+function pickPrimaryOffer(
+  offers?: BackendSellerProduct["offers"],
+): BackendSellerOffer | undefined {
+  if (!offers?.length) return undefined;
+  return (
+    offers.find((row) => row.status === "ACTIVE") ??
+    offers.find((row) => row.status === "PENDING_REVIEW") ??
+    offers.find((row) => row.status === "DRAFT") ??
+    offers[0]
+  );
+}
+
 function looksLikeDeliveryTiming(value?: string | null): boolean {
   const v = (value ?? "").trim();
   if (!v) return false;
@@ -244,7 +260,7 @@ function estimateDeliveryTerms(locationHint?: string | null): string {
 }
 
 function mapProduct(item: BackendSellerProduct): SellerProduct {
-  const offer = item.offers?.[0];
+  const offer = pickPrimaryOffer(item.offers);
   const inventory = item.inventory?.[0];
   const specs = (item.technicalSpecs ?? {}) as Record<string, unknown>;
   const tiers: BulkPriceSlab[] = (offer?.priceTiers ?? []).map((t, index) => ({
@@ -273,6 +289,14 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     (typeof offer?.metadata?.dispatchWindow === "string" &&
       offer.metadata.dispatchWindow.trim()) ||
     "24 Hours";
+  const offerStatus = mapStatus(offer?.status);
+  const basePrice = Number(offer?.basePrice ?? 0);
+  const needsPriceReview =
+    offer?.metadata?.needsPriceReview === true ||
+    (basePrice > 0 && basePrice < MARKETPLACE_FREIGHT_FLOOR_PER_MT);
+  const productStatus = (item.status ?? "").toUpperCase();
+  const marketplaceLive =
+    offerStatus === "active" && productStatus === "ACTIVE" && !needsPriceReview;
   return {
     id: item.id,
     category: item.grade?.category?.name ?? item.grade?.name ?? "Grade",
@@ -303,8 +327,17 @@ function mapProduct(item: BackendSellerProduct): SellerProduct {
     origin: item.countryOfOrigin ?? "India",
     warehouse: warehouseLabel,
     notes: typeof item.metadata?.notes === "string" ? item.metadata.notes : "",
-    offerStatus: mapStatus(offer?.status ?? item.status),
-    basePrice: Number(offer?.basePrice ?? 0),
+    offerStatus,
+    productStatus: productStatus || undefined,
+    marketplaceLive,
+    needsPriceReview,
+    priceReviewReason:
+      typeof offer?.metadata?.priceReviewReason === "string"
+        ? offer.metadata.priceReviewReason
+        : needsPriceReview
+          ? "Price is below the marketplace freight floor"
+          : undefined,
+    basePrice,
     currency: "INR",
     gstPercent: Number(
       item.metadata?.gstPercent ?? offer?.metadata?.gstPercent ?? 18,
